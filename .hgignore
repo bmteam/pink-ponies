@@ -1,0 +1,4 @@
+syntax: regexp
+^PinkPoniesApp/bin$
+^PinkPoniesServer/bin$
+^.metadata$
