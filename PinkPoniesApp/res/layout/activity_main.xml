@@ -22,19 +22,14 @@
 	        android:onClick="onSendClick" />
     </LinearLayout>
     
-	<ScrollView
-	    android:layout_width="match_parent"
-	    android:layout_height="50dip"
-	    android:fillViewport="true"
-	    android:layout_margin="10dip">
-	    <TextView
-	        android:id="@+id/text_view"
-	        android:layout_width="match_parent"
-	        android:layout_height="wrap_content"
-	        android:layout_gravity="bottom"
-	        android:scrollbars="vertical"
-	        android:textIsSelectable="true" />
-	</ScrollView>
+    <TextView
+        android:id="@+id/text_view"
+        android:layout_width="match_parent"
+        android:layout_height="200dip"
+        android:layout_gravity="bottom"
+        android:scrollbars="vertical"
+        android:textIsSelectable="true"
+        android:layout_margin="10dip" />
 	
     <org.osmdroid.views.MapView
         android:id="@+id/mapview"

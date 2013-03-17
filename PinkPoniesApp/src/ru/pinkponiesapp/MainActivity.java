@@ -22,26 +22,35 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        
-        textView = (TextView)findViewById(R.id.text_view);
-        textView.setMovementMethod(new ScrollingMovementMethod());
-        
-        editText = (EditText)findViewById(R.id.edit_message);
-        
-        messageHandler = new MessageHandler(this);
-        
-        networkingThread = new NetworkingThread(this);
-        networkingThread.start();
-        
-        printMessage("Initialized!");
+    	try {
+	        super.onCreate(savedInstanceState);
+	        setContentView(R.layout.activity_main);
+	        
+	        textView = (TextView)findViewById(R.id.text_view);
+	        textView.setMovementMethod(new ScrollingMovementMethod());
+	        
+	        editText = (EditText)findViewById(R.id.edit_message);
+	        
+	        messageHandler = new MessageHandler(this);
+	        
+	        networkingThread = new NetworkingThread(this);
+	        networkingThread.start();
+	        
+	        printMessage("Initialized!");
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    		printMessage("Exception: " + e.getMessage());
+        }
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
+    }
+    
+    private void printMessage(String message) {
+    	textView.append(message + "\n");
     }
     
     public void onSendClick(View view) {
@@ -52,12 +61,12 @@ public class MainActivity extends Activity {
     
     private void onMessageFromNetworkingThread(String message) {
         printMessage("NT: " + message);
+        if (message.equals("initialized")) {
+        	sendMessageToNetworkingThread("connect");
+        	sendMessageToNetworkingThread("service");
+        }
     }
-    
-    private void printMessage(String message) {
-    	textView.append(message + "\n");
-    }
-    
+
     private void sendMessageToNetworkingThread(String message) {
         Message msg = networkingThread.messageHandler.obtainMessage();
         msg.obj = message;
