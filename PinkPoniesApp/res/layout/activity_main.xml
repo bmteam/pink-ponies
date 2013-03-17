@@ -31,7 +31,6 @@
 	        android:id="@+id/text_view"
 	        android:layout_width="match_parent"
 	        android:layout_height="wrap_content"
-	        android:layout_gravity="bottom"
 	        android:scrollbars="vertical"
 	        android:textIsSelectable="true" />
 	</ScrollView>
