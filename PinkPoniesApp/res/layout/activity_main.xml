@@ -24,7 +24,7 @@
     
 	<ScrollView
 	    android:layout_width="match_parent"
-	    android:layout_height="wrap_content"
+	    android:layout_height="50dip"
 	    android:fillViewport="true"
 	    android:layout_margin="10dip">
 	    <TextView
@@ -35,5 +35,11 @@
 	        android:scrollbars="vertical"
 	        android:textIsSelectable="true" />
 	</ScrollView>
+	
+    <org.osmdroid.views.MapView
+        android:id="@+id/mapview"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:clickable="true" />
 
 </LinearLayout>
