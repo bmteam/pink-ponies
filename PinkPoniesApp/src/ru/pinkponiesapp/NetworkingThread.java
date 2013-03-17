@@ -1,32 +1,33 @@
 package ru.pinkponiesapp;
 
 import java.lang.ref.WeakReference;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
 
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
 public class NetworkingThread extends Thread {
-    //private final String serverIp = "192.168.0.198";
-    //private final int serverPort = 4263;
+    private final String serverIp = "127.0.0.1";
+    private final int serverPort = 4263;
     
     private WeakReference<MainActivity> mainActivity;
     
     public MessageHandler messageHandler;
     
     NetworkingThread(MainActivity activity) {
+    	Looper.prepare();
+    	
+        messageHandler = new MessageHandler(this);
         mainActivity = new WeakReference<MainActivity>(activity);
+        
+        sendMessageToUIThread("Hello from networking thread!");
+        
+        //Looper.loop();
     }
     
     public void run() {
         try {
-            Looper.prepare();
-            messageHandler = new MessageHandler(this);
-            //Looper.loop();
             
-            sendMessageToUIThread("Hello from networking thread!");
         } catch (Exception e) {
             sendMessageToUIThread("Exception: " + e.getMessage());
         }
