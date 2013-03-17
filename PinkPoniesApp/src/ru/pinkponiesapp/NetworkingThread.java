@@ -15,7 +15,7 @@ import android.os.Looper;
 import android.os.Message;
 
 public class NetworkingThread extends Thread {
-    private final String serverIp = "192.168.0.195";
+    private final String serverIp = "192.168.0.198";
     private final int serverPort = 4264;
     
     private WeakReference<MainActivity> mainActivity;
