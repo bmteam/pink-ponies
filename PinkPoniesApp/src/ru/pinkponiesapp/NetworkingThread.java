@@ -1,6 +1,8 @@
 package ru.pinkponiesapp;
 
 import java.lang.ref.WeakReference;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -22,10 +24,9 @@ public class NetworkingThread extends Thread {
         try {
             Looper.prepare();
             messageHandler = new MessageHandler(this);
-            Looper.loop();
+            //Looper.loop();
             
             sendMessageToUIThread("Hello from networking thread!");
-            
         } catch (Exception e) {
             sendMessageToUIThread("Exception: " + e.getMessage());
         }
