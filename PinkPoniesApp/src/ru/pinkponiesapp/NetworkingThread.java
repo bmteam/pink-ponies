@@ -87,6 +87,7 @@ public class NetworkingThread extends Thread {
     
     private void login() throws IOException {
     	MessagePack msgpack = new MessagePack();
+    	msgpack.register(Login.class);
     	BufferPacker packer = msgpack.createBufferPacker();
     	
     	packer.write(new Login(Build.BOARD, Build.BOOTLOADER, Build.BRAND, 

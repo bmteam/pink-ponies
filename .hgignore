@@ -1,6 +1,8 @@
 syntax: regexp
 ^PinkPoniesApp/bin$
 ^PinkPoniesApp/gen$
+^PinkPoniesProtocol/bin$
+^PinkPoniesProtocol/gen$
 ^PinkPoniesServer/bin$
 ^PinkPoniesServer/gen$
 ^.metadata$
