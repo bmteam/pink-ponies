@@ -19,7 +19,6 @@ public class MainActivity extends Activity {
     private TextView textView;
     private EditText editText;
     
-    private GPSTracker gpsTracker;
     private NetworkingThread networkingThread;
     
     public Handler messageHandler;
@@ -35,7 +34,7 @@ public class MainActivity extends Activity {
         	mapView.setBuiltInZoomControls(true);
         	mapView.setMultiTouchControls(true);
         
-        	gpsTracker = new GPSTracker(this);	        
+        	//gpsTracker = new GPSTracker(this);	        
 
 	        textView = (TextView)findViewById(R.id.text_view);
 	        textView.setMovementMethod(new ScrollingMovementMethod());
@@ -49,8 +48,7 @@ public class MainActivity extends Activity {
 
 			myLocationOverlay = new MyLocationOverlay(this, mapView);
         	mapView.getOverlays().add(myLocationOverlay);
-        	boolean B =myLocationOverlay.enableMyLocation();
-        	mapView.postInvalidate();         
+        	mapView.postInvalidate();
         
 		    myLocationOverlay.runOnFirstFix(new Runnable() {
 		    	public void run() {
@@ -60,15 +58,15 @@ public class MainActivity extends Activity {
 
 	        printMessage("Initialized!");
 
-			printMessage(Boolean.toString(gpsTracker.canGetLocation()));
-        	printMessage(Double.toString(gpsTracker.getLatitude()));
-        	printMessage(Double.toString(gpsTracker.getLongitude()));
+			//printMessage(Boolean.toString(gpsTracker.canGetLocation()));
+        	//printMessage(Double.toString(gpsTracker.getLatitude()));
+        	//printMessage(Double.toString(gpsTracker.getLongitude()));
     	} catch (Exception e) {
     		e.printStackTrace();
     		printMessage("Exception: " + e.getMessage());
         }
     }
-    /*
+    
     @Override
     protected void onResume() {
      // TODO Auto-generated method stub
@@ -83,7 +81,7 @@ public class MainActivity extends Activity {
      super.onPause();
      myLocationOverlay.disableMyLocation();
      myLocationOverlay.disableFollowLocation();
-    } */
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
