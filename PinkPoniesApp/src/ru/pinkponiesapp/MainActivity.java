@@ -32,9 +32,7 @@ public class MainActivity extends Activity {
 
 			final MapView mapView = (MapView) findViewById(R.id.mapview);
         	mapView.setBuiltInZoomControls(true);
-        	mapView.setMultiTouchControls(true);
-        
-        	//gpsTracker = new GPSTracker(this);	        
+        	mapView.setMultiTouchControls(true);        
 
 	        textView = (TextView)findViewById(R.id.text_view);
 	        textView.setMovementMethod(new ScrollingMovementMethod());
@@ -54,13 +52,9 @@ public class MainActivity extends Activity {
 		    	public void run() {
 		    		mapView.getController().animateTo(myLocationOverlay.getMyLocation());
 		        }
-		    });	        
+		    });
 
 	        printMessage("Initialized!");
-
-			//printMessage(Boolean.toString(gpsTracker.canGetLocation()));
-        	//printMessage(Double.toString(gpsTracker.getLatitude()));
-        	//printMessage(Double.toString(gpsTracker.getLongitude()));
     	} catch (Exception e) {
     		e.printStackTrace();
     		printMessage("Exception: " + e.getMessage());
@@ -104,6 +98,7 @@ public class MainActivity extends Activity {
         if (message.equals("initialized")) {
         	sendMessageToNetworkingThread("connect");
         	sendMessageToNetworkingThread("service");
+        	sendMessageToNetworkingThread("login");
         }
     }
 

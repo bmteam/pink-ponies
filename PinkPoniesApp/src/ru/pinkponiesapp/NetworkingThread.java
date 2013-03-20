@@ -10,12 +10,18 @@ import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Set;
 
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
+import org.msgpack.MessagePack;
+import org.msgpack.packer.BufferPacker;
+
+import ru.pinkponies.protocol.Login;
+
 public class NetworkingThread extends Thread {
-    private final String serverIp = "192.168.0.198";
+    private final String serverIp = "77.232.25.36";
     private final int serverPort = 4264;
     
     private WeakReference<MainActivity> mainActivity;
@@ -79,6 +85,17 @@ public class NetworkingThread extends Thread {
     	}
     }
     
+    private void login() throws IOException {
+    	MessagePack msgpack = new MessagePack();
+    	BufferPacker packer = msgpack.createBufferPacker();
+    	
+    	packer.write(new Login(Build.BOARD, Build.BOOTLOADER, Build.BRAND, 
+    			Build.CPU_ABI, Build.CPU_ABI2, Build.DEVICE));
+    	
+    	ByteBuffer bb = ByteBuffer.wrap(packer.toByteArray());
+    	socket.write(bb);
+    }
+    
     private void sendMessage(String message) throws IOException {
     	ByteBuffer bb = ByteBuffer.wrap(message.getBytes());
     	socket.write(bb);
@@ -91,6 +108,8 @@ public class NetworkingThread extends Thread {
 	        	connect();
 	        } else if (message.equals("service")) {
 	        	service();
+	        } else if (message.equals("login")) {
+	        	login();
 	        } else {
 	        	sendMessage(message);
 	        }
