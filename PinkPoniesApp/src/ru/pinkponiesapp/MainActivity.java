@@ -2,6 +2,9 @@ package ru.pinkponiesapp;
 
 import java.lang.ref.WeakReference;
 
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.MyLocationOverlay;
+
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
@@ -16,16 +19,24 @@ public class MainActivity extends Activity {
     private TextView textView;
     private EditText editText;
     
+    private GPSTracker gpsTracker;
     private NetworkingThread networkingThread;
     
     public Handler messageHandler;
+    MyLocationOverlay myLocationOverlay = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
     	try {
 	        super.onCreate(savedInstanceState);
 	        setContentView(R.layout.activity_main);
-	        
+
+			final MapView mapView = (MapView) findViewById(R.id.mapview);
+        	mapView.setBuiltInZoomControls(true);
+        	mapView.setMultiTouchControls(true);
+        
+        	gpsTracker = new GPSTracker(this);	        
+
 	        textView = (TextView)findViewById(R.id.text_view);
 	        textView.setMovementMethod(new ScrollingMovementMethod());
 	        
@@ -35,13 +46,44 @@ public class MainActivity extends Activity {
 	        
 	        networkingThread = new NetworkingThread(this);
 	        networkingThread.start();
-	        
+
+			myLocationOverlay = new MyLocationOverlay(this, mapView);
+        	mapView.getOverlays().add(myLocationOverlay);
+        	boolean B =myLocationOverlay.enableMyLocation();
+        	mapView.postInvalidate();         
+        
+		    myLocationOverlay.runOnFirstFix(new Runnable() {
+		    	public void run() {
+		    		mapView.getController().animateTo(myLocationOverlay.getMyLocation());
+		        }
+		    });	        
+
 	        printMessage("Initialized!");
+
+			printMessage(Boolean.toString(gpsTracker.canGetLocation()));
+        	printMessage(Double.toString(gpsTracker.getLatitude()));
+        	printMessage(Double.toString(gpsTracker.getLongitude()));
     	} catch (Exception e) {
     		e.printStackTrace();
     		printMessage("Exception: " + e.getMessage());
         }
     }
+    /*
+    @Override
+    protected void onResume() {
+     // TODO Auto-generated method stub
+     super.onResume();
+     myLocationOverlay.enableMyLocation();
+     myLocationOverlay.enableFollowLocation();
+    }
+    
+    @Override
+    protected void onPause() {
+     // TODO Auto-generated method stub
+     super.onPause();
+     myLocationOverlay.disableMyLocation();
+     myLocationOverlay.disableFollowLocation();
+    } */
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
