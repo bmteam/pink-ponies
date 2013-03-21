@@ -3,20 +3,20 @@ package ru.pinkponies.protocol;
 import org.msgpack.annotation.Message;
 
 @Message
-public class LocationUpdate extends Packet {
-	public static long PACKET_ID = 1;
-	
+public class LocationUpdatePacket extends Packet {	
 	public float longitude;
 	public float latitude;
 	public float height;
 
-	public LocationUpdate() {
+	public LocationUpdatePacket() {
+		super();
 		this.longitude = 0;
 		this.latitude = 0;
 		this.height = 0;
 	}
 	
-	public LocationUpdate(float longitude, float latitude, float height) {
+	public LocationUpdatePacket(float longitude, float latitude, float height) {
+		super();
 		this.longitude = longitude;
 		this.latitude = latitude;
 		this.height = height;

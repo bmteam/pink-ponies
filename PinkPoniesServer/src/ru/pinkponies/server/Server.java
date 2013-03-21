@@ -18,9 +18,10 @@ import java.util.logging.Logger;
 
 import org.msgpack.template.builder.BuildContext;
 
-import ru.pinkponies.protocol.Login;
+import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.Protocol;
+import ru.pinkponies.protocol.SayPacket;
 
 public final class Server {
 	static final int serverPort = 4264;
@@ -34,9 +35,7 @@ public final class Server {
 	
 	private Map<SocketChannel, List<ByteBuffer>> pendingData = new HashMap<SocketChannel, List<ByteBuffer>>();
 	
-	private void initialize() {	
-		Logger.getLogger(BuildContext.class.getName()).setLevel(Level.ALL);
-		
+	private void initialize() {		
 		try {
 			protocol = new Protocol();
 			selector = Selector.open();
@@ -145,15 +144,17 @@ public final class Server {
 	}
 	
 	public void onMessage(SocketChannel channel, byte[] data) {
-		System.out.println("Message from " + channel.socket().getRemoteSocketAddress().toString() + ": '" + new String(data) + "'.");
-		//sendMessage(channel, data);
+		System.out.println("Message from " + channel.socket().getRemoteSocketAddress().toString() + ":");
 		
 		try {
 			Packet packet = protocol.unpack(data);
 			
-			if (packet instanceof Login) {
-				Login loginPacket = (Login) packet;
+			if (packet instanceof LoginPacket) {
+				LoginPacket loginPacket = (LoginPacket) packet;
 				System.out.println(loginPacket.toString());
+			} else if (packet instanceof SayPacket) {
+				SayPacket sayPacket = (SayPacket) packet;
+				System.out.println(sayPacket.toString());
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

@@ -15,9 +15,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
-import ru.pinkponies.protocol.Login;
+import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.Protocol;
+import ru.pinkponies.protocol.SayPacket;
 
 public class NetworkingThread extends Thread {
     private final String serverIp = "77.232.25.36";
@@ -88,16 +89,17 @@ public class NetworkingThread extends Thread {
     }
     
     private void login() throws IOException {
-    	Login loginPacket = new Login(Build.BOARD, Build.BOOTLOADER, Build.BRAND, 
+    	LoginPacket packet = new LoginPacket(Build.BOARD, Build.BOOTLOADER, Build.BRAND, 
     			Build.CPU_ABI, Build.CPU_ABI2, Build.DEVICE);
-    	Packet packet = loginPacket;
     	
     	ByteBuffer bb = ByteBuffer.wrap(protocol.pack(packet));
     	socket.write(bb);
     }
     
     private void sendMessage(String message) throws IOException {
-    	ByteBuffer bb = ByteBuffer.wrap(message.getBytes());
+    	SayPacket packet = new SayPacket(message);
+    	
+    	ByteBuffer bb = ByteBuffer.wrap(protocol.pack(packet));
     	socket.write(bb);
     }
     
