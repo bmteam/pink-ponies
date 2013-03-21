@@ -13,10 +13,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import org.msgpack.template.builder.BuildContext;
 
 import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.Packet;

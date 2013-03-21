@@ -10,15 +10,13 @@ import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Set;
 
+import ru.pinkponies.protocol.LoginPacket;
+import ru.pinkponies.protocol.Protocol;
+import ru.pinkponies.protocol.SayPacket;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-
-import ru.pinkponies.protocol.LoginPacket;
-import ru.pinkponies.protocol.Packet;
-import ru.pinkponies.protocol.Protocol;
-import ru.pinkponies.protocol.SayPacket;
 
 public class NetworkingThread extends Thread {
     private final String serverIp = "77.232.25.36";
