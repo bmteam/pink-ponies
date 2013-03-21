@@ -1,10 +1,9 @@
 package ru.pinkponies.protocol;
 
-import org.msgpack.annotation.Beans;
 import org.msgpack.annotation.Message;
 
-@Message @Beans
-public final class Login {
+@Message
+public class Login extends Packet {
 	public static long PACKET_ID = 0;
 	
 	public String board;
@@ -15,6 +14,10 @@ public final class Login {
 	public String device;
 	// TODO(alexknvl): add more
 	
+	public Login() {
+		
+	}
+	
 	public Login(String board, String bootloader, String brand, String cpuABI,
 			String cpuABI2, String device) {
 		super();
@@ -24,6 +27,13 @@ public final class Login {
 		this.cpuABI = cpuABI;
 		this.cpuABI2 = cpuABI2;
 		this.device = device;
+	}
+
+	@Override
+	public String toString() {
+		return "Login [board=" + board + ", bootloader=" + bootloader
+				+ ", brand=" + brand + ", cpuABI=" + cpuABI + ", cpuABI2="
+				+ cpuABI2 + ", device=" + device + "]";
 	}
 
 	public String getBoard() {

@@ -31,11 +31,4 @@
 		<nature>com.android.ide.eclipse.adt.AndroidNature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
-	<linkedResources>
-		<link>
-			<name>PinkPoniesProtocol</name>
-			<type>2</type>
-			<locationURI>PARENT_LOC/PinkPoniesProtocol/src</locationURI>
-		</link>
-	</linkedResources>
 </projectDescription>

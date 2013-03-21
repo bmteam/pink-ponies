@@ -15,14 +15,15 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
-import org.msgpack.MessagePack;
-import org.msgpack.packer.BufferPacker;
-
 import ru.pinkponies.protocol.Login;
+import ru.pinkponies.protocol.Packet;
+import ru.pinkponies.protocol.Protocol;
 
 public class NetworkingThread extends Thread {
     private final String serverIp = "77.232.25.36";
     private final int serverPort = 4264;
+    
+    private Protocol protocol;
     
     private WeakReference<MainActivity> mainActivity;
     
@@ -33,6 +34,7 @@ public class NetworkingThread extends Thread {
     
     NetworkingThread(MainActivity activity) {
     	mainActivity = new WeakReference<MainActivity>(activity);
+    	protocol = new Protocol();
     }
     
     public void run() {
@@ -86,14 +88,11 @@ public class NetworkingThread extends Thread {
     }
     
     private void login() throws IOException {
-    	MessagePack msgpack = new MessagePack();
-    	msgpack.register(Login.class);
-    	BufferPacker packer = msgpack.createBufferPacker();
+    	Login loginPacket = new Login(Build.BOARD, Build.BOOTLOADER, Build.BRAND, 
+    			Build.CPU_ABI, Build.CPU_ABI2, Build.DEVICE);
+    	Packet packet = loginPacket;
     	
-    	packer.write(new Login(Build.BOARD, Build.BOOTLOADER, Build.BRAND, 
-    			Build.CPU_ABI, Build.CPU_ABI2, Build.DEVICE));
-    	
-    	ByteBuffer bb = ByteBuffer.wrap(packer.toByteArray());
+    	ByteBuffer bb = ByteBuffer.wrap(protocol.pack(packet));
     	socket.write(bb);
     }
     
