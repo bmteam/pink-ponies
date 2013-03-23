@@ -7,10 +7,12 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.security.InvalidParameterException;
 import java.util.Iterator;
 import java.util.Set;
 
 import ru.pinkponies.protocol.LoginPacket;
+import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.Protocol;
 import ru.pinkponies.protocol.SayPacket;
 import android.os.Build;
@@ -94,24 +96,34 @@ public class NetworkingThread extends Thread {
     	socket.write(bb);
     }
     
-    private void sendMessage(String message) throws IOException {
+    private void say(String message) throws IOException {
     	SayPacket packet = new SayPacket(message);
     	
     	ByteBuffer bb = ByteBuffer.wrap(protocol.pack(packet));
     	socket.write(bb);
     }
     
-    private void onMessageFromUIThread(String message) {
+    private void sendPacket(Packet packet) throws IOException {
+    	ByteBuffer bb = ByteBuffer.wrap(protocol.pack(packet));
+    	socket.write(bb);
+    }
+    
+    private void onMessageFromUIThread(Object message) {
     	try {
-	    	sendMessageToUIThread("Got your message: '" + message + "'!");
+	    	sendMessageToUIThread("Got your message: '" + message.toString() + "'!");
+	    	
 	        if (message.equals("connect")) {
 	        	connect();
 	        } else if (message.equals("service")) {
 	        	service();
 	        } else if (message.equals("login")) {
 	        	login();
+	        } else if (message instanceof Packet) {
+	        	sendPacket((Packet) message);
+	        } else if (message instanceof String) {
+	        	say((String) message);
 	        } else {
-	        	sendMessage(message);
+	        	throw new InvalidParameterException("Unknown message type.");
 	        }
     	} catch (Exception e) {
     		e.printStackTrace();
@@ -139,7 +151,7 @@ public class NetworkingThread extends Thread {
         
         @Override
         public void handleMessage(Message msg) {
-            thread.get().onMessageFromUIThread((String)msg.obj);
+            thread.get().onMessageFromUIThread(msg.obj);
         }
     };
 }

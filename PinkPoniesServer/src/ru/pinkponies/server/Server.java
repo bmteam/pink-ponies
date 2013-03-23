@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.Protocol;
@@ -151,6 +152,9 @@ public final class Server {
 			} else if (packet instanceof SayPacket) {
 				SayPacket sayPacket = (SayPacket) packet;
 				System.out.println(sayPacket.toString());
+			} else if (packet instanceof LocationUpdatePacket) {
+				LocationUpdatePacket locUpdate = (LocationUpdatePacket) packet;
+				System.out.println(locUpdate.toString());
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

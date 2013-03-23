@@ -2,12 +2,18 @@ package ru.pinkponies.app;
 
 import java.lang.ref.WeakReference;
 
+import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MyLocationOverlay;
 
+import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponiesapp.R;
 
 import android.app.Activity;
+import android.content.Context;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -17,9 +23,11 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements LocationListener {
     private TextView textView;
     private EditText editText;
+    
+    private LocationManager locationManager;
     
     private NetworkingThread networkingThread;
     
@@ -28,7 +36,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-    	try {
+    	try {    		
 	        super.onCreate(savedInstanceState);
 	        setContentView(R.layout.activity_main);
 
@@ -55,6 +63,11 @@ public class MainActivity extends Activity {
 		    		mapView.getController().animateTo(myLocationOverlay.getMyLocation());
 		        }
 		    });
+		    
+		    locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+    		
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 1, this);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 1, this);
 
 	        printMessage("Initialized!");
     	} catch (Exception e) {
@@ -109,6 +122,11 @@ public class MainActivity extends Activity {
         msg.obj = message;
         networkingThread.messageHandler.sendMessage(msg);
     }
+    private void sendMessageToNetworkingThread(Object message) {
+        Message msg = networkingThread.messageHandler.obtainMessage();
+        msg.obj = message;
+        networkingThread.messageHandler.sendMessage(msg);
+    }
     
     static public class MessageHandler extends Handler {
         private WeakReference<MainActivity> activity;
@@ -121,6 +139,32 @@ public class MainActivity extends Activity {
         public void handleMessage(Message msg) {
             activity.get().onMessageFromNetworkingThread((String)msg.obj);
         }
-    };
+    }
+
+	@Override
+	public void onLocationChanged(Location location) {
+		double longitude = location.getLongitude();
+		double latitude = location.getLatitude();
+		double altitude = location.getAltitude();
+		sendMessageToNetworkingThread(new LocationUpdatePacket(longitude, latitude, altitude));
+	}
+
+	@Override
+	public void onProviderDisabled(String provider) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onProviderEnabled(String provider) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onStatusChanged(String provider, int status, Bundle extras) {
+		// TODO Auto-generated method stub
+		
+	};
 
 }
