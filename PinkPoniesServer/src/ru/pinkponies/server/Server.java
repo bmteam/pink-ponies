@@ -2,6 +2,7 @@ package ru.pinkponies.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -14,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.msgpack.io.ByteBufferOutput;
+
 import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.Packet;
@@ -21,28 +24,29 @@ import ru.pinkponies.protocol.Protocol;
 import ru.pinkponies.protocol.SayPacket;
 
 public final class Server {
-	static final int serverPort = 4264;
-	
-	private Protocol protocol;
+	private static final int SERVER_PORT = 4264;
+	private static final int BUFFER_SIZE = 8192;
 	
 	private ServerSocketChannel serverSocketChannel;
 	private Selector selector;
 	
-	private ByteBuffer readBuffer = ByteBuffer.allocate(8192);
+	private Map<SocketChannel, ByteBuffer> incomingData = new HashMap<SocketChannel, ByteBuffer>();
+	private Map<SocketChannel, ByteBuffer> outgoingData = new HashMap<SocketChannel, ByteBuffer>();
 	
-	private Map<SocketChannel, List<ByteBuffer>> pendingData = new HashMap<SocketChannel, List<ByteBuffer>>();
+	private Protocol protocol;
 	
 	private void initialize() {		
 		try {
-			protocol = new Protocol();
-			selector = Selector.open();
 			serverSocketChannel = ServerSocketChannel.open();
 			serverSocketChannel.configureBlocking(false);
-			InetSocketAddress address = new InetSocketAddress(serverPort);
+			InetSocketAddress address = new InetSocketAddress(SERVER_PORT);
 			serverSocketChannel.socket().bind(address);
-			SelectionKey key = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 			
+			selector = Selector.open();
+			SelectionKey key = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);		
 			System.out.println("serverSocketChannel's registered key is " + key.channel().toString() + ".");
+			
+			protocol = new Protocol();
 		} catch (Exception e) {
 			System.out.println("Exception: " + e.getMessage());
 		}
@@ -84,53 +88,53 @@ public final class Server {
 		channel.configureBlocking(false);
 		channel.register(selector, SelectionKey.OP_READ);
 		
+		incomingData.put(channel, ByteBuffer.allocate(BUFFER_SIZE));
+		outgoingData.put(channel, ByteBuffer.allocate(BUFFER_SIZE));
+		
 		onConnect(channel);
+	}
+	
+	public void close(SelectionKey key) throws IOException {
+		SocketChannel channel = (SocketChannel) key.channel();
+		
+		incomingData.remove(channel);
+		outgoingData.remove(channel);
+		
+		channel.close();
+		key.cancel();
 	}
 	
 	public void read(SelectionKey key) throws IOException {
 		SocketChannel channel = (SocketChannel) key.channel();
+		ByteBuffer buffer = incomingData.get(channel);
 		
-		readBuffer.clear();
+		buffer.limit(buffer.capacity());
 		
-		int numRead;
+		int numRead = -1;
 		try {
-			numRead = channel.read(readBuffer);
+			numRead = channel.read(buffer);
 		} catch (IOException e) {
-			channel.close();
-			key.cancel();
+			close(key);
 			return;
 		}
 		
 		if (numRead == -1) {
-			channel.close();
-			key.cancel();
+			close(key);
 			return;
 		}
 		
-		readBuffer.flip();
-		byte[] data = new byte[readBuffer.limit()];
-		readBuffer.get(data);
-		
-		onMessage(channel, data);
+		onMessage(channel, buffer);
 	}
 	
 	public void write(SelectionKey key) throws IOException {
 		SocketChannel channel = (SocketChannel) key.channel();
 		
-		synchronized (pendingData) {
-			List<ByteBuffer> list = (List<ByteBuffer>) pendingData.get(channel);
+		synchronized (outgoingData) {
+			ByteBuffer buffer = outgoingData.get(channel);
 			
-			while (!list.isEmpty()) {
-				ByteBuffer buffer = (ByteBuffer) list.get(0);
-				channel.write(buffer);
-				if (buffer.remaining() > 0) {
-					// Socket buffer filled up.
-					break;
-				}
-				list.remove(0);
-			}
+			channel.write(buffer);
 			
-			if (list.isEmpty()) {
+			if (buffer.remaining() == 0) {
 				key.interestOps(SelectionKey.OP_READ);
 			}
 		}
@@ -140,37 +144,46 @@ public final class Server {
 		System.out.println("Client connected from " + channel.socket().getRemoteSocketAddress().toString() + ".");
 	}
 	
-	public void onMessage(SocketChannel channel, byte[] data) {
+	public void onMessage(SocketChannel channel, ByteBuffer buffer) {
 		System.out.println("Message from " + channel.socket().getRemoteSocketAddress().toString() + ":");
 		
+		Packet packet = null;
+		
+		buffer.flip();
 		try {
-			Packet packet = protocol.unpack(data);
-			
-			if (packet instanceof LoginPacket) {
-				LoginPacket loginPacket = (LoginPacket) packet;
-				System.out.println(loginPacket.toString());
-			} else if (packet instanceof SayPacket) {
-				SayPacket sayPacket = (SayPacket) packet;
-				System.out.println(sayPacket.toString());
-			} else if (packet instanceof LocationUpdatePacket) {
-				LocationUpdatePacket locUpdate = (LocationUpdatePacket) packet;
-				System.out.println(locUpdate.toString());
-			}
-		} catch (IOException e) {
+			packet = protocol.unpack(buffer);
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		buffer.compact();
 		
+		if (packet == null) {
+			return;
+		}
+		
+		if (packet instanceof LoginPacket) {
+			LoginPacket loginPacket = (LoginPacket) packet;
+			System.out.println(loginPacket.toString());
+		} else if (packet instanceof SayPacket) {
+			SayPacket sayPacket = (SayPacket) packet;
+			System.out.println(sayPacket.toString());
+		} else if (packet instanceof LocationUpdatePacket) {
+			LocationUpdatePacket locUpdate = (LocationUpdatePacket) packet;
+			System.out.println(locUpdate.toString());
+		}
 	}
 	
 	public void sendMessage(SocketChannel channel, byte[] data) {
-		synchronized (pendingData) {
-			List<ByteBuffer> list = (List<ByteBuffer>) pendingData.get(channel);
-			if (list == null) {
-				list = new ArrayList<ByteBuffer>();
-				pendingData.put(channel, list);
+		synchronized (outgoingData) {
+			ByteBuffer buffer = outgoingData.get(channel);
+			
+			try {
+				buffer.put(data);
+			} catch(BufferOverflowException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-			list.add(ByteBuffer.wrap(data));
 		}
 	}
 	
