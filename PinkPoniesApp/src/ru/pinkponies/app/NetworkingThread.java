@@ -1,4 +1,4 @@
-package ru.pinkponiesapp;
+package ru.pinkponies.app;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;

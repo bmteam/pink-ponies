@@ -1,9 +1,11 @@
-package ru.pinkponiesapp;
+package ru.pinkponies.app;
 
 import java.lang.ref.WeakReference;
 
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MyLocationOverlay;
+
+import ru.pinkponiesapp.R;
 
 import android.app.Activity;
 import android.os.Bundle;
