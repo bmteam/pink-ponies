@@ -2,13 +2,11 @@ package ru.pinkponies.app;
 
 import java.lang.ref.WeakReference;
 
-import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MyLocationOverlay;
 
 import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponiesapp.R;
-
 import android.app.Activity;
 import android.content.Context;
 import android.location.Location;
