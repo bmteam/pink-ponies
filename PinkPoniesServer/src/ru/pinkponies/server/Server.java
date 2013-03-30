@@ -128,6 +128,7 @@ public final class Server {
 		synchronized (outgoingData) {
 			ByteBuffer buffer = outgoingData.get(channel);
 			
+			// FIXME(alexknvl): flip buffer?
 			channel.write(buffer);
 			
 			if (buffer.remaining() == 0) {
