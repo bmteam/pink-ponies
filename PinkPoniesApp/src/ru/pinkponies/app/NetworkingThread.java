@@ -3,6 +3,7 @@ package ru.pinkponies.app;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.InetSocketAddress;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -10,6 +11,8 @@ import java.nio.channels.SocketChannel;
 import java.security.InvalidParameterException;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.Packet;
@@ -21,17 +24,24 @@ import android.os.Looper;
 import android.os.Message;
 
 public class NetworkingThread extends Thread {
-    private final String serverIp = "77.232.25.36";
-    private final int serverPort = 4264;
+    private final String SERVER_IP = "10.55.87.47";
+    private final int SERVER_PORT = 4266;
+    
+    private static final int BUFFER_SIZE = 8192;
+    
+    private final static Logger logger = Logger.getLogger(NetworkingThread.class.getName());
     
     private Protocol protocol;
     
     private WeakReference<MainActivity> mainActivity;
     
+    public MessageHandler messageHandler;
+    
     private SocketChannel socket;
 	private Selector selector;
-    
-    public MessageHandler messageHandler;
+	
+	private ByteBuffer incomingData = ByteBuffer.allocate(BUFFER_SIZE);
+	private ByteBuffer outgoingData = ByteBuffer.allocate(BUFFER_SIZE);
     
     NetworkingThread(MainActivity activity) {
     	mainActivity = new WeakReference<MainActivity>(activity);
@@ -45,32 +55,30 @@ public class NetworkingThread extends Thread {
     		sendMessageToUIThread("initialized");
 	    	Looper.loop();
     	} catch (Exception e) {
-    		e.printStackTrace();
-    		sendMessageToUIThread("Exception: " + e.getMessage());
+    		logger.log(Level.SEVERE, "Exception", e);
         }
     }
     
     private void connect() throws IOException {
-    	sendMessageToUIThread("Connecting to " + serverIp + ":" + serverPort + "...");
+    	logger.info("Connecting to " + SERVER_IP + ":" + SERVER_PORT + "...");
     	
     	socket = SocketChannel.open();
     	socket.configureBlocking(false);
-    	socket.connect(new InetSocketAddress(serverIp, serverPort));
+    	socket.connect(new InetSocketAddress(SERVER_IP, SERVER_PORT));
     	
     	selector = Selector.open();
     	socket.register(selector, SelectionKey.OP_CONNECT);
     	
-    	sendMessageToUIThread("Connection initiated, waiting for finishing...");
+    	logger.info("Connection initiated, waiting for finishing...");
     }
     
     private void service() throws IOException {
-    	while (selector.select() > 0) {
+    	if (selector.select() > 0) {
     		Set<SelectionKey> keys = selector.selectedKeys();
 			Iterator<SelectionKey> iterator = keys.iterator();
 			
 			while (iterator.hasNext()) {
 				SelectionKey key = iterator.next();
-				SocketChannel channel = (SocketChannel) key.channel();
 				iterator.remove();
 				
 				if (!key.isValid()) {
@@ -78,39 +86,104 @@ public class NetworkingThread extends Thread {
 				}
 				
 				if (key.isConnectable()) {
-					if (channel.isConnectionPending()) {
-						channel.finishConnect();
-						sendMessageToUIThread("Connected!");
-					}
-					continue;
+					finishConnection(key);
+				} else if (key.isReadable()) {
+					read(key);
+				} else if (key.isWritable()) {
+					write(key);
 				}
 			}
     	}
     }
     
+    private void finishConnection(SelectionKey key) throws IOException {
+    	SocketChannel channel = (SocketChannel) key.channel();
+    	if (channel.isConnectionPending()) {
+    		channel.finishConnect();
+			
+    		channel.register(selector, SelectionKey.OP_READ);
+    		channel.register(selector, SelectionKey.OP_WRITE);
+	    	
+    		sendMessageToUIThread("connected");
+		}
+    }
+    
+    private void close(SelectionKey key) throws IOException {
+		SocketChannel channel = (SocketChannel) key.channel();	
+		channel.close();
+		key.cancel();
+	}
+	
+    private void read(SelectionKey key) throws IOException {
+		SocketChannel channel = (SocketChannel) key.channel();
+		
+		incomingData.limit(incomingData.capacity());
+		
+		int numRead = -1;
+		try {
+			numRead = channel.read(incomingData);
+		} catch (IOException e) {
+			close(key);
+			sendMessageToUIThread("Exception: " + e.getMessage());
+			return;
+		}
+		
+		if (numRead == -1) {
+			close(key);
+			return;
+		}
+		
+		Packet packet = null;
+		
+		incomingData.flip();
+		try {
+			packet = protocol.unpack(incomingData);
+		} catch (Exception e) {
+			e.printStackTrace();
+			sendMessageToUIThread("Exception: " + e.getMessage());
+		}
+		incomingData.compact();
+		
+		if (packet == null) {
+			return;
+		}
+		
+		if (packet instanceof SayPacket) {
+			SayPacket sayPacket = (SayPacket) packet;
+			logger.info("Server: " + sayPacket.toString());
+		}
+	}
+	
+    private void write(SelectionKey key) throws IOException {
+		SocketChannel channel = (SocketChannel) key.channel();
+		
+		outgoingData.flip();
+		channel.write(outgoingData);
+		outgoingData.compact();
+	}
+    
+    private void sendPacket(Packet packet) throws IOException {
+		try {
+			outgoingData.put(protocol.pack(packet));
+		} catch(BufferOverflowException e) {
+			logger.log(Level.SEVERE, "Exception", e);
+		}
+    }
+    
     private void login() throws IOException {
     	LoginPacket packet = new LoginPacket(Build.BOARD, Build.BOOTLOADER, Build.BRAND, 
     			Build.CPU_ABI, Build.CPU_ABI2, Build.DEVICE);
-    	
-    	ByteBuffer bb = ByteBuffer.wrap(protocol.pack(packet));
-    	socket.write(bb);
+    	sendPacket(packet);
     }
     
     private void say(String message) throws IOException {
     	SayPacket packet = new SayPacket(message);
-    	
-    	ByteBuffer bb = ByteBuffer.wrap(protocol.pack(packet));
-    	socket.write(bb);
-    }
-    
-    private void sendPacket(Packet packet) throws IOException {
-    	ByteBuffer bb = ByteBuffer.wrap(protocol.pack(packet));
-    	socket.write(bb);
+    	sendPacket(packet);
     }
     
     private void onMessageFromUIThread(Object message) {
     	try {
-	    	sendMessageToUIThread("Got your message: '" + message.toString() + "'!");
+	    	logger.info("MA: " + message.toString());
 	    	
 	        if (message.equals("connect")) {
 	        	connect();
@@ -126,8 +199,7 @@ public class NetworkingThread extends Thread {
 	        	throw new InvalidParameterException("Unknown message type.");
 	        }
     	} catch (Exception e) {
-    		e.printStackTrace();
-            sendMessageToUIThread("Exception: " + e.getMessage());
+    		logger.log(Level.SEVERE, "Exception", e);
         }
     }
     
@@ -137,8 +209,7 @@ public class NetworkingThread extends Thread {
 	        msg.obj = message;
 	        mainActivity.get().messageHandler.sendMessage(msg);
 	    } catch (Exception e) {
-	    	e.printStackTrace();
-	        sendMessageToUIThread("Exception: " + e.getMessage());
+	    	logger.log(Level.SEVERE, "Exception", e);
 	    }
     }
     
