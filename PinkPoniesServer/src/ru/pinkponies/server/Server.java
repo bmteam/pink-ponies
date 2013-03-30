@@ -12,6 +12,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponies.protocol.LoginPacket;
@@ -20,8 +22,10 @@ import ru.pinkponies.protocol.Protocol;
 import ru.pinkponies.protocol.SayPacket;
 
 public final class Server {
-	private static final int SERVER_PORT = 4264;
+	private static final int SERVER_PORT = 4266;
 	private static final int BUFFER_SIZE = 8192;
+	
+	private final static Logger logger = Logger.getLogger(Server.class.getName());
 	
 	private ServerSocketChannel serverSocketChannel;
 	private Selector selector;
@@ -31,7 +35,7 @@ public final class Server {
 	
 	private Protocol protocol;
 	
-	private void initialize() {		
+	private void initialize() {
 		try {
 			serverSocketChannel = ServerSocketChannel.open();
 			serverSocketChannel.configureBlocking(false);
@@ -44,7 +48,7 @@ public final class Server {
 			
 			protocol = new Protocol();
 		} catch (Exception e) {
-			System.out.println("Exception: " + e.getMessage());
+			logger.log(Level.SEVERE, "Exception", e);
 		}
 	}
 	
@@ -69,12 +73,17 @@ public final class Server {
 				continue;
 			}
 			
-			if (key.isAcceptable()) {
-				accept(key);
-			} else if (key.isReadable()) {
-				read(key);
-			} else if (key.isWritable()) {
-				write(key);
+			try {
+				if (key.isAcceptable()) {
+					accept(key);
+				} else if (key.isReadable()) {
+					read(key);
+				} else if (key.isWritable()) {
+					write(key);
+				}
+			} catch (IOException e) {
+				close(key);
+				logger.log(Level.SEVERE, "Exception", e);
 			}
 		}
 	}
@@ -83,6 +92,7 @@ public final class Server {
 		SocketChannel channel = serverSocketChannel.accept();
 		channel.configureBlocking(false);
 		channel.register(selector, SelectionKey.OP_READ);
+		//channel.register(selector, SelectionKey.OP_WRITE);
 		
 		incomingData.put(channel, ByteBuffer.allocate(BUFFER_SIZE));
 		outgoingData.put(channel, ByteBuffer.allocate(BUFFER_SIZE));
@@ -111,11 +121,13 @@ public final class Server {
 			numRead = channel.read(buffer);
 		} catch (IOException e) {
 			close(key);
+			logger.log(Level.SEVERE, "Exception", e);
 			return;
 		}
 		
 		if (numRead == -1) {
 			close(key);
+			logger.severe("Read failed.");
 			return;
 		}
 		
@@ -142,7 +154,7 @@ public final class Server {
 		System.out.println("Client connected from " + channel.socket().getRemoteSocketAddress().toString() + ".");
 	}
 	
-	public void onMessage(SocketChannel channel, ByteBuffer buffer) {
+	public void onMessage(SocketChannel channel, ByteBuffer buffer) throws IOException {
 		System.out.println("Message from " + channel.socket().getRemoteSocketAddress().toString() + ":");
 		
 		Packet packet = null;
@@ -151,7 +163,6 @@ public final class Server {
 		try {
 			packet = protocol.unpack(buffer);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		buffer.compact();
@@ -169,6 +180,7 @@ public final class Server {
 		} else if (packet instanceof LocationUpdatePacket) {
 			LocationUpdatePacket locUpdate = (LocationUpdatePacket) packet;
 			System.out.println(locUpdate.toString());
+			//say(channel, "Thank you!"); // XXX.
 		}
 	}
 	
@@ -179,11 +191,19 @@ public final class Server {
 			try {
 				buffer.put(data);
 			} catch(BufferOverflowException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 	}
+	
+    private void sendPacket(SocketChannel channel, Packet packet) throws IOException {
+    	sendMessage(channel, protocol.pack(packet));
+    }
+    
+    private void say(SocketChannel channel, String message) throws IOException {
+    	SayPacket packet = new SayPacket(message);
+    	sendPacket(channel, packet);
+    }
 	
 	public static void main(String[] args) {
 		try {
@@ -191,7 +211,7 @@ public final class Server {
 			server.initialize();
 			server.start();
 		} catch (Exception e) {
-			System.out.println("Exception: " + e.getMessage());
+			logger.log(Level.SEVERE, "Exception", e);
 		}
 	}
 
