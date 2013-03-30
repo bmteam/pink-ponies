@@ -16,6 +16,7 @@ import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -156,10 +157,11 @@ public class MainActivity extends Activity implements LocationListener {
 
 	@Override
 	public void onLocationChanged(Location location) {
+		String clientID = Build.DISPLAY;
 		double longitude = location.getLongitude();
 		double latitude = location.getLatitude();
 		double altitude = location.getAltitude();
-		sendMessageToNetworkingThread(new LocationUpdatePacket(longitude, latitude, altitude));
+		sendMessageToNetworkingThread(new LocationUpdatePacket(clientID, longitude, latitude, altitude));
 	}
 
 	@Override
