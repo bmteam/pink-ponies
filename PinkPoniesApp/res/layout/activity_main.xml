@@ -40,10 +40,5 @@
         android:scrollbars="vertical"
         android:textIsSelectable="true" />
 	
-    <org.osmdroid.views.MapView
-        android:id="@+id/MainActivityMapview"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:clickable="true" />
 
 </LinearLayout>
