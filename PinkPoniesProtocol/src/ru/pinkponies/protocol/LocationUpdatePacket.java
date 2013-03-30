@@ -4,9 +4,9 @@ import org.msgpack.annotation.Message;
 
 @Message
 public class LocationUpdatePacket extends Packet {	
-	public double longitude;
-	public double latitude;
 	public double altitude;
+	public double latitude;
+	public double longitude;
 
 	public LocationUpdatePacket() {
 		super();
