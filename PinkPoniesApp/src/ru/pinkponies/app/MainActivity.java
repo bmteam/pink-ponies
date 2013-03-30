@@ -39,6 +39,7 @@ public class MainActivity extends Activity implements LocationListener {
 	
     private TextView textView;
     private EditText editText;
+    private TextOverlay textOverlay;
     
     private LocationManager locationManager;
     
@@ -60,7 +61,7 @@ public class MainActivity extends Activity implements LocationListener {
 	        setContentView(R.layout.activity_main);
 
 			final MapView mapView = (MapView) findViewById(R.id.mapview);
-        	mapView.setBuiltInZoomControls(true);
+
         	mapView.setMultiTouchControls(true);        
         	final  MapController mapController = mapView.getController();
         	mapController.setZoom(13);
@@ -79,6 +80,11 @@ public class MainActivity extends Activity implements LocationListener {
         	mapView.getOverlays().add(myLocationOverlay);
         	myPath = new PathOverlay(Color.GREEN, this);
         	mapView.getOverlays().add(myPath);
+        	textOverlay = new TextOverlay(this, mapView);
+        	textOverlay.setPosition(new GeoPoint(37.0, 57.0));
+        	textOverlay.setText("Hello, world!");
+        	mapView.getOverlays().add(textOverlay);
+        	
         	mapView.postInvalidate();
         
 		    myLocationOverlay.runOnFirstFix(new Runnable() {
@@ -240,6 +246,8 @@ public class MainActivity extends Activity implements LocationListener {
 		GeoPoint point = new GeoPoint(latitude, longitude);		
 		myPath.addPoint(point);
 		sendMessageToNetworkingThread(new LocationUpdatePacket(longitude, latitude, altitude));
+		
+		textOverlay.setPosition(new GeoPoint(longitude, latitude, altitude));
 	}
 
 	@Override
