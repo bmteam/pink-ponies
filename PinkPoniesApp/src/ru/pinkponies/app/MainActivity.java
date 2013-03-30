@@ -157,6 +157,8 @@ public class MainActivity extends Activity implements LocationListener {
 	            	myPersonOverlay.removeItem("player1");	            	
 	            	myPersonOverlay.addItem(myPoint, "player1", "player1");
 	            	p1Path.addPoint(myPoint);
+	            	Drawable marker=getResources().getDrawable(R.drawable.shit);
+	            	myAppleOverlay.resetItemMarker("Apple3", marker);
 	            	mapView.invalidate();
 	            }
 	        }); 

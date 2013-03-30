@@ -32,6 +32,13 @@ public class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
 		}
 	 }
 	 
+	 public void resetItemMarker(String title, Drawable newMarker){
+		 for(OverlayItem i:overlayItemList){
+				if (i.mTitle.equals(title))
+					i.setMarker(newMarker);
+			}
+	 }
+	 
 	 @Override
 	 public boolean onSnapToItem(int arg0, int arg1, Point arg2, IMapView arg3) {
 	  // TODO Auto-generated method stub
