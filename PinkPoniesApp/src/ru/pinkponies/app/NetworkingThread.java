@@ -101,7 +101,7 @@ public class NetworkingThread extends Thread {
     	SocketChannel channel = (SocketChannel) key.channel();
     	if (channel.isConnectionPending()) {
     		channel.finishConnect();
-    		channel.register(selector, SelectionKey.OP_READ);
+    		channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
     		logger.info("Now reading.");
 	    	
     		sendMessageToUIThread("connected");
@@ -160,12 +160,6 @@ public class NetworkingThread extends Thread {
 		
 		outgoingData.flip();
 		channel.write(outgoingData);
-
-		if (outgoingData.remaining() == 0) {
-			key.interestOps(SelectionKey.OP_READ);
-			logger.info("Now reading.");
-		}
-		
 		outgoingData.compact();
 	}
     
@@ -175,10 +169,6 @@ public class NetworkingThread extends Thread {
 		} catch(BufferOverflowException e) {
 			logger.log(Level.SEVERE, "Exception", e);
 		}
-		
-		SelectionKey key = socket.keyFor(this.selector);
-        key.interestOps(SelectionKey.OP_WRITE);
-        logger.info("Now writing.");
     }
     
     private void login() throws IOException {

@@ -189,7 +189,7 @@ public final class Server {
 		} else if (packet instanceof LocationUpdatePacket) {
 			LocationUpdatePacket locUpdate = (LocationUpdatePacket) packet;
 			System.out.println(locUpdate.toString());
-			//broadcastPacket(locUpdate);
+			broadcastPacket(locUpdate);
 		}
 	}
 	
