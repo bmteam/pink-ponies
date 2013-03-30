@@ -20,6 +20,7 @@ public final class Protocol {
 		messagePack = new MessagePack();
 		messagePack.register(LocationUpdatePacket.class);
 		messagePack.register(LoginPacket.class);
+		messagePack.register(SayPacket.class);
 	}
 	
 	public byte[] pack(Packet packet) throws IOException {
