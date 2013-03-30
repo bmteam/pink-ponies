@@ -8,6 +8,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -32,6 +33,8 @@ public final class Server {
 	
 	private Map<SocketChannel, ByteBuffer> incomingData = new HashMap<SocketChannel, ByteBuffer>();
 	private Map<SocketChannel, ByteBuffer> outgoingData = new HashMap<SocketChannel, ByteBuffer>();
+	
+	private ArrayList<SocketChannel> clients = new ArrayList<SocketChannel>();
 	
 	private Protocol protocol;
 	
@@ -100,6 +103,8 @@ public final class Server {
 		incomingData.put(channel, ByteBuffer.allocate(BUFFER_SIZE));
 		outgoingData.put(channel, ByteBuffer.allocate(BUFFER_SIZE));
 		
+		clients.add(channel);
+		
 		onConnect(channel);
 	}
 	
@@ -108,6 +113,8 @@ public final class Server {
 		
 		incomingData.remove(channel);
 		outgoingData.remove(channel);
+		
+		clients.remove(channel);
 		
 		channel.close();
 		key.cancel();
@@ -144,9 +151,6 @@ public final class Server {
 			ByteBuffer buffer = outgoingData.get(channel);
 			
 			buffer.flip();
-			if (buffer.remaining() != 0) {
-				logger.info("write");
-			}
 			channel.write(buffer);
 			if (buffer.remaining() == 0) {
 				key.interestOps(SelectionKey.OP_READ);
@@ -185,6 +189,7 @@ public final class Server {
 		} else if (packet instanceof LocationUpdatePacket) {
 			LocationUpdatePacket locUpdate = (LocationUpdatePacket) packet;
 			System.out.println(locUpdate.toString());
+			//broadcastPacket(locUpdate);
 		}
 	}
 	
@@ -205,6 +210,12 @@ public final class Server {
 	
     private void sendPacket(SocketChannel channel, Packet packet) throws IOException {
     	sendMessage(channel, protocol.pack(packet));
+    }
+    
+    private void broadcastPacket(Packet packet) throws IOException {
+    	for (SocketChannel client : clients) {
+    		sendPacket(client, packet);
+    	}
     }
     
     private void say(SocketChannel channel, String message) throws IOException {

@@ -112,8 +112,8 @@ public class MainActivity extends Activity implements LocationListener {
         sendMessageToNetworkingThread(message);
     }
     
-    private void onMessageFromNetworkingThread(String message) {
-        logger.info("NT: " + message);
+    private void onMessageFromNetworkingThread(Object message) {
+    	logger.info("NT: " + message.toString());
         if (message.equals("initialized")) {
         	sendMessageToNetworkingThread("connect");
         	sendMessageToNetworkingThread("service");
@@ -128,14 +128,11 @@ public class MainActivity extends Activity implements LocationListener {
 				}
         		
         	}, 0, SERVICE_DELAY);
+        } else if (message instanceof LocationUpdatePacket) {
+        	// TODO
         }
     }
 
-    private void sendMessageToNetworkingThread(String message) {
-        Message msg = networkingThread.messageHandler.obtainMessage();
-        msg.obj = message;
-        networkingThread.messageHandler.sendMessage(msg);
-    }
     private void sendMessageToNetworkingThread(Object message) {
         Message msg = networkingThread.messageHandler.obtainMessage();
         msg.obj = message;
@@ -151,7 +148,7 @@ public class MainActivity extends Activity implements LocationListener {
         
         @Override
         public void handleMessage(Message msg) {
-            activity.get().onMessageFromNetworkingThread((String) msg.obj);
+            activity.get().onMessageFromNetworkingThread(msg.obj);
         }
     }
 
@@ -162,6 +159,7 @@ public class MainActivity extends Activity implements LocationListener {
 		double latitude = location.getLatitude();
 		double altitude = location.getAltitude();
 		sendMessageToNetworkingThread(new LocationUpdatePacket(clientID, longitude, latitude, altitude));
+		logger.info("Location updated.");
 	}
 
 	@Override

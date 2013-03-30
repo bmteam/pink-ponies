@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.Protocol;
@@ -101,6 +102,7 @@ public class NetworkingThread extends Thread {
     	if (channel.isConnectionPending()) {
     		channel.finishConnect();
     		channel.register(selector, SelectionKey.OP_READ);
+    		logger.info("Now reading.");
 	    	
     		sendMessageToUIThread("connected");
 		}
@@ -148,17 +150,20 @@ public class NetworkingThread extends Thread {
 		if (packet instanceof SayPacket) {
 			SayPacket sayPacket = (SayPacket) packet;
 			logger.info("Server: " + sayPacket.toString());
+		} else if (packet instanceof LocationUpdatePacket) {
+			sendMessageToUIThread(packet);
 		}
 	}
 	
     private void write(SelectionKey key) throws IOException {
 		SocketChannel channel = (SocketChannel) key.channel();
-				
+		
 		outgoingData.flip();
 		channel.write(outgoingData);
 
 		if (outgoingData.remaining() == 0) {
 			key.interestOps(SelectionKey.OP_READ);
+			logger.info("Now reading.");
 		}
 		
 		outgoingData.compact();
@@ -173,6 +178,7 @@ public class NetworkingThread extends Thread {
 		
 		SelectionKey key = socket.keyFor(this.selector);
         key.interestOps(SelectionKey.OP_WRITE);
+        logger.info("Now writing.");
     }
     
     private void login() throws IOException {
@@ -188,7 +194,7 @@ public class NetworkingThread extends Thread {
     
     private void onMessageFromUIThread(Object message) {
     	try {
-	    	//logger.info("MA: " + message.toString());
+	    	logger.info("MA: " + message.toString());
 	    	
 	        if (message.equals("connect")) {
 	        	connect();
@@ -208,7 +214,7 @@ public class NetworkingThread extends Thread {
         }
     }
     
-    private void sendMessageToUIThread(String message) {
+    private void sendMessageToUIThread(Object message) {
 	    try {
 	        Message msg = mainActivity.get().messageHandler.obtainMessage();
 	        msg.obj = message;
