@@ -30,7 +30,7 @@ import android.os.Message;
 import android.text.method.ScrollingMovementMethod;
 import android.view.Menu;
 import android.view.View;
-import android.widget.Button;
+//import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -126,7 +126,7 @@ public class MainActivity extends Activity implements LocationListener {
 	       	         
 	        
 	        // player 1	                
-	        myPersonOverlay.addItem(myPoint, "player1", "player1");
+	        //myPersonOverlay.addItem(myPoint, "player1", "player1");
 	        // apples
 	        GeoPoint applePoint1 = new 
 	        		GeoPoint(myPoint.getLatitudeE6() + 20000,
@@ -141,7 +141,7 @@ public class MainActivity extends Activity implements LocationListener {
 					myPoint.getLongitudeE6() + 10000);
 	        myAppleOverlay.addItem(applePoint3, "Apple3", "Apple3");
 	        
-	       //path
+	       /*path
 	       final PathOverlay p1Path = new PathOverlay(Color.RED, this);
 	       p1Path.addPoint(applePoint1);
 	       p1Path.addPoint(applePoint2);
@@ -158,12 +158,12 @@ public class MainActivity extends Activity implements LocationListener {
 	            					myPoint.getLongitudeE6() + 10000);
 	            	myPersonOverlay.removeItem("player1");	            	
 	            	myPersonOverlay.addItem(myPoint, "player1", "player1");
-	            	p1Path.addPoint(myPoint);
-	            	Drawable marker=getResources().getDrawable(R.drawable.shit);
-	            	myAppleOverlay.resetItemMarker("Apple3", marker);
+	            	//p1Path.addPoint(myPoint);
+	            	//Drawable marker=getResources().getDrawable(R.drawable.shit);
+	            	//myAppleOverlay.resetItemMarker("Apple3", marker);
 	            	mapView.invalidate();
-	            }
-	        }); 
+	            } 
+	        }); */
 	        
 	        
     	} catch (Exception e) {
@@ -217,7 +217,8 @@ public class MainActivity extends Activity implements LocationListener {
         	}, 0, SERVICE_DELAY);
         } else if (message instanceof LocationUpdatePacket) {
         	LocationUpdatePacket packet = (LocationUpdatePacket) message;
-        	if (packet.clientID != Build.DISPLAY) {
+        	logger.info(packet.clientID + "!" + Build.DISPLAY);
+        	if (!(packet.clientID).equals(Build.DISPLAY)) {
         		GeoPoint point = new GeoPoint(packet.latitude, packet.longitude);	
         		myPersonOverlay.removeItem(packet.clientID);	            	
             	myPersonOverlay.addItem(point, packet.clientID, packet.clientID);
