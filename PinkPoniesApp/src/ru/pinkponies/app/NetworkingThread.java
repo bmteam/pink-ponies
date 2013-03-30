@@ -25,7 +25,7 @@ import android.os.Looper;
 import android.os.Message;
 
 public class NetworkingThread extends Thread {
-    private final String SERVER_IP = "10.55.87.47";
+    private final String SERVER_IP = "192.168.0.199";
     private final int SERVER_PORT = 4268;
     
     private static final int BUFFER_SIZE = 8192;
@@ -172,8 +172,7 @@ public class NetworkingThread extends Thread {
     }
     
     private void login() throws IOException {
-    	LoginPacket packet = new LoginPacket(Build.BOARD, Build.BOOTLOADER, Build.BRAND, 
-    			Build.CPU_ABI, Build.CPU_ABI2, Build.DEVICE);
+    	LoginPacket packet = new LoginPacket(Build.DISPLAY);
     	sendPacket(packet);
     }
     

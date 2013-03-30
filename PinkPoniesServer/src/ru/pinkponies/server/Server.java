@@ -98,7 +98,7 @@ public final class Server {
 	public void accept(SelectionKey key) throws IOException {		
 		SocketChannel channel = serverSocketChannel.accept();
 		channel.configureBlocking(false);
-		channel.register(selector, SelectionKey.OP_READ);
+		channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
 		
 		incomingData.put(channel, ByteBuffer.allocate(BUFFER_SIZE));
 		outgoingData.put(channel, ByteBuffer.allocate(BUFFER_SIZE));
@@ -152,9 +152,6 @@ public final class Server {
 			
 			buffer.flip();
 			channel.write(buffer);
-			if (buffer.remaining() == 0) {
-				key.interestOps(SelectionKey.OP_READ);
-			}
 			buffer.compact();
 		}
 	}
@@ -202,9 +199,6 @@ public final class Server {
 			} catch(BufferOverflowException e) {
 				logger.log(Level.SEVERE, "Exception", e);
 			}
-			
-			SelectionKey key = channel.keyFor(this.selector);
-            key.interestOps(SelectionKey.OP_WRITE);
 		}
 	}
 	
@@ -218,10 +212,10 @@ public final class Server {
     	}
     }
     
-    private void say(SocketChannel channel, String message) throws IOException {
+    /*private void say(SocketChannel channel, String message) throws IOException {
     	SayPacket packet = new SayPacket(message);
     	sendPacket(channel, packet);
-    }
+    }*/
 	
 	public static void main(String[] args) {
 		try {

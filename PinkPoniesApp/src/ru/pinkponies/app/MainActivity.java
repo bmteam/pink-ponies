@@ -27,7 +27,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 public class MainActivity extends Activity implements LocationListener {   
-	private int SERVICE_DELAY = 2000;
+	private int SERVICE_DELAY = 1000;
 	
 	private final static Logger logger = Logger.getLogger(MainActivity.class.getName());
 	
