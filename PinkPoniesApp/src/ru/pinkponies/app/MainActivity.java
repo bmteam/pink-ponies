@@ -1,6 +1,10 @@
 package ru.pinkponies.app;
 
 import java.lang.ref.WeakReference;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MyLocationOverlay;
@@ -22,7 +26,11 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.content.Intent;
 
-public class MainActivity extends Activity implements LocationListener {
+public class MainActivity extends Activity implements LocationListener {   
+	private int SERVICE_DELAY = 1000;
+	
+	private final static Logger logger = Logger.getLogger(MainActivity.class.getName());
+	
     private TextView textView;
     private EditText editText;
     
@@ -35,14 +43,17 @@ public class MainActivity extends Activity implements LocationListener {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-    	try {    		
+    	try {
+    		logger.info("Initializing...");
+    		
 	        super.onCreate(savedInstanceState);
 	        setContentView(R.layout.activity_main);
 
-		/*	final MapView mapView = (MapView) findViewById(R.id.MainActivityMapview);
+			/*
+			final MapView mapView = (MapView) findViewById(R.id.MainActivityMapview);
         	mapView.setBuiltInZoomControls(true);
         	mapView.setMultiTouchControls(true);        
-*/
+
 	        textView = (TextView)findViewById(R.id.text_view);
 	        textView.setMovementMethod(new ScrollingMovementMethod());
 	        
@@ -52,8 +63,10 @@ public class MainActivity extends Activity implements LocationListener {
 	        
 	        networkingThread = new NetworkingThread(this);
 	        networkingThread.start();
+			*/
 
-	/*		myLocationOverlay = new MyLocationOverlay(this, mapView);
+			/*
+			myLocationOverlay = new MyLocationOverlay(this, mapView);
         	mapView.getOverlays().add(myLocationOverlay);
         	mapView.postInvalidate();
         
@@ -67,28 +80,28 @@ public class MainActivity extends Activity implements LocationListener {
     		
             locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 1, this);
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 1, this);
-*/
-	        printMessage("Initialized!");
+			*/
+
+            logger.info("Initialized!");
     	} catch (Exception e) {
-    		e.printStackTrace();
-    		printMessage("Exception: " + e.getMessage());
+    		logger.log(Level.SEVERE, "Exception", e);
         }
     }
     
     @Override
     protected void onResume() {
-     // TODO Auto-generated method stub
-     super.onResume();
-  //   myLocationOverlay.enableMyLocation();
-  //  myLocationOverlay.enableFollowLocation();
+		// TODO Auto-generated method stub
+		super.onResume();
+		//   myLocationOverlay.enableMyLocation();
+		//  myLocationOverlay.enableFollowLocation();
     }
     
     @Override
     protected void onPause() {
-     // TODO Auto-generated method stub
-     super.onPause();
-  //   myLocationOverlay.disableMyLocation();
-  //   myLocationOverlay.disableFollowLocation();
+		// TODO Auto-generated method stub
+		super.onPause();
+		//   myLocationOverlay.disableMyLocation();
+		//   myLocationOverlay.disableFollowLocation();
     }
 
     @Override
@@ -115,11 +128,21 @@ public class MainActivity extends Activity implements LocationListener {
     }
     
     private void onMessageFromNetworkingThread(String message) {
-        printMessage("NT: " + message);
+        logger.info("NT: " + message);
         if (message.equals("initialized")) {
         	sendMessageToNetworkingThread("connect");
         	sendMessageToNetworkingThread("service");
+        } else if (message.equals("connected")) {
         	sendMessageToNetworkingThread("login");
+        	
+        	new Timer().scheduleAtFixedRate(new TimerTask() {
+
+				@Override
+				public void run() {
+					sendMessageToNetworkingThread("service");
+				}
+        		
+        	}, 0, SERVICE_DELAY);
         }
     }
 
