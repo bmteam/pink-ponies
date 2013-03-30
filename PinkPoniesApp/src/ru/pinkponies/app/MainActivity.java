@@ -22,6 +22,7 @@ import android.os.Message;
 import android.text.method.ScrollingMovementMethod;
 import android.view.Menu;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -44,7 +45,7 @@ public class MainActivity extends Activity implements LocationListener {
 	        setContentView(R.layout.activity_main);
 
 			final MapView mapView = (MapView) findViewById(R.id.mapview);
-        	mapView.setBuiltInZoomControls(true);
+        	//mapView.setBuiltInZoomControls(true);
         	mapView.setMultiTouchControls(true);        
 
 	        textView = (TextView)findViewById(R.id.text_view);
@@ -74,7 +75,7 @@ public class MainActivity extends Activity implements LocationListener {
 
 	        printMessage("Initialized!");
 	        
-	        Drawable marker=getResources().getDrawable(android.R.drawable.btn_plus);
+	        Drawable marker=getResources().getDrawable(R.drawable.person);
 	        int markerWidth = marker.getIntrinsicWidth();
 	        int markerHeight = marker.getIntrinsicHeight();
 	        marker.setBounds(0, markerHeight, markerWidth, 0);
@@ -83,11 +84,29 @@ public class MainActivity extends Activity implements LocationListener {
 	         
 	        myItemizedOverlay = new MyItemizedOverlay(marker, resourceProxy);
 	        mapView.getOverlays().add(myItemizedOverlay);
-	         
-	        GeoPoint myPoint1 = new GeoPoint(0*1000000, 0*1000000);
-	        myItemizedOverlay.addItem(myPoint1, "myPoint1", "myPoint1");
-	        GeoPoint myPoint2 = new GeoPoint(50*1000000, 50*1000000);
-	        myItemizedOverlay.addItem(myPoint2, "myPoint2", "myPoint2");
+	       	         
+	        
+	        // player 1
+	        final int latitude = 55*1000000;
+	        final int longitude = 37*1000000;
+	        final GeoPoint myPoint1 = new GeoPoint(latitude, longitude);	        
+	        myItemizedOverlay.addItem(myPoint1, "player1", "player1");
+	        
+	        
+	       final Button button = (Button) findViewById(R.id.button1);
+	       
+	        button.setOnClickListener(new Button.OnClickListener() {
+	            public void onClick(View v){
+	            	GeoPoint point2 = new 
+	            			GeoPoint(latitude + 100000, longitude + 100000);
+	            	myItemizedOverlay.removeItem("player1");	            	
+	            	myItemizedOverlay.addItem(point2, "player2", "player2");
+	            	mapView.invalidate();
+	            }
+	        }); /* */
+	        
+	       // GeoPoint myPoint2 = new GeoPoint(50*1000000, 50*1000000);
+	       // myItemizedOverlay.addItem(myPoint2, "myPoint2", "myPoint2");
 	        
 	        
     	} catch (Exception e) {

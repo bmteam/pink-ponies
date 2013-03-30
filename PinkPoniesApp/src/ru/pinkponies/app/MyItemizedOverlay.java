@@ -1,6 +1,9 @@
 package ru.pinkponies.app;
 
 import java.util.ArrayList;
+//import java.util.HashMap;
+//import java.util.Map;
+
 import org.osmdroid.ResourceProxy;
 import org.osmdroid.api.IMapView;
 import org.osmdroid.util.GeoPoint;
@@ -15,14 +18,21 @@ public class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
 	 
 	 public MyItemizedOverlay(Drawable pDefaultMarker,
 	   ResourceProxy pResourceProxy) {
-	  super(pDefaultMarker, pResourceProxy);
+		 super(pDefaultMarker, pResourceProxy);
 	  // TODO Auto-generated constructor stub
 	 }
 	  
 	 public void addItem(GeoPoint p, String title, String snippet){
-	  OverlayItem newItem = new OverlayItem(title, snippet, p);
-	  overlayItemList.add(newItem);
-	  populate();
+		 OverlayItem newItem = new OverlayItem(title, snippet, p);
+		 overlayItemList.add(newItem);
+		 //id++;
+		// m.put(title, id);
+		 populate();
+	 }
+	 
+	 public void removeItem(String title){
+		overlayItemList.remove(0);
+		
 	 }
 	 
 	 @Override
@@ -42,4 +52,7 @@ public class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
 	  // TODO Auto-generated method stub
 	  return overlayItemList.size();
 	 }
+
+	// private Map<String, Integer> m = new HashMap<String, Integer>();
+	// private int id = 0; 
 }
