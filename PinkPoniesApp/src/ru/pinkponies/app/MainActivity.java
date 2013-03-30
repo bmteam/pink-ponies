@@ -5,13 +5,16 @@ import java.lang.ref.WeakReference;
 import org.osmdroid.DefaultResourceProxyImpl;
 import org.osmdroid.ResourceProxy;
 import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapController;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MyLocationOverlay;
+import org.osmdroid.views.overlay.PathOverlay;
 
 import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponiesapp.R;
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationListener;
@@ -48,6 +51,8 @@ public class MainActivity extends Activity implements LocationListener {
 
 			final MapView mapView = (MapView) findViewById(R.id.mapview);
         	mapView.setMultiTouchControls(true);        
+        	final  MapController mapController = mapView.getController();
+        	mapController.setZoom(13);
 
 	        textView = (TextView)findViewById(R.id.text_view);
 	        textView.setMovementMethod(new ScrollingMovementMethod());
@@ -103,20 +108,26 @@ public class MainActivity extends Activity implements LocationListener {
 	        // player 1	                
 	        myPersonOverlay.addItem(myPoint, "player1", "player1");
 	        // apples
-	        GeoPoint applePoint = new 
+	        GeoPoint applePoint1 = new 
 	        		GeoPoint(myPoint.getLatitudeE6() + 10000,
 					myPoint.getLongitudeE6() + 10000);
-	        myAppleOverlay.addItem(applePoint, "Apple1", "Apple1");
-	        applePoint = new 
+	        myAppleOverlay.addItem(applePoint1, "Apple1", "Apple1");
+	        GeoPoint applePoint2 = new 
 	        		GeoPoint(myPoint.getLatitudeE6() + 10000,
 					myPoint.getLongitudeE6() - 10000);
-	        myAppleOverlay.addItem(applePoint, "Apple2", "Apple2");
-	        applePoint = new 
+	        myAppleOverlay.addItem(applePoint2, "Apple2", "Apple2");
+	        GeoPoint applePoint3 = new 
 	        		GeoPoint(myPoint.getLatitudeE6() - 10000,
 					myPoint.getLongitudeE6() + 10000);
-	        myAppleOverlay.addItem(applePoint, "Apple3", "Apple3");
+	        myAppleOverlay.addItem(applePoint3, "Apple3", "Apple3");
 	        
-	        
+	       //path
+	       final PathOverlay myPath = new PathOverlay(Color.RED, this);
+	       myPath.addPoint(applePoint1);
+	       myPath.addPoint(applePoint2);
+	       myPath.addPoint(applePoint3);
+	       mapView.getOverlays().add(myPath);
+	       
 	       // magic button 
 	       final Button button = (Button) findViewById(R.id.button1);
 	       
@@ -127,6 +138,7 @@ public class MainActivity extends Activity implements LocationListener {
 	            					myPoint.getLongitudeE6() + 10000);
 	            	myPersonOverlay.removeItem("player1");	            	
 	            	myPersonOverlay.addItem(myPoint, "player1", "player1");
+	            	myPath.addPoint(myPoint);
 	            	mapView.invalidate();
 	            }
 	        }); 
