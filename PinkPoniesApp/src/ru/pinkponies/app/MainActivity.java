@@ -220,7 +220,7 @@ public class MainActivity extends Activity implements LocationListener {
         	if (packet.clientID != Build.DISPLAY) {
         		GeoPoint point = new GeoPoint(packet.latitude, packet.longitude);	
         		myPersonOverlay.removeItem(packet.clientID);	            	
-            	myPersonOverlay.addItem(point, "player1", "player1");
+            	myPersonOverlay.addItem(point, packet.clientID, packet.clientID);
         	}
         }
     }
