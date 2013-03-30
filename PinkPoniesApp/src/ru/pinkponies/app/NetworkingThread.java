@@ -25,7 +25,7 @@ import android.os.Message;
 
 public class NetworkingThread extends Thread {
     private final String SERVER_IP = "10.55.87.47";
-    private final int SERVER_PORT = 4266;
+    private final int SERVER_PORT = 4268;
     
     private static final int BUFFER_SIZE = 8192;
     
@@ -100,9 +100,7 @@ public class NetworkingThread extends Thread {
     	SocketChannel channel = (SocketChannel) key.channel();
     	if (channel.isConnectionPending()) {
     		channel.finishConnect();
-			
     		channel.register(selector, SelectionKey.OP_READ);
-    		channel.register(selector, SelectionKey.OP_WRITE);
 	    	
     		sendMessageToUIThread("connected");
 		}
@@ -124,7 +122,7 @@ public class NetworkingThread extends Thread {
 			numRead = channel.read(incomingData);
 		} catch (IOException e) {
 			close(key);
-			sendMessageToUIThread("Exception: " + e.getMessage());
+			logger.log(Level.SEVERE, "Exception", e);
 			return;
 		}
 		
@@ -139,8 +137,7 @@ public class NetworkingThread extends Thread {
 		try {
 			packet = protocol.unpack(incomingData);
 		} catch (Exception e) {
-			e.printStackTrace();
-			sendMessageToUIThread("Exception: " + e.getMessage());
+			logger.log(Level.SEVERE, "Exception", e);
 		}
 		incomingData.compact();
 		
@@ -156,9 +153,14 @@ public class NetworkingThread extends Thread {
 	
     private void write(SelectionKey key) throws IOException {
 		SocketChannel channel = (SocketChannel) key.channel();
-		
+				
 		outgoingData.flip();
 		channel.write(outgoingData);
+
+		if (outgoingData.remaining() == 0) {
+			key.interestOps(SelectionKey.OP_READ);
+		}
+		
 		outgoingData.compact();
 	}
     
@@ -168,6 +170,9 @@ public class NetworkingThread extends Thread {
 		} catch(BufferOverflowException e) {
 			logger.log(Level.SEVERE, "Exception", e);
 		}
+		
+		SelectionKey key = socket.keyFor(this.selector);
+        key.interestOps(SelectionKey.OP_WRITE);
     }
     
     private void login() throws IOException {
@@ -183,7 +188,7 @@ public class NetworkingThread extends Thread {
     
     private void onMessageFromUIThread(Object message) {
     	try {
-	    	logger.info("MA: " + message.toString());
+	    	//logger.info("MA: " + message.toString());
 	    	
 	        if (message.equals("connect")) {
 	        	connect();

@@ -22,7 +22,7 @@ import ru.pinkponies.protocol.Protocol;
 import ru.pinkponies.protocol.SayPacket;
 
 public final class Server {
-	private static final int SERVER_PORT = 4266;
+	private static final int SERVER_PORT = 4268;
 	private static final int BUFFER_SIZE = 8192;
 	
 	private final static Logger logger = Logger.getLogger(Server.class.getName());
@@ -37,6 +37,8 @@ public final class Server {
 	
 	private void initialize() {
 		try {
+			logger.info("Initializing...");
+			
 			serverSocketChannel = ServerSocketChannel.open();
 			serverSocketChannel.configureBlocking(false);
 			InetSocketAddress address = new InetSocketAddress(SERVER_PORT);
@@ -47,6 +49,8 @@ public final class Server {
 			System.out.println("serverSocketChannel's registered key is " + key.channel().toString() + ".");
 			
 			protocol = new Protocol();
+			
+			logger.info("Initialized!");
 		} catch (Exception e) {
 			logger.log(Level.SEVERE, "Exception", e);
 		}
@@ -92,7 +96,6 @@ public final class Server {
 		SocketChannel channel = serverSocketChannel.accept();
 		channel.configureBlocking(false);
 		channel.register(selector, SelectionKey.OP_READ);
-		//channel.register(selector, SelectionKey.OP_WRITE);
 		
 		incomingData.put(channel, ByteBuffer.allocate(BUFFER_SIZE));
 		outgoingData.put(channel, ByteBuffer.allocate(BUFFER_SIZE));
@@ -141,12 +144,14 @@ public final class Server {
 			ByteBuffer buffer = outgoingData.get(channel);
 			
 			buffer.flip();
+			if (buffer.remaining() != 0) {
+				logger.info("write");
+			}
 			channel.write(buffer);
-			buffer.compact();
-			
 			if (buffer.remaining() == 0) {
 				key.interestOps(SelectionKey.OP_READ);
 			}
+			buffer.compact();
 		}
 	}
 	
@@ -163,7 +168,7 @@ public final class Server {
 		try {
 			packet = protocol.unpack(buffer);
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.log(Level.SEVERE, "Exception", e);
 		}
 		buffer.compact();
 		
@@ -180,7 +185,6 @@ public final class Server {
 		} else if (packet instanceof LocationUpdatePacket) {
 			LocationUpdatePacket locUpdate = (LocationUpdatePacket) packet;
 			System.out.println(locUpdate.toString());
-			//say(channel, "Thank you!"); // XXX.
 		}
 	}
 	
@@ -191,8 +195,11 @@ public final class Server {
 			try {
 				buffer.put(data);
 			} catch(BufferOverflowException e) {
-				e.printStackTrace();
+				logger.log(Level.SEVERE, "Exception", e);
 			}
+			
+			SelectionKey key = channel.keyFor(this.selector);
+            key.interestOps(SelectionKey.OP_WRITE);
 		}
 	}
 	

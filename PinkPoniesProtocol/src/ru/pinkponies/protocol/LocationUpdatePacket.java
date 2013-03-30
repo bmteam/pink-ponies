@@ -4,8 +4,8 @@ import org.msgpack.annotation.Message;
 
 @Message
 public class LocationUpdatePacket extends Packet {
-	public double altitude;
 	public String clientID;
+	public double altitude;
 	public double latitude;
 	public double longitude;
 
@@ -27,7 +27,7 @@ public class LocationUpdatePacket extends Packet {
 	
 	@Override
 	public String toString() {
-		return "LocationUpdate [client_id =" + clientID + ", longitude=" + longitude +
+		return "LocationUpdate [clientID=" + clientID + ", longitude=" + longitude +
 				", latitude=" + latitude + ", altitude=" + altitude + "]";
 	}
 }
