@@ -3,12 +3,10 @@ package ru.pinkponies.app;
 import java.lang.ref.WeakReference;
 import java.util.logging.Logger;
 
-import org.osmdroid.api.IMapView;
 import org.osmdroid.views.MapController;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MyLocationOverlay;
 
-import ru.pinkponies.app.LoginActivity.MessageHandler;
 import ru.pinkponiesapp.R;
 import android.app.Activity;
 import android.content.Context;
@@ -20,7 +18,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.text.method.ScrollingMovementMethod;
-import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.EditText;
@@ -64,12 +61,12 @@ public class MainActivity extends Activity implements LocationListener {
 	        textView.setMovementMethod(new ScrollingMovementMethod());
 	        
 	        editText = (EditText)findViewById(R.id.edit_message);
-	        
-	        messageHandler = new MessageHandler(this);
 		    
 		    editText = (EditText)findViewById(R.id.edit_message);
 		    
-		    messageHandler = new MessageHandler(this);
+		    
+		    networkingThread = new NetworkingThread(this);
+	        networkingThread.start();
 		    
 		   
 			mapView = (MapView) findViewById(R.id.MainActivityMapview);
@@ -153,50 +150,25 @@ public class MainActivity extends Activity implements LocationListener {
     public void onLogoutClick(View view) {
     	goToLoginActivity(view);
     }
- /*   
-    private void onMessageFromNetworkingThread(String message) {
-        printMessage("NT: " + message);
-        if (message.equals("initialized")) {
-        	sendMessageToNetworkingThread("connect");
-        	sendMessageToNetworkingThread("service");
-        	sendMessageToNetworkingThread("login");
-        }
-    }
-
+    
     private void sendMessageToNetworkingThread(String message) {
         Message msg = networkingThread.messageHandler.obtainMessage();
         msg.obj = message;
         networkingThread.messageHandler.sendMessage(msg);
     }
+    
     private void sendMessageToNetworkingThread(Object message) {
         Message msg = networkingThread.messageHandler.obtainMessage();
         msg.obj = message;
         networkingThread.messageHandler.sendMessage(msg);
     }
-   */ 
     public void goToLoginActivity(View view)
     {
     	Intent intent = new Intent(MainActivity.this, LoginActivity.class);
         startActivity(intent);
         this.onDestroy();
     }
-    
-    static public class MessageHandler extends Handler {
-        private WeakReference<MainActivity> activity;
-        
-        MessageHandler(MainActivity secondActivity) {
-            activity = new WeakReference<MainActivity>(secondActivity);
-        }
-    }
- 
-/*		@Override
-        public void handleMessage(Message msg) {
-            activity.get().onMessageFromNetworkingThread((String)msg.obj);
-        }
-   	}
-*/
-
-
+     
 	@Override
 	public void onLocationChanged(Location location) {
 		// TODO Auto-generated method stub

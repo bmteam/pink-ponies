@@ -33,7 +33,7 @@ public class NetworkingThread extends Thread {
     
     private Protocol protocol;
     
-    private WeakReference<LoginActivity> mainActivity;
+    private WeakReference<MainActivity> mainActivity;
     
     public MessageHandler messageHandler;
     
@@ -43,12 +43,12 @@ public class NetworkingThread extends Thread {
 	private ByteBuffer incomingData = ByteBuffer.allocate(BUFFER_SIZE);
 	private ByteBuffer outgoingData = ByteBuffer.allocate(BUFFER_SIZE);
     
-    NetworkingThread(LoginActivity activity) {
-    	mainActivity = new WeakReference<LoginActivity>(activity);
+    NetworkingThread(MainActivity activity) {
+    	mainActivity = new WeakReference<MainActivity>(activity);
     	protocol = new Protocol();
     }
-    
-    public void run() {
+
+	public void run() {
     	try {
     		Looper.prepare();
     		messageHandler = new MessageHandler(this);
