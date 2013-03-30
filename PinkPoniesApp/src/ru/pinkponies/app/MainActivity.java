@@ -37,6 +37,7 @@ public class MainActivity extends Activity implements LocationListener {
     public Handler messageHandler;
     MyLocationOverlay myLocationOverlay = null;
     MyItemizedOverlay myItemizedOverlay = null;
+    GeoPoint myPoint = new GeoPoint(55*1000000, 37*1000000);	
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,27 +87,22 @@ public class MainActivity extends Activity implements LocationListener {
 	        mapView.getOverlays().add(myItemizedOverlay);
 	       	         
 	        
-	        // player 1
-	        final int latitude = 55*1000000;
-	        final int longitude = 37*1000000;
-	        final GeoPoint myPoint1 = new GeoPoint(latitude, longitude);	        
-	        myItemizedOverlay.addItem(myPoint1, "player1", "player1");
+	        // player 1	                
+	        myItemizedOverlay.addItem(myPoint, "player1", "player1");
 	        
 	        
 	       final Button button = (Button) findViewById(R.id.button1);
 	       
 	        button.setOnClickListener(new Button.OnClickListener() {
 	            public void onClick(View v){
-	            	GeoPoint point2 = new 
-	            			GeoPoint(latitude + 100000, longitude + 100000);
+	            	myPoint = new 
+	            			GeoPoint(myPoint.getLatitudeE6() + 100000,
+	            					myPoint.getLongitudeE6() + 100000);
 	            	myItemizedOverlay.removeItem("player1");	            	
-	            	myItemizedOverlay.addItem(point2, "player2", "player2");
+	            	myItemizedOverlay.addItem(myPoint, "player1", "player1");
 	            	mapView.invalidate();
 	            }
-	        }); /* */
-	        
-	       // GeoPoint myPoint2 = new GeoPoint(50*1000000, 50*1000000);
-	       // myItemizedOverlay.addItem(myPoint2, "myPoint2", "myPoint2");
+	        }); 
 	        
 	        
     	} catch (Exception e) {
