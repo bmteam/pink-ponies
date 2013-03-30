@@ -218,10 +218,10 @@ public final class Server {
     	}
     }
     
-    private void say(SocketChannel channel, String message) throws IOException {
+    /*private void say(SocketChannel channel, String message) throws IOException {
     	SayPacket packet = new SayPacket(message);
     	sendPacket(channel, packet);
-    }
+    }*/
 	
 	public static void main(String[] args) {
 		try {

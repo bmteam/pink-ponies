@@ -172,8 +172,7 @@ public class NetworkingThread extends Thread {
     }
     
     private void login() throws IOException {
-    	LoginPacket packet = new LoginPacket(Build.BOARD, Build.BOOTLOADER, Build.BRAND, 
-    			Build.CPU_ABI, Build.CPU_ABI2, Build.DEVICE);
+    	LoginPacket packet = new LoginPacket(Build.DISPLAY);
     	sendPacket(packet);
     }
     
