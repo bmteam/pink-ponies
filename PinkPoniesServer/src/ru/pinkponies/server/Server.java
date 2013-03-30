@@ -128,8 +128,9 @@ public final class Server {
 		synchronized (outgoingData) {
 			ByteBuffer buffer = outgoingData.get(channel);
 			
-			// FIXME(alexknvl): flip buffer?
+			buffer.flip();
 			channel.write(buffer);
+			buffer.compact();
 			
 			if (buffer.remaining() == 0) {
 				key.interestOps(SelectionKey.OP_READ);
