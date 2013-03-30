@@ -23,7 +23,7 @@ import android.os.Message;
 
 public class NetworkingThread extends Thread {
     private final String serverIp = "10.55.87.47";
-    private final int serverPort = 4264;
+    private final int serverPort = 4265;
     
     private static final int BUFFER_SIZE = 8192;
     
@@ -94,13 +94,14 @@ public class NetworkingThread extends Thread {
     }
     
     private void finishConnection(SelectionKey key) throws IOException {
-    	SocketChannel channel = (SocketChannel) key.channel();	
+    	SocketChannel channel = (SocketChannel) key.channel();
     	if (channel.isConnectionPending()) {
 			channel.finishConnect();
 			sendMessageToUIThread("Connected!");
+			
+			channel.register(selector, SelectionKey.OP_READ);
+	    	channel.register(selector, SelectionKey.OP_WRITE);
 		}
-    	channel.register(selector, SelectionKey.OP_READ);
-    	channel.register(selector, SelectionKey.OP_WRITE);
     }
     
     private void close(SelectionKey key) throws IOException {
