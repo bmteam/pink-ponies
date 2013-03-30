@@ -10,35 +10,24 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal" >
 
-        <EditText
-            android:id="@+id/edit_message"
+        <TextView
+            android:id="@+id/text_view"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="0.41"
-            android:hint="@string/edit_message" />
+            android:layout_weight="0.41" />
 
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="onSendClick"
-            android:text="@string/button_send" />
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="goToSecondActivity"
-            android:text="Map" />
+            android:onClick="onLogoutClick"
+            android:text="@string/button_logout" />
 
     </LinearLayout>
-    
-    <TextView
-        android:id="@+id/text_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_gravity="bottom"
-        android:layout_margin="10dip"
-        android:scrollbars="vertical"
-        android:textIsSelectable="true" />
-	
+
+    <org.osmdroid.views.MapView
+        android:id="@+id/MainActivityMapview"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:clickable="true" />
 
 </LinearLayout>
