@@ -36,8 +36,9 @@ public class MainActivity extends Activity implements LocationListener {
     
     public Handler messageHandler;
     MyLocationOverlay myLocationOverlay = null;
-    MyItemizedOverlay myItemizedOverlay = null;
-    GeoPoint myPoint = new GeoPoint(55*1000000, 37*1000000);	
+    MyItemizedOverlay myPersonOverlay = null;
+    MyItemizedOverlay myAppleOverlay = null;
+    GeoPoint myPoint = new GeoPoint(5592*10000, 3751*10000);	
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +47,6 @@ public class MainActivity extends Activity implements LocationListener {
 	        setContentView(R.layout.activity_main);
 
 			final MapView mapView = (MapView) findViewById(R.id.mapview);
-        	//mapView.setBuiltInZoomControls(true);
         	mapView.setMultiTouchControls(true);        
 
 	        textView = (TextView)findViewById(R.id.text_view);
@@ -76,6 +76,8 @@ public class MainActivity extends Activity implements LocationListener {
 
 	        printMessage("Initialized!");
 	        
+	        
+	        // add Person overlay
 	        Drawable marker=getResources().getDrawable(R.drawable.person);
 	        int markerWidth = marker.getIntrinsicWidth();
 	        int markerHeight = marker.getIntrinsicHeight();
@@ -83,23 +85,48 @@ public class MainActivity extends Activity implements LocationListener {
 	         
 	        ResourceProxy resourceProxy = new DefaultResourceProxyImpl(getApplicationContext());
 	         
-	        myItemizedOverlay = new MyItemizedOverlay(marker, resourceProxy);
-	        mapView.getOverlays().add(myItemizedOverlay);
+	        myPersonOverlay = new MyItemizedOverlay(marker, resourceProxy);
+	        mapView.getOverlays().add(myPersonOverlay);
+	        
+	        //add Apple overlay
+	        marker=getResources().getDrawable(R.drawable.apple);
+	        markerWidth = marker.getIntrinsicWidth();
+	        markerHeight = marker.getIntrinsicHeight();
+	        marker.setBounds(0, markerHeight, markerWidth, 0);
+	         
+	        resourceProxy = new DefaultResourceProxyImpl(getApplicationContext());
+	         
+	        myAppleOverlay = new MyItemizedOverlay(marker, resourceProxy);
+	        mapView.getOverlays().add(myAppleOverlay);
 	       	         
 	        
 	        // player 1	                
-	        myItemizedOverlay.addItem(myPoint, "player1", "player1");
+	        myPersonOverlay.addItem(myPoint, "player1", "player1");
+	        // apples
+	        GeoPoint applePoint = new 
+	        		GeoPoint(myPoint.getLatitudeE6() + 10000,
+					myPoint.getLongitudeE6() + 10000);
+	        myAppleOverlay.addItem(applePoint, "Apple1", "Apple1");
+	        applePoint = new 
+	        		GeoPoint(myPoint.getLatitudeE6() + 10000,
+					myPoint.getLongitudeE6() - 10000);
+	        myAppleOverlay.addItem(applePoint, "Apple2", "Apple2");
+	        applePoint = new 
+	        		GeoPoint(myPoint.getLatitudeE6() - 10000,
+					myPoint.getLongitudeE6() + 10000);
+	        myAppleOverlay.addItem(applePoint, "Apple3", "Apple3");
 	        
 	        
+	       // magic button 
 	       final Button button = (Button) findViewById(R.id.button1);
 	       
 	        button.setOnClickListener(new Button.OnClickListener() {
 	            public void onClick(View v){
 	            	myPoint = new 
-	            			GeoPoint(myPoint.getLatitudeE6() + 100000,
-	            					myPoint.getLongitudeE6() + 100000);
-	            	myItemizedOverlay.removeItem("player1");	            	
-	            	myItemizedOverlay.addItem(myPoint, "player1", "player1");
+	            			GeoPoint(myPoint.getLatitudeE6() + 10000,
+	            					myPoint.getLongitudeE6() + 10000);
+	            	myPersonOverlay.removeItem("player1");	            	
+	            	myPersonOverlay.addItem(myPoint, "player1", "player1");
 	            	mapView.invalidate();
 	            }
 	        }); 
