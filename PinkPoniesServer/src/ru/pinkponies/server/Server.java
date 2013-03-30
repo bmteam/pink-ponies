@@ -8,6 +8,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -22,7 +23,7 @@ import ru.pinkponies.protocol.Protocol;
 import ru.pinkponies.protocol.SayPacket;
 
 public final class Server {
-	private static final int SERVER_PORT = 4266;
+	private static final int SERVER_PORT = 4268;
 	private static final int BUFFER_SIZE = 8192;
 	
 	private final static Logger logger = Logger.getLogger(Server.class.getName());
@@ -33,10 +34,14 @@ public final class Server {
 	private Map<SocketChannel, ByteBuffer> incomingData = new HashMap<SocketChannel, ByteBuffer>();
 	private Map<SocketChannel, ByteBuffer> outgoingData = new HashMap<SocketChannel, ByteBuffer>();
 	
+	private ArrayList<SocketChannel> clients = new ArrayList<SocketChannel>();
+	
 	private Protocol protocol;
 	
 	private void initialize() {
 		try {
+			logger.info("Initializing...");
+			
 			serverSocketChannel = ServerSocketChannel.open();
 			serverSocketChannel.configureBlocking(false);
 			InetSocketAddress address = new InetSocketAddress(SERVER_PORT);
@@ -47,6 +52,8 @@ public final class Server {
 			System.out.println("serverSocketChannel's registered key is " + key.channel().toString() + ".");
 			
 			protocol = new Protocol();
+			
+			logger.info("Initialized!");
 		} catch (Exception e) {
 			logger.log(Level.SEVERE, "Exception", e);
 		}
@@ -92,10 +99,11 @@ public final class Server {
 		SocketChannel channel = serverSocketChannel.accept();
 		channel.configureBlocking(false);
 		channel.register(selector, SelectionKey.OP_READ);
-		//channel.register(selector, SelectionKey.OP_WRITE);
 		
 		incomingData.put(channel, ByteBuffer.allocate(BUFFER_SIZE));
 		outgoingData.put(channel, ByteBuffer.allocate(BUFFER_SIZE));
+		
+		clients.add(channel);
 		
 		onConnect(channel);
 	}
@@ -105,6 +113,8 @@ public final class Server {
 		
 		incomingData.remove(channel);
 		outgoingData.remove(channel);
+		
+		clients.remove(channel);
 		
 		channel.close();
 		key.cancel();
@@ -142,11 +152,10 @@ public final class Server {
 			
 			buffer.flip();
 			channel.write(buffer);
-			buffer.compact();
-			
 			if (buffer.remaining() == 0) {
 				key.interestOps(SelectionKey.OP_READ);
 			}
+			buffer.compact();
 		}
 	}
 	
@@ -163,7 +172,7 @@ public final class Server {
 		try {
 			packet = protocol.unpack(buffer);
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.log(Level.SEVERE, "Exception", e);
 		}
 		buffer.compact();
 		
@@ -180,7 +189,7 @@ public final class Server {
 		} else if (packet instanceof LocationUpdatePacket) {
 			LocationUpdatePacket locUpdate = (LocationUpdatePacket) packet;
 			System.out.println(locUpdate.toString());
-			//say(channel, "Thank you!"); // XXX.
+			broadcastPacket(locUpdate);
 		}
 	}
 	
@@ -191,13 +200,22 @@ public final class Server {
 			try {
 				buffer.put(data);
 			} catch(BufferOverflowException e) {
-				e.printStackTrace();
+				logger.log(Level.SEVERE, "Exception", e);
 			}
+			
+			SelectionKey key = channel.keyFor(this.selector);
+            key.interestOps(SelectionKey.OP_WRITE);
 		}
 	}
 	
     private void sendPacket(SocketChannel channel, Packet packet) throws IOException {
     	sendMessage(channel, protocol.pack(packet));
+    }
+    
+    private void broadcastPacket(Packet packet) throws IOException {
+    	for (SocketChannel client : clients) {
+    		sendPacket(client, packet);
+    	}
     }
     
     private void say(SocketChannel channel, String message) throws IOException {
