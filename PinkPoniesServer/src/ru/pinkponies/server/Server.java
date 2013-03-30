@@ -12,7 +12,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import ru.pinkponies.app.NetworkingThread;
 import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.Packet;
@@ -22,6 +25,8 @@ import ru.pinkponies.protocol.SayPacket;
 public final class Server {
 	private static final int SERVER_PORT = 4266;
 	private static final int BUFFER_SIZE = 8192;
+	
+	private final static Logger logger = Logger.getLogger(Server.class.getName());
 	
 	private ServerSocketChannel serverSocketChannel;
 	private Selector selector;
@@ -44,7 +49,7 @@ public final class Server {
 			
 			protocol = new Protocol();
 		} catch (Exception e) {
-			System.out.println("Exception: " + e.getMessage());
+			logger.log(Level.SEVERE, "Exception", e);
 		}
 	}
 	
@@ -79,7 +84,7 @@ public final class Server {
 				}
 			} catch (IOException e) {
 				close(key);
-				e.printStackTrace();
+				logger.log(Level.SEVERE, "Exception", e);
 			}
 		}
 	}
@@ -117,11 +122,13 @@ public final class Server {
 			numRead = channel.read(buffer);
 		} catch (IOException e) {
 			close(key);
+			logger.log(Level.SEVERE, "Exception", e);
 			return;
 		}
 		
 		if (numRead == -1) {
 			close(key);
+			logger.severe("Read failed.");
 			return;
 		}
 		
@@ -205,7 +212,7 @@ public final class Server {
 			server.initialize();
 			server.start();
 		} catch (Exception e) {
-			System.out.println("Exception: " + e.getMessage());
+			logger.log(Level.SEVERE, "Exception", e);
 		}
 	}
 
