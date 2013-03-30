@@ -21,7 +21,7 @@ import android.os.Looper;
 import android.os.Message;
 
 public class NetworkingThread extends Thread {
-    private final String serverIp = "77.232.25.36";
+    private final String serverIp = "10.55.87.47";
     private final int serverPort = 4264;
     
     private Protocol protocol;

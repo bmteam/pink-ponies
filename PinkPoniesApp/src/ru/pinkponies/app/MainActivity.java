@@ -2,6 +2,7 @@ package ru.pinkponies.app;
 
 import java.lang.ref.WeakReference;
 
+import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MyLocationOverlay;
 
@@ -24,6 +25,7 @@ import android.widget.TextView;
 public class MainActivity extends Activity implements LocationListener {
     private TextView textView;
     private EditText editText;
+    private TextOverlay textOverlay;
     
     private LocationManager locationManager;
     
@@ -54,6 +56,12 @@ public class MainActivity extends Activity implements LocationListener {
 
 			myLocationOverlay = new MyLocationOverlay(this, mapView);
         	mapView.getOverlays().add(myLocationOverlay);
+        	
+        	textOverlay = new TextOverlay(this, mapView);
+        	textOverlay.setPosition(new GeoPoint(37.0, 57.0));
+        	textOverlay.setText("Hello, world!");
+        	mapView.getOverlays().add(textOverlay);
+        	
         	mapView.postInvalidate();
         
 		    myLocationOverlay.runOnFirstFix(new Runnable() {
@@ -145,6 +153,8 @@ public class MainActivity extends Activity implements LocationListener {
 		double latitude = location.getLatitude();
 		double altitude = location.getAltitude();
 		sendMessageToNetworkingThread(new LocationUpdatePacket(longitude, latitude, altitude));
+		
+		textOverlay.setPosition(new GeoPoint(longitude, latitude, altitude));
 	}
 
 	@Override
