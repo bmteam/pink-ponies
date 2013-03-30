@@ -13,6 +13,7 @@ import org.osmdroid.views.MapController;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MyLocationOverlay;
 import org.osmdroid.views.overlay.PathOverlay;
+
 import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponiesapp.R;
 import android.app.Activity;
@@ -22,6 +23,7 @@ import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -197,8 +199,8 @@ public class MainActivity extends Activity implements LocationListener {
         sendMessageToNetworkingThread(message);
     }
     
-    private void onMessageFromNetworkingThread(String message) {
-        logger.info("NT: " + message);
+    private void onMessageFromNetworkingThread(Object message) {
+    	logger.info("NT: " + message.toString());
         if (message.equals("initialized")) {
         	sendMessageToNetworkingThread("connect");
         	sendMessageToNetworkingThread("service");
@@ -213,14 +215,16 @@ public class MainActivity extends Activity implements LocationListener {
 				}
         		
         	}, 0, SERVICE_DELAY);
+        } else if (message instanceof LocationUpdatePacket) {
+        	LocationUpdatePacket packet = (LocationUpdatePacket) message;
+        	if (packet.clientID != Build.DISPLAY) {
+        		GeoPoint point = new GeoPoint(packet.latitude, packet.longitude);	
+        		myPersonOverlay.removeItem(packet.clientID);	            	
+            	myPersonOverlay.addItem(point, "player1", "player1");
+        	}
         }
     }
 
-    private void sendMessageToNetworkingThread(String message) {
-        Message msg = networkingThread.messageHandler.obtainMessage();
-        msg.obj = message;
-        networkingThread.messageHandler.sendMessage(msg);
-    }
     private void sendMessageToNetworkingThread(Object message) {
         Message msg = networkingThread.messageHandler.obtainMessage();
         msg.obj = message;
@@ -236,20 +240,23 @@ public class MainActivity extends Activity implements LocationListener {
         
         @Override
         public void handleMessage(Message msg) {
-            activity.get().onMessageFromNetworkingThread((String)msg.obj);
+            activity.get().onMessageFromNetworkingThread(msg.obj);
         }
     }
 
 	@Override
 	public void onLocationChanged(Location location) {
+		String clientID = Build.DISPLAY;
 		double longitude = location.getLongitude();
 		double latitude = location.getLatitude();
 		double altitude = location.getAltitude();
 		GeoPoint point = new GeoPoint(latitude, longitude);		
 		myPath.addPoint(point);
-		sendMessageToNetworkingThread(new LocationUpdatePacket(longitude, latitude, altitude));
 		
 		textOverlay.setPosition(new GeoPoint(longitude, latitude, altitude));
+
+		sendMessageToNetworkingThread(new LocationUpdatePacket(clientID, longitude, latitude, altitude));
+		logger.info("Location updated.");
 	}
 
 	@Override

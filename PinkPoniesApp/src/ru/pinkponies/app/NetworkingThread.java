@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.Protocol;
@@ -25,7 +26,7 @@ import android.os.Message;
 
 public class NetworkingThread extends Thread {
     private final String SERVER_IP = "10.55.87.47";
-    private final int SERVER_PORT = 4266;
+    private final int SERVER_PORT = 4268;
     
     private static final int BUFFER_SIZE = 8192;
     
@@ -100,9 +101,8 @@ public class NetworkingThread extends Thread {
     	SocketChannel channel = (SocketChannel) key.channel();
     	if (channel.isConnectionPending()) {
     		channel.finishConnect();
-			
-    		channel.register(selector, SelectionKey.OP_READ);
-    		channel.register(selector, SelectionKey.OP_WRITE);
+    		channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+    		logger.info("Now reading.");
 	    	
     		sendMessageToUIThread("connected");
 		}
@@ -124,7 +124,7 @@ public class NetworkingThread extends Thread {
 			numRead = channel.read(incomingData);
 		} catch (IOException e) {
 			close(key);
-			sendMessageToUIThread("Exception: " + e.getMessage());
+			logger.log(Level.SEVERE, "Exception", e);
 			return;
 		}
 		
@@ -139,8 +139,7 @@ public class NetworkingThread extends Thread {
 		try {
 			packet = protocol.unpack(incomingData);
 		} catch (Exception e) {
-			e.printStackTrace();
-			sendMessageToUIThread("Exception: " + e.getMessage());
+			logger.log(Level.SEVERE, "Exception", e);
 		}
 		incomingData.compact();
 		
@@ -151,6 +150,8 @@ public class NetworkingThread extends Thread {
 		if (packet instanceof SayPacket) {
 			SayPacket sayPacket = (SayPacket) packet;
 			logger.info("Server: " + sayPacket.toString());
+		} else if (packet instanceof LocationUpdatePacket) {
+			sendMessageToUIThread(packet);
 		}
 	}
 	
@@ -203,7 +204,7 @@ public class NetworkingThread extends Thread {
         }
     }
     
-    private void sendMessageToUIThread(String message) {
+    private void sendMessageToUIThread(Object message) {
 	    try {
 	        Message msg = mainActivity.get().messageHandler.obtainMessage();
 	        msg.obj = message;
