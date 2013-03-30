@@ -3,6 +3,8 @@ package ru.pinkponies.app;
 import java.lang.ref.WeakReference;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MyLocationOverlay;
@@ -26,6 +28,8 @@ import android.widget.TextView;
 public class MainActivity extends Activity implements LocationListener {   
 	private int SERVICE_DELAY = 1000;
 	
+	private final static Logger logger = Logger.getLogger(MainActivity.class.getName());
+	
     private TextView textView;
     private EditText editText;
     
@@ -38,7 +42,9 @@ public class MainActivity extends Activity implements LocationListener {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-    	try {    		
+    	try {
+    		logger.info("Initializing...");
+    		
 	        super.onCreate(savedInstanceState);
 	        setContentView(R.layout.activity_main);
 
@@ -71,10 +77,9 @@ public class MainActivity extends Activity implements LocationListener {
             locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 1, this);
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 1, this);
 
-	        printMessage("Initialized!");
+            logger.info("Initialized!");
     	} catch (Exception e) {
-    		e.printStackTrace();
-    		printMessage("Exception: " + e.getMessage());
+    		logger.log(Level.SEVERE, "Exception", e);
         }
     }
     
@@ -100,10 +105,6 @@ public class MainActivity extends Activity implements LocationListener {
         return true;
     }
     
-    private void printMessage(String message) {
-    	textView.append(message + "\n");
-    }
-    
     public void onSendClick(View view) {
         String message = editText.getText().toString();
         editText.setText("");
@@ -111,11 +112,10 @@ public class MainActivity extends Activity implements LocationListener {
     }
     
     private void onMessageFromNetworkingThread(String message) {
-        printMessage("NT: " + message);
+        logger.info("NT: " + message);
         if (message.equals("initialized")) {
         	sendMessageToNetworkingThread("connect");
         	sendMessageToNetworkingThread("service");
-        	
         } else if (message.equals("connected")) {
         	sendMessageToNetworkingThread("login");
         	

@@ -20,7 +20,7 @@ import ru.pinkponies.protocol.Protocol;
 import ru.pinkponies.protocol.SayPacket;
 
 public final class Server {
-	private static final int SERVER_PORT = 4265;
+	private static final int SERVER_PORT = 4266;
 	private static final int BUFFER_SIZE = 8192;
 	
 	private ServerSocketChannel serverSocketChannel;
@@ -69,12 +69,17 @@ public final class Server {
 				continue;
 			}
 			
-			if (key.isAcceptable()) {
-				accept(key);
-			} else if (key.isReadable()) {
-				read(key);
-			} else if (key.isWritable()) {
-				write(key);
+			try {
+				if (key.isAcceptable()) {
+					accept(key);
+				} else if (key.isReadable()) {
+					read(key);
+				} else if (key.isWritable()) {
+					write(key);
+				}
+			} catch (IOException e) {
+				close(key);
+				e.printStackTrace();
 			}
 		}
 	}
