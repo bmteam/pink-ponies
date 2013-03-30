@@ -20,6 +20,7 @@ import android.view.Menu;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.content.Intent;
 
 public class MainActivity extends Activity implements LocationListener {
     private TextView textView;
@@ -38,7 +39,7 @@ public class MainActivity extends Activity implements LocationListener {
 	        super.onCreate(savedInstanceState);
 	        setContentView(R.layout.activity_main);
 
-			final MapView mapView = (MapView) findViewById(R.id.mapview);
+			final MapView mapView = (MapView) findViewById(R.id.MainActivityMapview);
         	mapView.setBuiltInZoomControls(true);
         	mapView.setMultiTouchControls(true);        
 
@@ -106,6 +107,12 @@ public class MainActivity extends Activity implements LocationListener {
         sendMessageToNetworkingThread(message);
     }
     
+    public void goToSecondActivity(View view)
+    {
+    	Intent intent = new Intent(MainActivity.this, SecondActivity.class);
+        startActivity(intent);
+    }
+    
     private void onMessageFromNetworkingThread(String message) {
         printMessage("NT: " + message);
         if (message.equals("initialized")) {
@@ -135,7 +142,7 @@ public class MainActivity extends Activity implements LocationListener {
         
         @Override
         public void handleMessage(Message msg) {
-            activity.get().onMessageFromNetworkingThread((String)msg.obj);
+            activity.get().onMessageFromNetworkingThread((String) msg.obj);
         }
     }
 
