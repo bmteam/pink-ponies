@@ -9,7 +9,6 @@ import org.osmdroid.views.MapController;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MyLocationOverlay;
 import org.osmdroid.views.overlay.PathOverlay;
-
 import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponiesapp.R;
 import android.app.Activity;
@@ -31,10 +30,9 @@ import android.widget.TextView;
 
 public class MainActivity extends Activity implements LocationListener {
     private TextView textView;
-    private EditText editText;
+    private EditText editText;  
     
-    private LocationManager locationManager;
-    
+    private LocationManager locationManager;    
     private NetworkingThread networkingThread;
     
     public Handler messageHandler;
@@ -42,6 +40,7 @@ public class MainActivity extends Activity implements LocationListener {
     MyItemizedOverlay myPersonOverlay = null;
     MyItemizedOverlay myAppleOverlay = null;
     GeoPoint myPoint = new GeoPoint(5592*10000, 3751*10000);	
+    PathOverlay myPath = null; 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +65,8 @@ public class MainActivity extends Activity implements LocationListener {
 
 			myLocationOverlay = new MyLocationOverlay(this, mapView);
         	mapView.getOverlays().add(myLocationOverlay);
+        	myPath = new PathOverlay(Color.GREEN, this);
+        	mapView.getOverlays().add(myPath);
         	mapView.postInvalidate();
         
 		    myLocationOverlay.runOnFirstFix(new Runnable() {
@@ -109,24 +110,24 @@ public class MainActivity extends Activity implements LocationListener {
 	        myPersonOverlay.addItem(myPoint, "player1", "player1");
 	        // apples
 	        GeoPoint applePoint1 = new 
-	        		GeoPoint(myPoint.getLatitudeE6() + 10000,
+	        		GeoPoint(myPoint.getLatitudeE6() + 20000,
 					myPoint.getLongitudeE6() + 10000);
 	        myAppleOverlay.addItem(applePoint1, "Apple1", "Apple1");
 	        GeoPoint applePoint2 = new 
-	        		GeoPoint(myPoint.getLatitudeE6() + 10000,
+	        		GeoPoint(myPoint.getLatitudeE6() + 14000,
 					myPoint.getLongitudeE6() - 10000);
 	        myAppleOverlay.addItem(applePoint2, "Apple2", "Apple2");
 	        GeoPoint applePoint3 = new 
-	        		GeoPoint(myPoint.getLatitudeE6() - 10000,
+	        		GeoPoint(myPoint.getLatitudeE6() - 7000,
 					myPoint.getLongitudeE6() + 10000);
 	        myAppleOverlay.addItem(applePoint3, "Apple3", "Apple3");
 	        
 	       //path
-	       final PathOverlay myPath = new PathOverlay(Color.RED, this);
-	       myPath.addPoint(applePoint1);
-	       myPath.addPoint(applePoint2);
-	       myPath.addPoint(applePoint3);
-	       mapView.getOverlays().add(myPath);
+	       final PathOverlay p1Path = new PathOverlay(Color.RED, this);
+	       p1Path.addPoint(applePoint1);
+	       p1Path.addPoint(applePoint2);
+	       p1Path.addPoint(applePoint3);
+	       mapView.getOverlays().add(p1Path);
 	       
 	       // magic button 
 	       final Button button = (Button) findViewById(R.id.button1);
@@ -138,7 +139,7 @@ public class MainActivity extends Activity implements LocationListener {
 	            					myPoint.getLongitudeE6() + 10000);
 	            	myPersonOverlay.removeItem("player1");	            	
 	            	myPersonOverlay.addItem(myPoint, "player1", "player1");
-	            	myPath.addPoint(myPoint);
+	            	p1Path.addPoint(myPoint);
 	            	mapView.invalidate();
 	            }
 	        }); 
@@ -220,6 +221,8 @@ public class MainActivity extends Activity implements LocationListener {
 		double longitude = location.getLongitude();
 		double latitude = location.getLatitude();
 		double altitude = location.getAltitude();
+		GeoPoint point = new GeoPoint(latitude, longitude);		
+		myPath.addPoint(point);
 		sendMessageToNetworkingThread(new LocationUpdatePacket(longitude, latitude, altitude));
 	}
 
