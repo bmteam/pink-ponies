@@ -2,6 +2,9 @@ package ru.pinkponies.app;
 
 import java.lang.ref.WeakReference;
 
+import org.osmdroid.DefaultResourceProxyImpl;
+import org.osmdroid.ResourceProxy;
+import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MyLocationOverlay;
 
@@ -9,6 +12,7 @@ import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponiesapp.R;
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -31,6 +35,7 @@ public class MainActivity extends Activity implements LocationListener {
     
     public Handler messageHandler;
     MyLocationOverlay myLocationOverlay = null;
+    MyItemizedOverlay myItemizedOverlay = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +73,23 @@ public class MainActivity extends Activity implements LocationListener {
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 1, this);
 
 	        printMessage("Initialized!");
+	        
+	        Drawable marker=getResources().getDrawable(android.R.drawable.btn_plus);
+	        int markerWidth = marker.getIntrinsicWidth();
+	        int markerHeight = marker.getIntrinsicHeight();
+	        marker.setBounds(0, markerHeight, markerWidth, 0);
+	         
+	        ResourceProxy resourceProxy = new DefaultResourceProxyImpl(getApplicationContext());
+	         
+	        myItemizedOverlay = new MyItemizedOverlay(marker, resourceProxy);
+	        mapView.getOverlays().add(myItemizedOverlay);
+	         
+	        GeoPoint myPoint1 = new GeoPoint(0*1000000, 0*1000000);
+	        myItemizedOverlay.addItem(myPoint1, "myPoint1", "myPoint1");
+	        GeoPoint myPoint2 = new GeoPoint(50*1000000, 50*1000000);
+	        myItemizedOverlay.addItem(myPoint2, "myPoint2", "myPoint2");
+	        
+	        
     	} catch (Exception e) {
     		e.printStackTrace();
     		printMessage("Exception: " + e.getMessage());
