@@ -70,7 +70,7 @@ public class NetworkingThread extends Thread {
     }
     
     private void service() throws IOException {
-    	while (selector.select() > 0) {
+    	if (selector.select() > 0) {
     		Set<SelectionKey> keys = selector.selectedKeys();
 			Iterator<SelectionKey> iterator = keys.iterator();
 			
@@ -99,8 +99,8 @@ public class NetworkingThread extends Thread {
 			channel.finishConnect();
 			sendMessageToUIThread("Connected!");
 		}
-    	//socket.register(selector, SelectionKey.OP_WRITE);
-    	key.interestOps(SelectionKey.OP_WRITE);
+    	channel.register(selector, SelectionKey.OP_READ);
+    	channel.register(selector, SelectionKey.OP_WRITE);
     }
     
     private void close(SelectionKey key) throws IOException {
@@ -137,12 +137,9 @@ public class NetworkingThread extends Thread {
 		
 		synchronized (outgoingData) {
 			outgoingData.flip();
+			sendMessageToUIThread("!" + new String(outgoingData.array(), outgoingData.position(), outgoingData.remaining()));
 			channel.write(outgoingData);
 			outgoingData.compact();
-			
-			if (outgoingData.remaining() == 0) {
-				key.interestOps(SelectionKey.OP_READ);
-			}
 		}
 	}
     
@@ -176,9 +173,6 @@ public class NetworkingThread extends Thread {
 				e.printStackTrace();
 				sendMessageToUIThread("Exception: " + e.getMessage());
 			}
-			
-            //SelectionKey key = socket.keyFor(selector);
-            //key.interestOps(SelectionKey.OP_WRITE);
 		}
 	}
     
@@ -199,7 +193,7 @@ public class NetworkingThread extends Thread {
     
     private void onMessageFromUIThread(Object message) {
     	try {
-	    	sendMessageToUIThread("Got your message: '" + message.toString() + "'!");
+	    	//sendMessageToUIThread("Got your message: '" + message.toString() + "'!");
 	    	
 	        if (message.equals("connect")) {
 	        	connect();

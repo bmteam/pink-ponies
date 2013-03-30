@@ -1,6 +1,8 @@
 package ru.pinkponies.app;
 
 import java.lang.ref.WeakReference;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MyLocationOverlay;
@@ -76,10 +78,10 @@ public class MainActivity extends Activity implements LocationListener {
     
     @Override
     protected void onResume() {
-     // TODO Auto-generated method stub
-     super.onResume();
-     myLocationOverlay.enableMyLocation();
-     myLocationOverlay.enableFollowLocation();
+	 // TODO Auto-generated method stub
+	 super.onResume();
+	 myLocationOverlay.enableMyLocation();
+	 myLocationOverlay.enableFollowLocation();
     }
     
     @Override
@@ -110,8 +112,16 @@ public class MainActivity extends Activity implements LocationListener {
         printMessage("NT: " + message);
         if (message.equals("initialized")) {
         	sendMessageToNetworkingThread("connect");
-        	sendMessageToNetworkingThread("service");
         	sendMessageToNetworkingThread("login");
+        	
+        	new Timer().scheduleAtFixedRate(new TimerTask() {
+
+				@Override
+				public void run() {
+					sendMessageToNetworkingThread("service");
+				}
+        		
+        	}, 0, 5000);
         }
     }
 

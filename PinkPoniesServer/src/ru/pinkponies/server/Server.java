@@ -83,6 +83,7 @@ public final class Server {
 		SocketChannel channel = serverSocketChannel.accept();
 		channel.configureBlocking(false);
 		channel.register(selector, SelectionKey.OP_READ);
+		//channel.register(selector, SelectionKey.OP_WRITE);
 		
 		incomingData.put(channel, ByteBuffer.allocate(BUFFER_SIZE));
 		outgoingData.put(channel, ByteBuffer.allocate(BUFFER_SIZE));
@@ -181,9 +182,6 @@ public final class Server {
 			} catch(BufferOverflowException e) {
 				e.printStackTrace();
 			}
-			
-            //SelectionKey key = channel.keyFor(selector);
-            //key.interestOps(SelectionKey.OP_WRITE);
 		}
 	}
 	
