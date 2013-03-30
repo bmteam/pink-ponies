@@ -23,7 +23,9 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 
-public class MainActivity extends Activity implements LocationListener {
+public class MainActivity extends Activity implements LocationListener {   
+	private int SERVICE_DELAY = 1000;
+	
     private TextView textView;
     private EditText editText;
     
@@ -112,6 +114,9 @@ public class MainActivity extends Activity implements LocationListener {
         printMessage("NT: " + message);
         if (message.equals("initialized")) {
         	sendMessageToNetworkingThread("connect");
+        	sendMessageToNetworkingThread("service");
+        	
+        } else if (message.equals("connected")) {
         	sendMessageToNetworkingThread("login");
         	
         	new Timer().scheduleAtFixedRate(new TimerTask() {
@@ -121,7 +126,7 @@ public class MainActivity extends Activity implements LocationListener {
 					sendMessageToNetworkingThread("service");
 				}
         		
-        	}, 0, 5000);
+        	}, 0, SERVICE_DELAY);
         }
     }
 

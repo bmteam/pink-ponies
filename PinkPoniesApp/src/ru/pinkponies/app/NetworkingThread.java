@@ -22,8 +22,8 @@ import android.os.Looper;
 import android.os.Message;
 
 public class NetworkingThread extends Thread {
-    private final String serverIp = "10.55.87.47";
-    private final int serverPort = 4265;
+    private final String SERVER_IP = "10.55.87.47";
+    private final int SERVER_PORT = 4265;
     
     private static final int BUFFER_SIZE = 8192;
     
@@ -57,11 +57,11 @@ public class NetworkingThread extends Thread {
     }
     
     private void connect() throws IOException {
-    	sendMessageToUIThread("Connecting to " + serverIp + ":" + serverPort + "...");
+    	sendMessageToUIThread("Connecting to " + SERVER_IP + ":" + SERVER_PORT + "...");
     	
     	socket = SocketChannel.open();
     	socket.configureBlocking(false);
-    	socket.connect(new InetSocketAddress(serverIp, serverPort));
+    	socket.connect(new InetSocketAddress(SERVER_IP, SERVER_PORT));
     	
     	selector = Selector.open();
     	socket.register(selector, SelectionKey.OP_CONNECT);
@@ -97,7 +97,8 @@ public class NetworkingThread extends Thread {
     	SocketChannel channel = (SocketChannel) key.channel();
     	if (channel.isConnectionPending()) {
 			channel.finishConnect();
-			sendMessageToUIThread("Connected!");
+			
+			sendMessageToUIThread("connected");
 			
 			channel.register(selector, SelectionKey.OP_READ);
 	    	channel.register(selector, SelectionKey.OP_WRITE);
@@ -138,7 +139,6 @@ public class NetworkingThread extends Thread {
 		
 		synchronized (outgoingData) {
 			outgoingData.flip();
-			sendMessageToUIThread("!" + new String(outgoingData.array(), outgoingData.position(), outgoingData.remaining()));
 			channel.write(outgoingData);
 			outgoingData.compact();
 		}
