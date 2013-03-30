@@ -51,7 +51,8 @@ public class MainActivity extends Activity implements LocationListener {
     MyLocationOverlay myLocationOverlay = null;
     MyItemizedOverlay myPersonOverlay = null;
     MyItemizedOverlay myAppleOverlay = null;
-    GeoPoint myPoint = new GeoPoint(5592*10000, 3751*10000);	
+ 
+    GeoPoint myPoint = new GeoPoint(55929563, 37523862);	
     PathOverlay myPath = null; 
 
     @Override
@@ -83,7 +84,7 @@ public class MainActivity extends Activity implements LocationListener {
         	myPath = new PathOverlay(Color.GREEN, this);
         	mapView.getOverlays().add(myPath);
         	textOverlay = new TextOverlay(this, mapView);
-        	textOverlay.setPosition(new GeoPoint(37.0, 57.0));
+        	textOverlay.setPosition(new GeoPoint(55.9, 37.5));
         	textOverlay.setText("Hello, world!");
         	mapView.getOverlays().add(textOverlay);
         	
@@ -140,6 +141,7 @@ public class MainActivity extends Activity implements LocationListener {
 	        		GeoPoint(myPoint.getLatitudeE6() - 7000,
 					myPoint.getLongitudeE6() + 10000);
 	        myAppleOverlay.addItem(applePoint3, "Apple3", "Apple3");
+	        myAppleOverlay.addItem(myPoint, "Apple4", "Apple4");
 	        
 	       /*path
 	       final PathOverlay p1Path = new PathOverlay(Color.RED, this);
@@ -253,8 +255,12 @@ public class MainActivity extends Activity implements LocationListener {
 		double altitude = location.getAltitude();
 		GeoPoint point = new GeoPoint(latitude, longitude);		
 		myPath.addPoint(point);
+		if(point.distanceTo(myPoint) < 20){
+			Drawable marker=getResources().getDrawable(R.drawable.shit);
+    		myAppleOverlay.resetItemMarker("Apple4", marker);
+		}
 		
-		textOverlay.setPosition(new GeoPoint(longitude, latitude, altitude));
+		textOverlay.setText("" + point.distanceTo(myPoint));
 
 		sendMessageToNetworkingThread(new LocationUpdatePacket(clientID, longitude, latitude, altitude));
 		logger.info("Location updated.");
