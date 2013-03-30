@@ -31,7 +31,7 @@ public final class Server {
 	
 	private Protocol protocol;
 	
-	private void initialize() {		
+	private void initialize() {
 		try {
 			serverSocketChannel = ServerSocketChannel.open();
 			serverSocketChannel.configureBlocking(false);
@@ -142,7 +142,7 @@ public final class Server {
 		System.out.println("Client connected from " + channel.socket().getRemoteSocketAddress().toString() + ".");
 	}
 	
-	public void onMessage(SocketChannel channel, ByteBuffer buffer) {
+	public void onMessage(SocketChannel channel, ByteBuffer buffer) throws IOException {
 		System.out.println("Message from " + channel.socket().getRemoteSocketAddress().toString() + ":");
 		
 		Packet packet = null;
@@ -151,7 +151,6 @@ public final class Server {
 		try {
 			packet = protocol.unpack(buffer);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		buffer.compact();
@@ -169,6 +168,7 @@ public final class Server {
 		} else if (packet instanceof LocationUpdatePacket) {
 			LocationUpdatePacket locUpdate = (LocationUpdatePacket) packet;
 			System.out.println(locUpdate.toString());
+			//say(channel, "Thank you!"); // XXX.
 		}
 	}
 	
@@ -179,11 +179,22 @@ public final class Server {
 			try {
 				buffer.put(data);
 			} catch(BufferOverflowException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			
+            //SelectionKey key = channel.keyFor(selector);
+            //key.interestOps(SelectionKey.OP_WRITE);
 		}
 	}
+	
+    private void sendPacket(SocketChannel channel, Packet packet) throws IOException {
+    	sendMessage(channel, protocol.pack(packet));
+    }
+    
+    private void say(SocketChannel channel, String message) throws IOException {
+    	SayPacket packet = new SayPacket(message);
+    	sendPacket(channel, packet);
+    }
 	
 	public static void main(String[] args) {
 		try {

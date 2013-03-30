@@ -3,6 +3,7 @@ package ru.pinkponies.app;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.InetSocketAddress;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -21,17 +22,22 @@ import android.os.Looper;
 import android.os.Message;
 
 public class NetworkingThread extends Thread {
-    private final String serverIp = "77.232.25.36";
+    private final String serverIp = "10.55.87.47";
     private final int serverPort = 4264;
+    
+    private static final int BUFFER_SIZE = 8192;
     
     private Protocol protocol;
     
     private WeakReference<MainActivity> mainActivity;
     
+    public MessageHandler messageHandler;
+    
     private SocketChannel socket;
 	private Selector selector;
-    
-    public MessageHandler messageHandler;
+	
+	private ByteBuffer incomingData = ByteBuffer.allocate(BUFFER_SIZE);
+	private ByteBuffer outgoingData = ByteBuffer.allocate(BUFFER_SIZE);
     
     NetworkingThread(MainActivity activity) {
     	mainActivity = new WeakReference<MainActivity>(activity);
@@ -70,7 +76,6 @@ public class NetworkingThread extends Thread {
 			
 			while (iterator.hasNext()) {
 				SelectionKey key = iterator.next();
-				SocketChannel channel = (SocketChannel) key.channel();
 				iterator.remove();
 				
 				if (!key.isValid()) {
@@ -78,34 +83,118 @@ public class NetworkingThread extends Thread {
 				}
 				
 				if (key.isConnectable()) {
-					if (channel.isConnectionPending()) {
-						channel.finishConnect();
-						sendMessageToUIThread("Connected!");
-					}
-					continue;
+					finishConnection(key);
+				} else if (key.isReadable()) {
+					read(key);
+				} else if (key.isWritable()) {
+					write(key);
 				}
 			}
     	}
     }
     
+    private void finishConnection(SelectionKey key) throws IOException {
+    	SocketChannel channel = (SocketChannel) key.channel();	
+    	if (channel.isConnectionPending()) {
+			channel.finishConnect();
+			sendMessageToUIThread("Connected!");
+		}
+    	//socket.register(selector, SelectionKey.OP_WRITE);
+    	key.interestOps(SelectionKey.OP_WRITE);
+    }
+    
+    private void close(SelectionKey key) throws IOException {
+		SocketChannel channel = (SocketChannel) key.channel();	
+		channel.close();
+		key.cancel();
+	}
+	
+    private void read(SelectionKey key) throws IOException {
+		SocketChannel channel = (SocketChannel) key.channel();
+		ByteBuffer buffer = incomingData;
+		
+		buffer.limit(buffer.capacity());
+		
+		int numRead = -1;
+		try {
+			numRead = channel.read(buffer);
+		} catch (IOException e) {
+			close(key);
+			sendMessageToUIThread("Exception: " + e.getMessage());
+			return;
+		}
+		
+		if (numRead == -1) {
+			close(key);
+			return;
+		}
+		
+		onMessageFromServer();
+	}
+	
+    private void write(SelectionKey key) throws IOException {
+		SocketChannel channel = (SocketChannel) key.channel();
+		
+		synchronized (outgoingData) {
+			outgoingData.flip();
+			channel.write(outgoingData);
+			outgoingData.compact();
+			
+			if (outgoingData.remaining() == 0) {
+				key.interestOps(SelectionKey.OP_READ);
+			}
+		}
+	}
+    
+    private void onMessageFromServer() {	
+		Packet packet = null;
+		
+		incomingData.flip();
+		try {
+			packet = protocol.unpack(incomingData);
+		} catch (Exception e) {
+			e.printStackTrace();
+			sendMessageToUIThread("Exception: " + e.getMessage());
+		}
+		incomingData.compact();
+		
+		if (packet == null) {
+			return;
+		}
+		
+		if (packet instanceof SayPacket) {
+			SayPacket sayPacket = (SayPacket) packet;
+			sendMessageToUIThread("Server: " + sayPacket.toString());
+		}
+    }
+    
+    private void sendMessageToServer(byte[] data) {
+		synchronized (outgoingData) {
+			try {
+				outgoingData.put(data);
+			} catch(BufferOverflowException e) {
+				e.printStackTrace();
+				sendMessageToUIThread("Exception: " + e.getMessage());
+			}
+			
+            //SelectionKey key = socket.keyFor(selector);
+            //key.interestOps(SelectionKey.OP_WRITE);
+		}
+	}
+    
+    private void sendPacket(Packet packet) throws IOException {
+    	sendMessageToServer(protocol.pack(packet));
+    }
+    
     private void login() throws IOException {
     	LoginPacket packet = new LoginPacket(Build.BOARD, Build.BOOTLOADER, Build.BRAND, 
     			Build.CPU_ABI, Build.CPU_ABI2, Build.DEVICE);
-    	
-    	ByteBuffer bb = ByteBuffer.wrap(protocol.pack(packet));
-    	socket.write(bb);
+    	sendPacket(packet);
     }
     
     private void say(String message) throws IOException {
     	SayPacket packet = new SayPacket(message);
-    	
-    	ByteBuffer bb = ByteBuffer.wrap(protocol.pack(packet));
-    	socket.write(bb);
-    }
-    
-    private void sendPacket(Packet packet) throws IOException {
-    	ByteBuffer bb = ByteBuffer.wrap(protocol.pack(packet));
-    	socket.write(bb);
+    	sendPacket(packet);
     }
     
     private void onMessageFromUIThread(Object message) {
