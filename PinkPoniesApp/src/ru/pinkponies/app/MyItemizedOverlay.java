@@ -19,20 +19,20 @@ public class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
 	  // TODO Auto-generated constructor stub
 	 }
 	  
-	 public void addItem(GeoPoint p, String title, String snippet){
+	 public synchronized void addItem(GeoPoint p, String title, String snippet){
 		 OverlayItem newItem = new OverlayItem(title, snippet, p);
 		 overlayItemList.add(newItem);
 		 populate();
 	 }
 	 
-	 public void removeItem(String title){
+	 public synchronized void removeItem(String title){
 		for(OverlayItem i:overlayItemList){
 			if (i.mTitle.equals(title))
 				overlayItemList.remove(i);
 		}
 	 }
 	 
-	 public void resetItemMarker(String title, Drawable newMarker){
+	 public synchronized void resetItemMarker(String title, Drawable newMarker){
 		 for(OverlayItem i:overlayItemList){
 				if (i.mTitle.equals(title))
 					i.setMarker(newMarker);
