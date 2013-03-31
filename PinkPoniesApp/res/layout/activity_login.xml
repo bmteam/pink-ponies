@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:gravity="fill_vertical" >
- 
+
     <EditText
         android:id="@+id/login"
         android:layout_width="240dp"
@@ -19,7 +18,7 @@
         <requestFocus />
     </EditText>
 
-     <EditText
+    <EditText
         android:id="@+id/password"
         android:layout_width="240dp"
         android:layout_height="40dp"
@@ -27,10 +26,8 @@
         android:layout_marginTop="150dp"
         android:background="@android:drawable/editbox_background"
         android:ems="10"
-        android:inputType="textPassword"
-        android:hint="Password" >
-
-       
+        android:hint="Password"
+        android:inputType="textPassword" >
     </EditText>
 
     <Button
@@ -41,7 +38,7 @@
         android:layout_below="@+id/password"
         android:layout_marginRight="25dp"
         android:layout_marginTop="20dp"
-        android:ems="15"      
+        android:ems="15"
         android:onClick="onLoginClick"
         android:text="Log in" />
 
