@@ -21,7 +21,6 @@
             android:layout_height="wrap_content"
             android:onClick="onLogoutClick"
             android:text="@string/button_logout" />
-
     </LinearLayout>
 
     <org.osmdroid.views.MapView

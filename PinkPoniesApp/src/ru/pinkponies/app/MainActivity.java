@@ -44,6 +44,7 @@ public class MainActivity extends Activity implements LocationListener {
 	private MapController mapController;
 
 	private String login = "";
+	private String password = "";
 
 	public Handler messageHandler;
 	MyLocationOverlay myLocationOverlay = null;
@@ -61,6 +62,7 @@ public class MainActivity extends Activity implements LocationListener {
 
 			Bundle extras = intent.getExtras();
 			login = extras.getString("login");
+			password = extras.getString("login");
 
 			setContentView(R.layout.activity_main);
 
@@ -73,8 +75,6 @@ public class MainActivity extends Activity implements LocationListener {
 
 			mapController = mapView.getController();
 
-			// editText = (EditText)findViewById(R.id.edit_message);
-
 			messageHandler = new MessageHandler(this);
 
 			networkingThread = new NetworkingThread(this);
@@ -86,8 +86,7 @@ public class MainActivity extends Activity implements LocationListener {
 
 			myLocationOverlay.runOnFirstFix(new Runnable() {
 				public void run() {
-					mapView.getController().animateTo(
-							myLocationOverlay.getMyLocation());
+					mapController.animateTo(myLocationOverlay.getMyLocation());
 				}
 			});
 
@@ -97,6 +96,10 @@ public class MainActivity extends Activity implements LocationListener {
 					LocationManager.NETWORK_PROVIDER, 1000, 1, this);
 			locationManager.requestLocationUpdates(
 					LocationManager.GPS_PROVIDER, 1000, 1, this);
+
+			mapController.setZoom(7);
+
+			printMessage("login/password = \"" + login + "/" + password + "\"");
 
 			logger.info("Initialized!");
 		} catch (Exception e) {
@@ -161,6 +164,7 @@ public class MainActivity extends Activity implements LocationListener {
 
 	public void onLogoutClick(View view) {
 		goToLoginActivity(view);
+		MainActivity.this.finish();
 	}
 
 	private void onMessageFromNetworkingThread(Object message) {
