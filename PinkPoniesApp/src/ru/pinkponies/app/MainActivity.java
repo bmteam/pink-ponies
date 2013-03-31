@@ -73,7 +73,7 @@ public class MainActivity extends Activity implements LocationListener {
 
         	mapController = mapView.getController();
 	        
-	        editText = (EditText)findViewById(R.id.edit_message);
+	//        editText = (EditText)findViewById(R.id.edit_message);
 	        
 	        messageHandler = new MessageHandler(this);
 	        

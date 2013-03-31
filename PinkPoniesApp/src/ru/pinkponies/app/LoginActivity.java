@@ -21,7 +21,7 @@ public class LoginActivity extends Activity {
 	private final static Logger logger = Logger.getLogger(LoginActivity.class.getName());
 		   	
     private TextView textView;
-    private EditText editText;
+    private EditText editLogin, editPassword;
     
     private String login = "admin";
     
@@ -39,9 +39,10 @@ public class LoginActivity extends Activity {
 	        textView = (TextView)findViewById(R.id.text_view);
 	        textView.setMovementMethod(new ScrollingMovementMethod());
 	        
-	        editText = (EditText)findViewById(R.id.edit_message);
+	        editLogin = (EditText)findViewById(R.id.login);
+	  //      editPassword = (EditText)findViewById(R.id.password);
 	        	        
-	      //  logger.info("LoginActivity:onCreate");
+	        logger.info("LoginActivity:onCreate");
      	} catch (Exception e) {
     		logger.log(Level.SEVERE, "Exception", e);
         }
@@ -76,9 +77,11 @@ public class LoginActivity extends Activity {
     }
     
     public void onLoginClick(View view) {
-        login = editText.getText().toString();
-        editText.setText("");
-  //      sendMessageToNetworkingThread(login);
+    	logger.info("LoginActivity:onLoginClick");
+        login = editLogin.getText().toString();
+        logger.info("LoginActivity:onLoginClick2");
+    //    editLogin.setText("");
+        logger.info("LoginActivity:onLoginClick2");
         goToMainActivity(view);
     }
     
@@ -87,6 +90,7 @@ public class LoginActivity extends Activity {
     	Intent intent = new Intent(LoginActivity.this, MainActivity.class);
     	intent.putExtra("login", login);
         startActivity(intent);
+        LoginActivity.this.finish();
   	};
 
 }

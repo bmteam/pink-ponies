@@ -1,44 +1,48 @@
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+<?xml version="1.0" encoding="utf-8"?>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:gravity="fill_vertical" >
+ 
+    <EditText
+        android:id="@+id/login"
+        android:layout_width="240dp"
+        android:layout_height="40dp"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="80dp"
+        android:background="@android:drawable/editbox_background"
+        android:ems="10"
+        android:hint="Login" >
 
-        <EditText
-            android:id="@+id/edit_message"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.41"
-            android:hint="@string/edit_message" />
+        <requestFocus />
+    </EditText>
 
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="onLoginClick"
-            android:text="@string/button_login" />
+     <EditText
+        android:id="@+id/password"
+        android:layout_width="240dp"
+        android:layout_height="40dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="150dp"
+        android:background="@android:drawable/editbox_background"
+        android:ems="10"
+        android:inputType="textPassword"
+        android:hint="Password" >
 
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="goToMainActivity"
-            android:text="Map" />
+       
+    </EditText>
 
-    </LinearLayout>
-    
-    <TextView
-        android:id="@+id/text_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_gravity="bottom"
-        android:layout_margin="10dip"
-        android:scrollbars="vertical"
-        android:textIsSelectable="true" />
-	
+    <Button
+        android:id="@+id/ok"
+        android:layout_width="100dp"
+        android:layout_height="42dp"
+        android:layout_alignRight="@+id/password"
+        android:layout_below="@+id/password"
+        android:layout_marginRight="25dp"
+        android:layout_marginTop="20dp"
+        android:ems="15"      
+        android:onClick="onLoginClick"
+        android:text="Log in" />
 
-</LinearLayout>
+</RelativeLayout>
