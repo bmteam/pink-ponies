@@ -22,7 +22,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.text.method.ScrollingMovementMethod;
 import android.view.Menu;
 import android.view.View;
 import android.widget.EditText;
@@ -69,9 +68,6 @@ public class MainActivity extends Activity implements LocationListener {
 			mapView = (MapView) findViewById(R.id.MainActivityMapview);
 			mapView.setBuiltInZoomControls(true);
 			mapView.setMultiTouchControls(true);
-
-			textView = (TextView) findViewById(R.id.text_view);
-			textView.setMovementMethod(new ScrollingMovementMethod());
 
 			mapController = mapView.getController();
 
