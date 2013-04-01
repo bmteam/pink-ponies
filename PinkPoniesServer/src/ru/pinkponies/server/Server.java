@@ -25,61 +25,65 @@ import ru.pinkponies.protocol.SayPacket;
 public final class Server {
 	private static final int SERVER_PORT = 4268;
 	private static final int BUFFER_SIZE = 8192;
-	
-	private final static Logger logger = Logger.getLogger(Server.class.getName());
-	
+
+	private final static Logger logger = Logger.getLogger(Server.class
+			.getName());
+
 	private ServerSocketChannel serverSocketChannel;
 	private Selector selector;
-	
+
 	private Map<SocketChannel, ByteBuffer> incomingData = new HashMap<SocketChannel, ByteBuffer>();
 	private Map<SocketChannel, ByteBuffer> outgoingData = new HashMap<SocketChannel, ByteBuffer>();
-	
+
 	private ArrayList<SocketChannel> clients = new ArrayList<SocketChannel>();
-	
+
 	private Protocol protocol;
-	
+
 	private void initialize() {
 		try {
 			logger.info("Initializing...");
-			
+
 			serverSocketChannel = ServerSocketChannel.open();
 			serverSocketChannel.configureBlocking(false);
 			InetSocketAddress address = new InetSocketAddress(SERVER_PORT);
 			serverSocketChannel.socket().bind(address);
-			
+
 			selector = Selector.open();
-			SelectionKey key = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);		
-			System.out.println("serverSocketChannel's registered key is " + key.channel().toString() + ".");
-			
+			SelectionKey key = serverSocketChannel.register(selector,
+					SelectionKey.OP_ACCEPT);
+			System.out.println("serverSocketChannel's registered key is "
+					+ key.channel().toString() + ".");
+
 			protocol = new Protocol();
-			
+
 			logger.info("Initialized!");
 		} catch (Exception e) {
 			logger.log(Level.SEVERE, "Exception", e);
 		}
 	}
-	
-	private void start() throws IOException {
-		System.out.println("Server is listening on port " + serverSocketChannel.socket().getLocalPort() + ".");
 
-		while(true) {
+	private void start() throws IOException {
+		System.out.println("Server is listening on port "
+				+ serverSocketChannel.socket().getLocalPort() + ".");
+
+		while (true) {
 			pumpEvents();
 		}
 	}
-	
+
 	private void pumpEvents() throws IOException {
 		selector.select();
 		Set<SelectionKey> selectedKeys = selector.selectedKeys();
 		Iterator<SelectionKey> iterator = selectedKeys.iterator();
-		
+
 		while (iterator.hasNext()) {
 			SelectionKey key = (SelectionKey) iterator.next();
 			iterator.remove();
-			
+
 			if (!key.isValid()) {
 				continue;
 			}
-			
+
 			try {
 				if (key.isAcceptable()) {
 					accept(key);
@@ -94,38 +98,38 @@ public final class Server {
 			}
 		}
 	}
-	
-	public void accept(SelectionKey key) throws IOException {		
+
+	public void accept(SelectionKey key) throws IOException {
 		SocketChannel channel = serverSocketChannel.accept();
 		channel.configureBlocking(false);
 		channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-		
+
 		incomingData.put(channel, ByteBuffer.allocate(BUFFER_SIZE));
 		outgoingData.put(channel, ByteBuffer.allocate(BUFFER_SIZE));
-		
+
 		clients.add(channel);
-		
+
 		onConnect(channel);
 	}
-	
+
 	public void close(SelectionKey key) throws IOException {
 		SocketChannel channel = (SocketChannel) key.channel();
-		
+
 		incomingData.remove(channel);
 		outgoingData.remove(channel);
-		
+
 		clients.remove(channel);
-		
+
 		channel.close();
 		key.cancel();
 	}
-	
+
 	public void read(SelectionKey key) throws IOException {
 		SocketChannel channel = (SocketChannel) key.channel();
 		ByteBuffer buffer = incomingData.get(channel);
-		
+
 		buffer.limit(buffer.capacity());
-		
+
 		int numRead = -1;
 		try {
 			numRead = channel.read(buffer);
@@ -134,37 +138,40 @@ public final class Server {
 			logger.log(Level.SEVERE, "Exception", e);
 			return;
 		}
-		
+
 		if (numRead == -1) {
 			close(key);
 			logger.severe("Read failed.");
 			return;
 		}
-		
+
 		onMessage(channel, buffer);
 	}
-	
+
 	public void write(SelectionKey key) throws IOException {
 		SocketChannel channel = (SocketChannel) key.channel();
-		
+
 		synchronized (outgoingData) {
 			ByteBuffer buffer = outgoingData.get(channel);
-			
+
 			buffer.flip();
 			channel.write(buffer);
 			buffer.compact();
 		}
 	}
-	
+
 	public void onConnect(SocketChannel channel) {
-		System.out.println("Client connected from " + channel.socket().getRemoteSocketAddress().toString() + ".");
+		System.out.println("Client connected from "
+				+ channel.socket().getRemoteSocketAddress().toString() + ".");
 	}
-	
-	public void onMessage(SocketChannel channel, ByteBuffer buffer) throws IOException {
-		System.out.println("Message from " + channel.socket().getRemoteSocketAddress().toString() + ":");
-		
+
+	public void onMessage(SocketChannel channel, ByteBuffer buffer)
+			throws IOException {
+		System.out.println("Message from "
+				+ channel.socket().getRemoteSocketAddress().toString() + ":");
+
 		Packet packet = null;
-		
+
 		buffer.flip();
 		try {
 			packet = protocol.unpack(buffer);
@@ -172,11 +179,11 @@ public final class Server {
 			logger.log(Level.SEVERE, "Exception", e);
 		}
 		buffer.compact();
-		
+
 		if (packet == null) {
 			return;
 		}
-		
+
 		if (packet instanceof LoginPacket) {
 			LoginPacket loginPacket = (LoginPacket) packet;
 			System.out.println(loginPacket.toString());
@@ -189,34 +196,36 @@ public final class Server {
 			broadcastPacket(locUpdate);
 		}
 	}
-	
+
 	public void sendMessage(SocketChannel channel, byte[] data) {
 		synchronized (outgoingData) {
 			ByteBuffer buffer = outgoingData.get(channel);
-			
+
 			try {
 				buffer.put(data);
-			} catch(BufferOverflowException e) {
+			} catch (BufferOverflowException e) {
 				logger.log(Level.SEVERE, "Exception", e);
 			}
 		}
 	}
-	
-    private void sendPacket(SocketChannel channel, Packet packet) throws IOException {
-    	sendMessage(channel, protocol.pack(packet));
-    }
-    
-    private void broadcastPacket(Packet packet) throws IOException {
-    	for (SocketChannel client : clients) {
-    		sendPacket(client, packet);
-    	}
-    }
-    
-    /*private void say(SocketChannel channel, String message) throws IOException {
-    	SayPacket packet = new SayPacket(message);
-    	sendPacket(channel, packet);
-    }*/
-	
+
+	private void sendPacket(SocketChannel channel, Packet packet)
+			throws IOException {
+		sendMessage(channel, protocol.pack(packet));
+	}
+
+	private void broadcastPacket(Packet packet) throws IOException {
+		for (SocketChannel client : clients) {
+			sendPacket(client, packet);
+		}
+	}
+
+	/*
+	 * private void say(SocketChannel channel, String message) throws
+	 * IOException { SayPacket packet = new SayPacket(message);
+	 * sendPacket(channel, packet); }
+	 */
+
 	public static void main(String[] args) {
 		try {
 			Server server = new Server();
