@@ -22,20 +22,14 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.text.method.ScrollingMovementMethod;
 import android.view.Menu;
 import android.view.View;
-import android.widget.EditText;
-import android.widget.TextView;
 
 public class MainActivity extends Activity implements LocationListener {
 	private int SERVICE_DELAY = 1000;
 
 	private final static Logger logger = Logger.getLogger(MainActivity.class
 			.getName());
-
-	private TextView textView;
-	private EditText editText;
 
 	private LocationManager locationManager;
 
@@ -44,7 +38,9 @@ public class MainActivity extends Activity implements LocationListener {
 	private MapController mapController;
 
 	private String login = "";
+	private String password = "";
 
+	
 	public Handler messageHandler;
 	MyLocationOverlay myLocationOverlay = null;
 
@@ -58,22 +54,17 @@ public class MainActivity extends Activity implements LocationListener {
 			super.onCreate(savedInstanceState);
 
 			Intent intent = getIntent();
-
+			setContentView(R.layout.activity_main);
+			
 			Bundle extras = intent.getExtras();
 			login = extras.getString("login");
-
-			setContentView(R.layout.activity_main);
+			password = extras.getString("password");
 
 			mapView = (MapView) findViewById(R.id.MainActivityMapview);
 			mapView.setBuiltInZoomControls(true);
 			mapView.setMultiTouchControls(true);
 
-			textView = (TextView) findViewById(R.id.text_view);
-			textView.setMovementMethod(new ScrollingMovementMethod());
-
 			mapController = mapView.getController();
-
-			// editText = (EditText)findViewById(R.id.edit_message);
 
 			messageHandler = new MessageHandler(this);
 
@@ -98,6 +89,7 @@ public class MainActivity extends Activity implements LocationListener {
 			locationManager.requestLocationUpdates(
 					LocationManager.GPS_PROVIDER, 1000, 1, this);
 
+			mapController.setZoom(7);
 			logger.info("Initialized!");
 		} catch (Exception e) {
 			logger.log(Level.SEVERE, "Exception", e);
@@ -147,16 +139,6 @@ public class MainActivity extends Activity implements LocationListener {
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
-	}
-
-	private void printMessage(String message) {
-		textView.append(message + "\n");
-	}
-
-	public void onSendClick(View view) {
-		String message = editText.getText().toString();
-		editText.setText("");
-		sendMessageToNetworkingThread(message);
 	}
 
 	public void onLogoutClick(View view) {
