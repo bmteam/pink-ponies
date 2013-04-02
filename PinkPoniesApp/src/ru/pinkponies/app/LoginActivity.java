@@ -13,12 +13,13 @@ import android.view.View;
 import android.widget.EditText;
 
 public class LoginActivity extends Activity {
-
 	private final static Logger logger = Logger.getLogger(LoginActivity.class
 			.getName());
 
+	// FIXME(alexknvl): loginEditBox, passwordEditBox;
 	private EditText editLogin, editPassword;
 
+	// FIXME(alexknvl): "default", "default"?
 	private String login = "admin";
 	private String password = "admin";
 
@@ -27,12 +28,16 @@ public class LoginActivity extends Activity {
 		try {
 			logger.info("Initializing...");
 
+			// FIXME(alexknvl): Super should always come first in the method,
+			// and in this case preferably outside the try-catch
 			super.onCreate(savedInstanceState);
 			setContentView(R.layout.activity_login);
 
 			editLogin = (EditText) findViewById(R.id.login);
 			editPassword = (EditText) findViewById(R.id.password);
 
+			// FIXME(alexknvl): @see `Logger.entering` + should be at
+			// the beginning of the method.
 			logger.info("LoginActivity:onCreate");
 		} catch (Exception e) {
 			logger.log(Level.SEVERE, "Exception", e);
@@ -41,7 +46,9 @@ public class LoginActivity extends Activity {
 
 	@Override
 	protected void onResume() {
+		// FIXME(alexknvl): @see `Logger.entering`
 		logger.info("LoginActivity:onResume");
+		// FIXME(alexknvl): Remove all such TODO's.
 		// TODO Auto-generated method stub
 		super.onResume();
 
@@ -49,6 +56,7 @@ public class LoginActivity extends Activity {
 
 	@Override
 	protected void onPause() {
+		// FIXME(alexknvl): @see `Logger.entering`
 		logger.info("LoginActivity:onPause");
 		// TODO Auto-generated method stub
 		super.onPause();
@@ -56,6 +64,7 @@ public class LoginActivity extends Activity {
 
 	@Override
 	protected void onDestroy() {
+		// FIXME(alexknvl): @see `Logger.entering`
 		logger.info("LoginActivity:onDestroy");
 		// TODO Auto-generated method stub
 		super.onDestroy();
@@ -82,9 +91,13 @@ public class LoginActivity extends Activity {
 		logger.info("LoginActivity:onLoginClick");
 		login = editLogin.getText().toString();
 		password = editPassword.getText().toString();
+
+		// FIXME(alexknvl): Pass login and password as arguments to the
+		// `goToMainActivity`.
 		goToMainActivity(view);
 	}
 
+	// FIXME(alexknvl): Remove the unused argument?
 	public void goToMainActivity(View view) {
 		Intent intent = new Intent(LoginActivity.this, MainActivity.class);
 

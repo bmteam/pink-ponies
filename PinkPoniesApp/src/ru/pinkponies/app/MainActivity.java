@@ -26,8 +26,10 @@ import android.view.Menu;
 import android.view.View;
 
 public class MainActivity extends Activity implements LocationListener {
+	// FIXME(alexknvl): Constants should be declared as `static final`.
 	private int SERVICE_DELAY = 1000;
 
+	// FIXME(alexknvl): Declare logger before any other fields.
 	private final static Logger logger = Logger.getLogger(MainActivity.class
 			.getName());
 
@@ -40,7 +42,9 @@ public class MainActivity extends Activity implements LocationListener {
 	private String login = "";
 	private String password = "";
 
+	// FIXME(alexknvl): private?
 	public Handler messageHandler;
+	// FIXME(alexknvl): private?
 	MyLocationOverlay myLocationOverlay = null;
 
 	private MapView mapView;
@@ -50,11 +54,16 @@ public class MainActivity extends Activity implements LocationListener {
 		try {
 			logger.info("Initializing...");
 
+			// FIXME(alexknvl): Super should always come first in the method,
+			// and in this case preferably outside the try-catch
 			super.onCreate(savedInstanceState);
 
+			// FIXME(alexknvl): Reorder code lines so that consecutive lines
+			// are logically connected (i.e. first get activity data, then
+			// initialize the GUI, or vice-versa).
 			Intent intent = getIntent();
 			setContentView(R.layout.activity_main);
-			
+
 			Bundle extras = intent.getExtras();
 			login = extras.getString("login");
 			password = extras.getString("password");
@@ -97,7 +106,9 @@ public class MainActivity extends Activity implements LocationListener {
 
 	@Override
 	protected void onResume() {
+		// FIXME(alexknvl): @see `Logger.entering`
 		logger.info("MainActivity:onResume");
+		// FIXME(alexknvl): Remove all such TODO's.
 		// TODO Auto-generated method stub
 		super.onResume();
 		myLocationOverlay.enableMyLocation();
@@ -106,6 +117,7 @@ public class MainActivity extends Activity implements LocationListener {
 
 	@Override
 	protected void onPause() {
+		// FIXME(alexknvl): @see `Logger.entering`
 		logger.info("MainActivity:onPause");
 		// TODO Auto-generated method stub
 		super.onPause();
@@ -115,6 +127,7 @@ public class MainActivity extends Activity implements LocationListener {
 
 	@Override
 	protected void onDestroy() {
+		// FIXME(alexknvl): @see `Logger.entering`
 		logger.info("MainActivity:onDestroy");
 		// TODO Auto-generated method stub
 		super.onDestroy();
