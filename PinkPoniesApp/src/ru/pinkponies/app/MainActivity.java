@@ -40,7 +40,6 @@ public class MainActivity extends Activity implements LocationListener {
 	private String login = "";
 	private String password = "";
 
-	
 	public Handler messageHandler;
 	MyLocationOverlay myLocationOverlay = null;
 
@@ -143,6 +142,7 @@ public class MainActivity extends Activity implements LocationListener {
 
 	public void onLogoutClick(View view) {
 		goToLoginActivity(view);
+		MainActivity.this.finish();
 	}
 
 	private void onMessageFromNetworkingThread(Object message) {
