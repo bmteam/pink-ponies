@@ -3,9 +3,9 @@ package ru.pinkponies.app;
 import java.lang.ref.WeakReference;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.osmdroid.views.MapController;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MyLocationOverlay;
 
@@ -13,6 +13,7 @@ import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponiesapp.R;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -20,77 +21,78 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.text.method.ScrollingMovementMethod;
 import android.view.Menu;
 import android.view.View;
-import android.widget.EditText;
-import android.widget.TextView;
 
 public class MainActivity extends Activity implements LocationListener {
-	private int SERVICE_DELAY = 1000;
-
 	private final static Logger logger = Logger.getLogger(MainActivity.class
 			.getName());
 
-	private TextView textView;
-	private EditText editText;
+	private static final int SERVICE_DELAY = 1000;
 
 	private LocationManager locationManager;
 
 	private NetworkingThread networkingThread;
 
+	private MapController mapController;
+
+	private String login = "";
+	private String password = "";
+
 	public Handler messageHandler;
-	MyLocationOverlay myLocationOverlay = null;
+
+	private MyLocationOverlay myLocationOverlay = null;
+
+	private MapView mapView;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		try {
-			logger.info("Initializing...");
+		super.onCreate(savedInstanceState);
 
-			super.onCreate(savedInstanceState);
-			setContentView(R.layout.activity_main);
+		logger.info("MainActivity:Initializing...");
 
-			final MapView mapView = (MapView) findViewById(R.id.mapview);
-			mapView.setBuiltInZoomControls(true);
-			mapView.setMultiTouchControls(true);
+		Intent intent = getIntent();
+		Bundle extras = intent.getExtras();
+		login = extras.getString("login");
+		password = extras.getString("password");
 
-			textView = (TextView) findViewById(R.id.text_view);
-			textView.setMovementMethod(new ScrollingMovementMethod());
+		setContentView(R.layout.activity_main);
 
-			editText = (EditText) findViewById(R.id.edit_message);
+		messageHandler = new MessageHandler(this);
 
-			messageHandler = new MessageHandler(this);
+		networkingThread = new NetworkingThread(this);
+		networkingThread.start();
 
-			networkingThread = new NetworkingThread(this);
-			networkingThread.start();
+		mapView = (MapView) findViewById(R.id.MainActivityMapview);
+		mapController = mapView.getController();
+		myLocationOverlay = new MyLocationOverlay(this, mapView);
 
-			myLocationOverlay = new MyLocationOverlay(this, mapView);
-			mapView.getOverlays().add(myLocationOverlay);
-			mapView.postInvalidate();
+		mapView.setBuiltInZoomControls(true);
+		mapView.setMultiTouchControls(true);
+		mapView.getOverlays().add(myLocationOverlay);
+		mapView.postInvalidate();
 
-			myLocationOverlay.runOnFirstFix(new Runnable() {
-				public void run() {
-					mapView.getController().animateTo(
-							myLocationOverlay.getMyLocation());
-				}
-			});
+		myLocationOverlay.runOnFirstFix(new Runnable() {
+			public void run() {
+				mapView.getController().animateTo(
+						myLocationOverlay.getMyLocation());
+			}
+		});
 
-			locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+		locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
-			locationManager.requestLocationUpdates(
-					LocationManager.NETWORK_PROVIDER, 1000, 1, this);
-			locationManager.requestLocationUpdates(
-					LocationManager.GPS_PROVIDER, 1000, 1, this);
+		locationManager.requestLocationUpdates(
+				LocationManager.NETWORK_PROVIDER, 1000, 1, this);
+		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+				1000, 1, this);
 
-			logger.info("Initialized!");
-		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Exception", e);
-		}
+		mapController.setZoom(7);
+
+		logger.info("MainActivity:Initialized!");
 	}
 
 	@Override
 	protected void onResume() {
-		// TODO Auto-generated method stub
 		super.onResume();
 		myLocationOverlay.enableMyLocation();
 		myLocationOverlay.enableFollowLocation();
@@ -98,10 +100,27 @@ public class MainActivity extends Activity implements LocationListener {
 
 	@Override
 	protected void onPause() {
-		// TODO Auto-generated method stub
 		super.onPause();
 		myLocationOverlay.disableMyLocation();
 		myLocationOverlay.disableFollowLocation();
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putInt("zoomLevel", mapView.getZoomLevel());
+	}
+
+	protected void onRestoreInstanceState(Bundle outState) {
+		logger.info("MainActivity:onSaveInstanceState");
+		super.onRestoreInstanceState(outState);
+		outState.getInt("zoomLevel");
+		mapController.setZoom(outState.getInt("zoomLevel"));
 	}
 
 	@Override
@@ -110,10 +129,9 @@ public class MainActivity extends Activity implements LocationListener {
 		return true;
 	}
 
-	public void onSendClick(View view) {
-		String message = editText.getText().toString();
-		editText.setText("");
-		sendMessageToNetworkingThread(message);
+	public void onLogoutClick(View view) {
+		goToLoginActivity(view);
+		MainActivity.this.finish();
 	}
 
 	private void onMessageFromNetworkingThread(Object message) {
@@ -143,7 +161,7 @@ public class MainActivity extends Activity implements LocationListener {
 		networkingThread.messageHandler.sendMessage(msg);
 	}
 
-	static public class MessageHandler extends Handler {
+	public static class MessageHandler extends Handler {
 		private WeakReference<MainActivity> activity;
 
 		MessageHandler(MainActivity mainActivity) {
@@ -154,6 +172,12 @@ public class MainActivity extends Activity implements LocationListener {
 		public void handleMessage(Message msg) {
 			activity.get().onMessageFromNetworkingThread(msg.obj);
 		}
+	}
+
+	public void goToLoginActivity(View view) {
+		Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+		startActivity(intent);
+		this.onDestroy();
 	}
 
 	@Override
@@ -170,19 +194,16 @@ public class MainActivity extends Activity implements LocationListener {
 	@Override
 	public void onProviderDisabled(String provider) {
 		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void onProviderEnabled(String provider) {
 		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void onStatusChanged(String provider, int status, Bundle extras) {
 		// TODO Auto-generated method stub
-
-	};
+	}
 
 }

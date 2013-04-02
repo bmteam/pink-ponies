@@ -5,34 +5,8 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
     
-	<LinearLayout
-	    android:layout_width="match_parent"
-	    android:layout_height="wrap_content"
-	    android:orientation="horizontal">
-	    <EditText
-	        android:id="@+id/edit_message"
-	        android:layout_weight="1"
-	        android:layout_width="0dp"
-	        android:layout_height="wrap_content"
-	        android:hint="@string/edit_message" />
-	    <Button
-	        android:layout_width="wrap_content"
-	        android:layout_height="wrap_content"
-	        android:text="@string/button_send"
-	        android:onClick="onSendClick" />
-    </LinearLayout>
-    
-    <TextView
-        android:id="@+id/text_view"
-        android:layout_width="match_parent"
-        android:layout_height="50dip"
-        android:layout_gravity="bottom"
-        android:scrollbars="vertical"
-        android:textIsSelectable="true"
-        android:layout_margin="10dip" />
-	
     <org.osmdroid.views.MapView
-        android:id="@+id/mapview"
+        android:id="@+id/MainActivityMapview"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:clickable="true" />
