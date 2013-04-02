@@ -3,7 +3,6 @@ package ru.pinkponies.app;
 import java.lang.ref.WeakReference;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.osmdroid.views.MapController;
@@ -26,12 +25,10 @@ import android.view.Menu;
 import android.view.View;
 
 public class MainActivity extends Activity implements LocationListener {
-	// FIXME(alexknvl): Constants should be declared as `static final`.
-	private int SERVICE_DELAY = 1000;
-
-	// FIXME(alexknvl): Declare logger before any other fields.
 	private final static Logger logger = Logger.getLogger(MainActivity.class
 			.getName());
+
+	private static final int SERVICE_DELAY = 1000;
 
 	private LocationManager locationManager;
 
@@ -42,74 +39,60 @@ public class MainActivity extends Activity implements LocationListener {
 	private String login = "";
 	private String password = "";
 
-	// FIXME(alexknvl): private?
 	public Handler messageHandler;
-	// FIXME(alexknvl): private?
-	MyLocationOverlay myLocationOverlay = null;
+
+	private MyLocationOverlay myLocationOverlay = null;
 
 	private MapView mapView;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		try {
-			logger.info("Initializing...");
+		super.onCreate(savedInstanceState);
 
-			// FIXME(alexknvl): Super should always come first in the method,
-			// and in this case preferably outside the try-catch
-			super.onCreate(savedInstanceState);
+		logger.info("MainActivity:Initializing...");
 
-			// FIXME(alexknvl): Reorder code lines so that consecutive lines
-			// are logically connected (i.e. first get activity data, then
-			// initialize the GUI, or vice-versa).
-			Intent intent = getIntent();
-			setContentView(R.layout.activity_main);
+		Intent intent = getIntent();
+		Bundle extras = intent.getExtras();
+		login = extras.getString("login");
+		password = extras.getString("password");
 
-			Bundle extras = intent.getExtras();
-			login = extras.getString("login");
-			password = extras.getString("password");
+		setContentView(R.layout.activity_main);
 
-			mapView = (MapView) findViewById(R.id.MainActivityMapview);
-			mapView.setBuiltInZoomControls(true);
-			mapView.setMultiTouchControls(true);
+		messageHandler = new MessageHandler(this);
 
-			mapController = mapView.getController();
+		networkingThread = new NetworkingThread(this);
+		networkingThread.start();
 
-			messageHandler = new MessageHandler(this);
+		mapView = (MapView) findViewById(R.id.MainActivityMapview);
+		mapController = mapView.getController();
+		myLocationOverlay = new MyLocationOverlay(this, mapView);
 
-			networkingThread = new NetworkingThread(this);
-			networkingThread.start();
+		mapView.setBuiltInZoomControls(true);
+		mapView.setMultiTouchControls(true);
+		mapView.getOverlays().add(myLocationOverlay);
+		mapView.postInvalidate();
 
-			myLocationOverlay = new MyLocationOverlay(this, mapView);
-			mapView.getOverlays().add(myLocationOverlay);
-			mapView.postInvalidate();
+		myLocationOverlay.runOnFirstFix(new Runnable() {
+			public void run() {
+				mapView.getController().animateTo(
+						myLocationOverlay.getMyLocation());
+			}
+		});
 
-			myLocationOverlay.runOnFirstFix(new Runnable() {
-				public void run() {
-					mapView.getController().animateTo(
-							myLocationOverlay.getMyLocation());
-				}
-			});
+		locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
-			locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+		locationManager.requestLocationUpdates(
+				LocationManager.NETWORK_PROVIDER, 1000, 1, this);
+		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+				1000, 1, this);
 
-			locationManager.requestLocationUpdates(
-					LocationManager.NETWORK_PROVIDER, 1000, 1, this);
-			locationManager.requestLocationUpdates(
-					LocationManager.GPS_PROVIDER, 1000, 1, this);
+		mapController.setZoom(7);
 
-			mapController.setZoom(7);
-			logger.info("Initialized!");
-		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Exception", e);
-		}
+		logger.info("MainActivity:Initialized!");
 	}
 
 	@Override
 	protected void onResume() {
-		// FIXME(alexknvl): @see `Logger.entering`
-		logger.info("MainActivity:onResume");
-		// FIXME(alexknvl): Remove all such TODO's.
-		// TODO Auto-generated method stub
 		super.onResume();
 		myLocationOverlay.enableMyLocation();
 		myLocationOverlay.enableFollowLocation();
@@ -117,9 +100,6 @@ public class MainActivity extends Activity implements LocationListener {
 
 	@Override
 	protected void onPause() {
-		// FIXME(alexknvl): @see `Logger.entering`
-		logger.info("MainActivity:onPause");
-		// TODO Auto-generated method stub
 		super.onPause();
 		myLocationOverlay.disableMyLocation();
 		myLocationOverlay.disableFollowLocation();
@@ -127,15 +107,11 @@ public class MainActivity extends Activity implements LocationListener {
 
 	@Override
 	protected void onDestroy() {
-		// FIXME(alexknvl): @see `Logger.entering`
-		logger.info("MainActivity:onDestroy");
-		// TODO Auto-generated method stub
 		super.onDestroy();
 	}
 
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
-		logger.info("MainActivity:onSaveInstanceState");
 		super.onSaveInstanceState(outState);
 		outState.putInt("zoomLevel", mapView.getZoomLevel());
 	}
@@ -218,19 +194,16 @@ public class MainActivity extends Activity implements LocationListener {
 	@Override
 	public void onProviderDisabled(String provider) {
 		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void onProviderEnabled(String provider) {
 		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void onStatusChanged(String provider, int status, Bundle extras) {
 		// TODO Auto-generated method stub
-
 	}
 
 }

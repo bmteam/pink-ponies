@@ -7,8 +7,9 @@
     <string name="edit_message">Enter a message</string>
     <string name="button_login">Log in</string>
     <string name="button_logout">Log out</string>
-    <string name="title_activity_fullscreen">FullscreenActivity</string>
     <string name="dummy_button">Dummy Button</string>
     <string name="dummy_content">DUMMY\nCONTENT</string>
-
+    <string name="login">Login</string>
+    <string name="password">Password</string>
+    
 </resources>

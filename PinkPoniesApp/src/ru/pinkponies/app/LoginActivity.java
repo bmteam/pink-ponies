@@ -1,6 +1,5 @@
 package ru.pinkponies.app;
 
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import ru.pinkponiesapp.R;
@@ -16,57 +15,36 @@ public class LoginActivity extends Activity {
 	private final static Logger logger = Logger.getLogger(LoginActivity.class
 			.getName());
 
-	// FIXME(alexknvl): loginEditBox, passwordEditBox;
-	private EditText editLogin, editPassword;
+	private EditText loginEditBox, passwordEditBox;
 
-	// FIXME(alexknvl): "default", "default"?
-	private String login = "admin";
-	private String password = "admin";
+	private String login = "default";
+	private String password = "default";
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		try {
-			logger.info("Initializing...");
+		logger.info("MainActivity:Initializing...");
 
-			// FIXME(alexknvl): Super should always come first in the method,
-			// and in this case preferably outside the try-catch
-			super.onCreate(savedInstanceState);
-			setContentView(R.layout.activity_login);
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_login);
 
-			editLogin = (EditText) findViewById(R.id.login);
-			editPassword = (EditText) findViewById(R.id.password);
+		loginEditBox = (EditText) findViewById(R.id.login);
+		passwordEditBox = (EditText) findViewById(R.id.password);
 
-			// FIXME(alexknvl): @see `Logger.entering` + should be at
-			// the beginning of the method.
-			logger.info("LoginActivity:onCreate");
-		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Exception", e);
-		}
+		logger.info("MainActivity:Initialized!");
 	}
 
 	@Override
 	protected void onResume() {
-		// FIXME(alexknvl): @see `Logger.entering`
-		logger.info("LoginActivity:onResume");
-		// FIXME(alexknvl): Remove all such TODO's.
-		// TODO Auto-generated method stub
 		super.onResume();
-
 	}
 
 	@Override
 	protected void onPause() {
-		// FIXME(alexknvl): @see `Logger.entering`
-		logger.info("LoginActivity:onPause");
-		// TODO Auto-generated method stub
 		super.onPause();
 	}
 
 	@Override
 	protected void onDestroy() {
-		// FIXME(alexknvl): @see `Logger.entering`
-		logger.info("LoginActivity:onDestroy");
-		// TODO Auto-generated method stub
 		super.onDestroy();
 	}
 
@@ -88,17 +66,13 @@ public class LoginActivity extends Activity {
 	}
 
 	public void onLoginClick(View view) {
-		logger.info("LoginActivity:onLoginClick");
-		login = editLogin.getText().toString();
-		password = editPassword.getText().toString();
+		login = loginEditBox.getText().toString();
+		password = passwordEditBox.getText().toString();
 
-		// FIXME(alexknvl): Pass login and password as arguments to the
-		// `goToMainActivity`.
-		goToMainActivity(view);
+		goToMainActivity();
 	}
 
-	// FIXME(alexknvl): Remove the unused argument?
-	public void goToMainActivity(View view) {
+	public void goToMainActivity() {
 		Intent intent = new Intent(LoginActivity.this, MainActivity.class);
 
 		intent.putExtra("login", login);
