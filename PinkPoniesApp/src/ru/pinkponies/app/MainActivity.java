@@ -34,6 +34,9 @@ public class MainActivity extends Activity implements LocationListener {
 	private final static Logger logger = Logger.getLogger(MainActivity.class
 			.getName());
 
+	// FIXME(alexknvl): SERVICE_DELAY should come first.
+	// FIXME(alexknvl): Group fields according to their meaning: GUI, 
+	//   networking, other fields.
 	private TextOverlay textOverlay;
 	private static final int SERVICE_DELAY = 1000;
 
@@ -48,6 +51,7 @@ public class MainActivity extends Activity implements LocationListener {
 
 	public Handler messageHandler;
 
+	// FIXME(alexknvl): Add private to these fields.
 	GeoPoint myPoint = new GeoPoint(55929563, 37523862);
 	PathOverlay myPath = null;
 	MyLocationOverlay myLocationOverlay = null;
@@ -74,6 +78,7 @@ public class MainActivity extends Activity implements LocationListener {
 		networkingThread = new NetworkingThread(this);
 		networkingThread.start();
 
+		// FIXME(alexknvl): Initialize gui before networking thread.
 		mapView = (MapView) findViewById(R.id.MainActivityMapview);
 		mapController = mapView.getController();
 		myLocationOverlay = new MyLocationOverlay(this, mapView);
@@ -103,8 +108,11 @@ public class MainActivity extends Activity implements LocationListener {
 		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
 				1000, 1, this);
 
+		// FIXME(alexknvl): Group GUI initialization code together.
 		mapController.setZoom(7);
 
+		// FIXME(alexknvl): Comments should start with a capital letter and
+		//   and be complete sentences with a dot at the end.
 		// add Person overlay
 		Drawable marker = getResources().getDrawable(R.drawable.person);
 		int markerWidth = marker.getIntrinsicWidth();
