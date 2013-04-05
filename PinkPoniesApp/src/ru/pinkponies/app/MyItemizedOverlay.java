@@ -12,7 +12,7 @@ import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 
 public class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
-
+	// FIXME(alexknvl): Use HashMap to search for items faster.
 	private ArrayList<OverlayItem> overlayItemList = new ArrayList<OverlayItem>();
 
 	public MyItemizedOverlay(Drawable pDefaultMarker,
@@ -21,8 +21,11 @@ public class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
 		// TODO Auto-generated constructor stub
 	}
 
+	// FIXME(alexknvl): Do we really need `snippet` here?
 	public synchronized void addItem(GeoPoint p, String title, String snippet) {
 		OverlayItem newItem = new OverlayItem(title, snippet, p);
+		// FIXME(alexknvl): Check that there is only one item with
+		// the given name (title).
 		overlayItemList.add(newItem);
 		populate();
 	}

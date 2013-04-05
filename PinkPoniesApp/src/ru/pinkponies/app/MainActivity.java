@@ -35,8 +35,8 @@ public class MainActivity extends Activity implements LocationListener {
 			.getName());
 
 	// FIXME(alexknvl): SERVICE_DELAY should come first.
-	// FIXME(alexknvl): Group fields according to their meaning: GUI, 
-	//   networking, other fields.
+	// FIXME(alexknvl): Group fields according to their meaning: GUI,
+	// networking, other fields.
 	private TextOverlay textOverlay;
 	private static final int SERVICE_DELAY = 1000;
 
@@ -51,7 +51,7 @@ public class MainActivity extends Activity implements LocationListener {
 
 	public Handler messageHandler;
 
-	// FIXME(alexknvl): Add private to these fields.
+	// FIXME(alexknvl): Add `private` modifier to these fields.
 	GeoPoint myPoint = new GeoPoint(55929563, 37523862);
 	PathOverlay myPath = null;
 	MyLocationOverlay myLocationOverlay = null;
@@ -112,7 +112,7 @@ public class MainActivity extends Activity implements LocationListener {
 		mapController.setZoom(7);
 
 		// FIXME(alexknvl): Comments should start with a capital letter and
-		//   and be complete sentences with a dot at the end.
+		// and be complete sentences with a dot at the end.
 		// add Person overlay
 		Drawable marker = getResources().getDrawable(R.drawable.person);
 		int markerWidth = marker.getIntrinsicWidth();
@@ -139,6 +139,8 @@ public class MainActivity extends Activity implements LocationListener {
 		// player 1
 		// myPersonOverlay.addItem(myPoint, "player1", "player1");
 		// apples
+		// FIXME(alexknvl): Remove it, and wait till picking up apples is
+		// implemented on the server.
 		GeoPoint applePoint1 = new GeoPoint(myPoint.getLatitudeE6() + 20000,
 				myPoint.getLongitudeE6() + 10000);
 		myAppleOverlay.addItem(applePoint1, "Apple1", "Apple1");
@@ -150,6 +152,8 @@ public class MainActivity extends Activity implements LocationListener {
 		myAppleOverlay.addItem(applePoint3, "Apple3", "Apple3");
 		myAppleOverlay.addItem(myPoint, "Apple4", "Apple4");
 
+		// FIXME(alexknvl): Remove the button if it is no longer necessary.
+		// FIXME(alexknvl): Remove this code if it is no longer necessary.
 		/*
 		 * path final PathOverlay p1Path = new PathOverlay(Color.RED, this);
 		 * p1Path.addPoint(applePoint1); p1Path.addPoint(applePoint2);
@@ -274,6 +278,9 @@ public class MainActivity extends Activity implements LocationListener {
 		double longitude = location.getLongitude();
 		double latitude = location.getLatitude();
 		double altitude = location.getAltitude();
+
+		// FIXME(alexknvl): Remove it, and wait till picking up apples is
+		// implemented on the server.
 		GeoPoint point = new GeoPoint(latitude, longitude);
 		myPath.addPoint(point);
 		if (point.distanceTo(myPoint) < 20) {
