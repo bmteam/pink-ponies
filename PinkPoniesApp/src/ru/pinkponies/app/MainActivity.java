@@ -14,7 +14,6 @@ import org.osmdroid.views.overlay.MyLocationOverlay;
 import org.osmdroid.views.overlay.PathOverlay;
 
 import ru.pinkponies.protocol.LocationUpdatePacket;
-import ru.pinkponies.app.R;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -31,34 +30,28 @@ import android.view.Menu;
 import android.view.View;
 
 public class MainActivity extends Activity implements LocationListener {
+
 	private final static Logger logger = Logger.getLogger(MainActivity.class
 			.getName());
 
-	// FIXME(alexknvl): SERVICE_DELAY should come first.
-	// FIXME(alexknvl): Group fields according to their meaning: GUI,
-	// networking, other fields.
-	private TextOverlay textOverlay;
 	private static final int SERVICE_DELAY = 1000;
 
+	private NetworkingThread networkingThread;
+	public Handler messageHandler;
 	private LocationManager locationManager;
 
-	private NetworkingThread networkingThread;
-
 	private MapController mapController;
-
-	private String login = "";
-	private String password = "";
-
-	public Handler messageHandler;
-
-	// FIXME(alexknvl): Add `private` modifier to these fields.
-	GeoPoint myPoint = new GeoPoint(55929563, 37523862);
-	PathOverlay myPath = null;
-	MyLocationOverlay myLocationOverlay = null;
-	MyItemizedOverlay myPersonOverlay = null;
-	MyItemizedOverlay myAppleOverlay = null;
-
 	private MapView mapView;
+
+	private MyLocationOverlay myLocationOverlay = null;
+	private MyItemizedOverlay myPersonOverlay = null;
+	private MyItemizedOverlay myAppleOverlay = null;
+	private PathOverlay myPath = null;
+
+	// private TextOverlay textOverlay;
+
+	// private String login = "";
+	// private String password = "";
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -66,34 +59,35 @@ public class MainActivity extends Activity implements LocationListener {
 
 		logger.info("MainActivity:Initializing...");
 
-		Intent intent = getIntent();
-		Bundle extras = intent.getExtras();
-		login = extras.getString("login");
-		password = extras.getString("password");
+		// Intent intent = getIntent();
+		// Bundle extras = intent.getExtras();
+		// login = extras.getString("login");
+		// password = extras.getString("password");
 
 		setContentView(R.layout.activity_main);
 
+		// Networking.
 		messageHandler = new MessageHandler(this);
 
 		networkingThread = new NetworkingThread(this);
 		networkingThread.start();
 
-		// FIXME(alexknvl): Initialize gui before networking thread.
+		locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+		locationManager.requestLocationUpdates(
+				LocationManager.NETWORK_PROVIDER, 1000, 1, this);
+		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+				1000, 1, this);
+
+		// GUI.
 		mapView = (MapView) findViewById(R.id.MainActivityMapview);
-		mapController = mapView.getController();
+		mapView.setMultiTouchControls(true);
 		myLocationOverlay = new MyLocationOverlay(this, mapView);
+		mapView.getOverlays().add(myLocationOverlay);
 		myPath = new PathOverlay(Color.GREEN, this);
 		mapView.getOverlays().add(myPath);
-		textOverlay = new TextOverlay(this, mapView);
-		textOverlay.setPosition(new GeoPoint(55.9, 37.5));
-		textOverlay.setText("Hello, world!");
-		mapView.getOverlays().add(textOverlay);
-
-		mapView.setBuiltInZoomControls(true);
-		mapView.setMultiTouchControls(true);
-		mapView.getOverlays().add(myLocationOverlay);
 		mapView.postInvalidate();
-
+		mapController = mapView.getController();
+		mapController.setZoom(13);
 		myLocationOverlay.runOnFirstFix(new Runnable() {
 			public void run() {
 				mapView.getController().animateTo(
@@ -101,77 +95,32 @@ public class MainActivity extends Activity implements LocationListener {
 			}
 		});
 
-		locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+		// textOverlay = new TextOverlay(this, mapView);
+		// textOverlay.setPosition(new GeoPoint(55.9, 37.5));
+		// textOverlay.setText("Hello, world!");
+		// mapView.getOverlays().add(textOverlay);
 
-		locationManager.requestLocationUpdates(
-				LocationManager.NETWORK_PROVIDER, 1000, 1, this);
-		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-				1000, 1, this);
-
-		// FIXME(alexknvl): Group GUI initialization code together.
-		mapController.setZoom(7);
-
-		// FIXME(alexknvl): Comments should start with a capital letter and
-		// and be complete sentences with a dot at the end.
-		// add Person overlay
+		// Add Person overlay.
 		Drawable marker = getResources().getDrawable(R.drawable.person);
 		int markerWidth = marker.getIntrinsicWidth();
 		int markerHeight = marker.getIntrinsicHeight();
 		marker.setBounds(0, markerHeight, markerWidth, 0);
-
 		ResourceProxy resourceProxy = new DefaultResourceProxyImpl(
 				getApplicationContext());
-
 		myPersonOverlay = new MyItemizedOverlay(marker, resourceProxy);
 		mapView.getOverlays().add(myPersonOverlay);
 
-		// add Apple overlay
+		// Add Apple overlay.
 		marker = getResources().getDrawable(R.drawable.apple);
 		markerWidth = marker.getIntrinsicWidth();
 		markerHeight = marker.getIntrinsicHeight();
 		marker.setBounds(0, markerHeight, markerWidth, 0);
-
 		resourceProxy = new DefaultResourceProxyImpl(getApplicationContext());
-
 		myAppleOverlay = new MyItemizedOverlay(marker, resourceProxy);
 		mapView.getOverlays().add(myAppleOverlay);
 
-		// player 1
-		// myPersonOverlay.addItem(myPoint, "player1", "player1");
-		// apples
-		// FIXME(alexknvl): Remove it, and wait till picking up apples is
-		// implemented on the server.
-		GeoPoint applePoint1 = new GeoPoint(myPoint.getLatitudeE6() + 20000,
-				myPoint.getLongitudeE6() + 10000);
-		myAppleOverlay.addItem(applePoint1, "Apple1", "Apple1");
-		GeoPoint applePoint2 = new GeoPoint(myPoint.getLatitudeE6() + 14000,
-				myPoint.getLongitudeE6() - 10000);
-		myAppleOverlay.addItem(applePoint2, "Apple2", "Apple2");
-		GeoPoint applePoint3 = new GeoPoint(myPoint.getLatitudeE6() - 7000,
-				myPoint.getLongitudeE6() + 10000);
-		myAppleOverlay.addItem(applePoint3, "Apple3", "Apple3");
-		myAppleOverlay.addItem(myPoint, "Apple4", "Apple4");
-
-		// FIXME(alexknvl): Remove the button if it is no longer necessary.
-		// FIXME(alexknvl): Remove this code if it is no longer necessary.
-		/*
-		 * path final PathOverlay p1Path = new PathOverlay(Color.RED, this);
-		 * p1Path.addPoint(applePoint1); p1Path.addPoint(applePoint2);
-		 * p1Path.addPoint(applePoint3); mapView.getOverlays().add(p1Path);
-		 * 
-		 * // magic button final Button button = (Button)
-		 * findViewById(R.id.button1);
-		 * 
-		 * button.setOnClickListener(new Button.OnClickListener() { public void
-		 * onClick(View v){ myPoint = new GeoPoint(myPoint.getLatitudeE6() +
-		 * 10000, myPoint.getLongitudeE6() + 10000);
-		 * myPersonOverlay.removeItem("player1");
-		 * myPersonOverlay.addItem(myPoint, "player1", "player1");
-		 * //p1Path.addPoint(myPoint); //Drawable
-		 * marker=getResources().getDrawable(R.drawable.shit);
-		 * //myAppleOverlay.resetItemMarker("Apple3", marker);
-		 * mapView.invalidate(); } });
-		 */
+		// GeoPoint myPoint = new GeoPoint(55929563, 37523862);
+		// myAppleOverlay.addItem(myPoint, "Apple");
 
 		logger.info("MainActivity:Initialized!");
 	}
@@ -242,7 +191,7 @@ public class MainActivity extends Activity implements LocationListener {
 				GeoPoint point = new GeoPoint(packet.latitude, packet.longitude);
 				myPersonOverlay.removeItem(packet.clientID);
 				myPersonOverlay
-						.addItem(point, packet.clientID, packet.clientID);
+						.addItem(point, packet.clientID);
 			}
 		}
 	}
@@ -274,21 +223,12 @@ public class MainActivity extends Activity implements LocationListener {
 
 	@Override
 	public void onLocationChanged(Location location) {
+
 		String clientID = Build.DISPLAY;
+
 		double longitude = location.getLongitude();
 		double latitude = location.getLatitude();
 		double altitude = location.getAltitude();
-
-		// FIXME(alexknvl): Remove it, and wait till picking up apples is
-		// implemented on the server.
-		GeoPoint point = new GeoPoint(latitude, longitude);
-		myPath.addPoint(point);
-		if (point.distanceTo(myPoint) < 20) {
-			Drawable marker = getResources().getDrawable(R.drawable.shit);
-			myAppleOverlay.resetItemMarker("Apple4", marker);
-		}
-
-		textOverlay.setText("" + point.distanceTo(myPoint));
 
 		sendMessageToNetworkingThread(new LocationUpdatePacket(clientID,
 				longitude, latitude, altitude));

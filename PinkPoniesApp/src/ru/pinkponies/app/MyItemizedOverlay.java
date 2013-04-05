@@ -1,6 +1,7 @@
 package ru.pinkponies.app;
 
 import java.util.ArrayList;
+import java.util.logging.Logger;
 
 import org.osmdroid.ResourceProxy;
 import org.osmdroid.api.IMapView;
@@ -12,7 +13,9 @@ import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 
 public class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
-	// FIXME(alexknvl): Use HashMap to search for items faster.
+	private final static Logger logger = Logger
+			.getLogger(MyItemizedOverlay.class.getName());
+
 	private ArrayList<OverlayItem> overlayItemList = new ArrayList<OverlayItem>();
 
 	public MyItemizedOverlay(Drawable pDefaultMarker,
@@ -21,11 +24,13 @@ public class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
 		// TODO Auto-generated constructor stub
 	}
 
-	// FIXME(alexknvl): Do we really need `snippet` here?
-	public synchronized void addItem(GeoPoint p, String title, String snippet) {
-		OverlayItem newItem = new OverlayItem(title, snippet, p);
-		// FIXME(alexknvl): Check that there is only one item with
-		// the given name (title).
+	public synchronized void addItem(GeoPoint p, String title) {
+		for (OverlayItem i : overlayItemList) {
+			if (i.mTitle.equals(title))
+				logger.info("Item named " + title + " already exists.");
+			throw new IllegalArgumentException();
+		}
+		OverlayItem newItem = new OverlayItem(title, title, p);
 		overlayItemList.add(newItem);
 		populate();
 	}
