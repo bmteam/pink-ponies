@@ -14,7 +14,7 @@ import org.osmdroid.views.overlay.MyLocationOverlay;
 import org.osmdroid.views.overlay.PathOverlay;
 
 import ru.pinkponies.protocol.LocationUpdatePacket;
-import ru.pinkponiesapp.R;
+import ru.pinkponies.app.R;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
