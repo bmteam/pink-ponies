@@ -23,7 +23,7 @@ import ru.pinkponies.protocol.Protocol;
 import ru.pinkponies.protocol.SayPacket;
 
 public final class Server {
-	private static final int SERVER_PORT = 4268;
+	private static final int SERVER_PORT = 4264;
 	private static final int BUFFER_SIZE = 8192;
 
 	private final static Logger logger = Logger.getLogger(Server.class
