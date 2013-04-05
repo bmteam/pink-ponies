@@ -3,7 +3,6 @@ package ru.pinkponies.app;
 import java.lang.ref.WeakReference;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.osmdroid.DefaultResourceProxyImpl;
@@ -18,6 +17,7 @@ import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponiesapp.R;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
@@ -27,153 +27,145 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.text.method.ScrollingMovementMethod;
 import android.view.Menu;
 import android.view.View;
-import android.widget.EditText;
-import android.widget.TextView;
 
 public class MainActivity extends Activity implements LocationListener {
-	private int SERVICE_DELAY = 1000;
-
 	private final static Logger logger = Logger.getLogger(MainActivity.class
 			.getName());
 
-	private TextView textView;
-	private EditText editText;
 	private TextOverlay textOverlay;
+	private static final int SERVICE_DELAY = 1000;
 
 	private LocationManager locationManager;
 
 	private NetworkingThread networkingThread;
 
+	private MapController mapController;
+
+	private String login = "";
+	private String password = "";
+
 	public Handler messageHandler;
+
+	GeoPoint myPoint = new GeoPoint(55929563, 37523862);
+	PathOverlay myPath = null;
 	MyLocationOverlay myLocationOverlay = null;
 	MyItemizedOverlay myPersonOverlay = null;
 	MyItemizedOverlay myAppleOverlay = null;
 
-	GeoPoint myPoint = new GeoPoint(55929563, 37523862);
-	PathOverlay myPath = null;
+	private MapView mapView;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		try {
-			logger.info("Initializing...");
+		super.onCreate(savedInstanceState);
 
-			super.onCreate(savedInstanceState);
-			setContentView(R.layout.activity_main);
+		logger.info("MainActivity:Initializing...");
 
-			final MapView mapView = (MapView) findViewById(R.id.mapview);
+		Intent intent = getIntent();
+		Bundle extras = intent.getExtras();
+		login = extras.getString("login");
+		password = extras.getString("password");
 
-			mapView.setMultiTouchControls(true);
-			final MapController mapController = mapView.getController();
-			mapController.setZoom(13);
+		setContentView(R.layout.activity_main);
 
-			textView = (TextView) findViewById(R.id.text_view);
-			textView.setMovementMethod(new ScrollingMovementMethod());
+		messageHandler = new MessageHandler(this);
 
-			editText = (EditText) findViewById(R.id.edit_message);
+		networkingThread = new NetworkingThread(this);
+		networkingThread.start();
 
-			messageHandler = new MessageHandler(this);
+		mapView = (MapView) findViewById(R.id.MainActivityMapview);
+		mapController = mapView.getController();
+		myLocationOverlay = new MyLocationOverlay(this, mapView);
+		myPath = new PathOverlay(Color.GREEN, this);
+		mapView.getOverlays().add(myPath);
+		textOverlay = new TextOverlay(this, mapView);
+		textOverlay.setPosition(new GeoPoint(55.9, 37.5));
+		textOverlay.setText("Hello, world!");
+		mapView.getOverlays().add(textOverlay);
 
-			networkingThread = new NetworkingThread(this);
-			networkingThread.start();
+		mapView.setBuiltInZoomControls(true);
+		mapView.setMultiTouchControls(true);
+		mapView.getOverlays().add(myLocationOverlay);
+		mapView.postInvalidate();
 
-			myLocationOverlay = new MyLocationOverlay(this, mapView);
-			mapView.getOverlays().add(myLocationOverlay);
-			myPath = new PathOverlay(Color.GREEN, this);
-			mapView.getOverlays().add(myPath);
-			textOverlay = new TextOverlay(this, mapView);
-			textOverlay.setPosition(new GeoPoint(55.9, 37.5));
-			textOverlay.setText("Hello, world!");
-			mapView.getOverlays().add(textOverlay);
+		myLocationOverlay.runOnFirstFix(new Runnable() {
+			public void run() {
+				mapView.getController().animateTo(
+						myLocationOverlay.getMyLocation());
+			}
+		});
 
-			mapView.postInvalidate();
+		locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
-			myLocationOverlay.runOnFirstFix(new Runnable() {
-				public void run() {
-					mapView.getController().animateTo(
-							myLocationOverlay.getMyLocation());
-				}
-			});
+		locationManager.requestLocationUpdates(
+				LocationManager.NETWORK_PROVIDER, 1000, 1, this);
+		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+				1000, 1, this);
 
-			locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+		mapController.setZoom(7);
 
-			locationManager.requestLocationUpdates(
-					LocationManager.NETWORK_PROVIDER, 1000, 1, this);
-			locationManager.requestLocationUpdates(
-					LocationManager.GPS_PROVIDER, 1000, 1, this);
+		// add Person overlay
+		Drawable marker = getResources().getDrawable(R.drawable.person);
+		int markerWidth = marker.getIntrinsicWidth();
+		int markerHeight = marker.getIntrinsicHeight();
+		marker.setBounds(0, markerHeight, markerWidth, 0);
 
-			logger.info("Initialized!");
+		ResourceProxy resourceProxy = new DefaultResourceProxyImpl(
+				getApplicationContext());
 
-			// add Person overlay
-			Drawable marker = getResources().getDrawable(R.drawable.person);
-			int markerWidth = marker.getIntrinsicWidth();
-			int markerHeight = marker.getIntrinsicHeight();
-			marker.setBounds(0, markerHeight, markerWidth, 0);
+		myPersonOverlay = new MyItemizedOverlay(marker, resourceProxy);
+		mapView.getOverlays().add(myPersonOverlay);
 
-			ResourceProxy resourceProxy = new DefaultResourceProxyImpl(
-					getApplicationContext());
+		// add Apple overlay
+		marker = getResources().getDrawable(R.drawable.apple);
+		markerWidth = marker.getIntrinsicWidth();
+		markerHeight = marker.getIntrinsicHeight();
+		marker.setBounds(0, markerHeight, markerWidth, 0);
 
-			myPersonOverlay = new MyItemizedOverlay(marker, resourceProxy);
-			mapView.getOverlays().add(myPersonOverlay);
+		resourceProxy = new DefaultResourceProxyImpl(getApplicationContext());
 
-			// add Apple overlay
-			marker = getResources().getDrawable(R.drawable.apple);
-			markerWidth = marker.getIntrinsicWidth();
-			markerHeight = marker.getIntrinsicHeight();
-			marker.setBounds(0, markerHeight, markerWidth, 0);
+		myAppleOverlay = new MyItemizedOverlay(marker, resourceProxy);
+		mapView.getOverlays().add(myAppleOverlay);
 
-			resourceProxy = new DefaultResourceProxyImpl(
-					getApplicationContext());
+		// player 1
+		// myPersonOverlay.addItem(myPoint, "player1", "player1");
+		// apples
+		GeoPoint applePoint1 = new GeoPoint(myPoint.getLatitudeE6() + 20000,
+				myPoint.getLongitudeE6() + 10000);
+		myAppleOverlay.addItem(applePoint1, "Apple1", "Apple1");
+		GeoPoint applePoint2 = new GeoPoint(myPoint.getLatitudeE6() + 14000,
+				myPoint.getLongitudeE6() - 10000);
+		myAppleOverlay.addItem(applePoint2, "Apple2", "Apple2");
+		GeoPoint applePoint3 = new GeoPoint(myPoint.getLatitudeE6() - 7000,
+				myPoint.getLongitudeE6() + 10000);
+		myAppleOverlay.addItem(applePoint3, "Apple3", "Apple3");
+		myAppleOverlay.addItem(myPoint, "Apple4", "Apple4");
 
-			myAppleOverlay = new MyItemizedOverlay(marker, resourceProxy);
-			mapView.getOverlays().add(myAppleOverlay);
+		/*
+		 * path final PathOverlay p1Path = new PathOverlay(Color.RED, this);
+		 * p1Path.addPoint(applePoint1); p1Path.addPoint(applePoint2);
+		 * p1Path.addPoint(applePoint3); mapView.getOverlays().add(p1Path);
+		 * 
+		 * // magic button final Button button = (Button)
+		 * findViewById(R.id.button1);
+		 * 
+		 * button.setOnClickListener(new Button.OnClickListener() { public void
+		 * onClick(View v){ myPoint = new GeoPoint(myPoint.getLatitudeE6() +
+		 * 10000, myPoint.getLongitudeE6() + 10000);
+		 * myPersonOverlay.removeItem("player1");
+		 * myPersonOverlay.addItem(myPoint, "player1", "player1");
+		 * //p1Path.addPoint(myPoint); //Drawable
+		 * marker=getResources().getDrawable(R.drawable.shit);
+		 * //myAppleOverlay.resetItemMarker("Apple3", marker);
+		 * mapView.invalidate(); } });
+		 */
 
-			// player 1
-			// myPersonOverlay.addItem(myPoint, "player1", "player1");
-			// apples
-			GeoPoint applePoint1 = new GeoPoint(
-					myPoint.getLatitudeE6() + 20000,
-					myPoint.getLongitudeE6() + 10000);
-			myAppleOverlay.addItem(applePoint1, "Apple1", "Apple1");
-			GeoPoint applePoint2 = new GeoPoint(
-					myPoint.getLatitudeE6() + 14000,
-					myPoint.getLongitudeE6() - 10000);
-			myAppleOverlay.addItem(applePoint2, "Apple2", "Apple2");
-			GeoPoint applePoint3 = new GeoPoint(myPoint.getLatitudeE6() - 7000,
-					myPoint.getLongitudeE6() + 10000);
-			myAppleOverlay.addItem(applePoint3, "Apple3", "Apple3");
-			myAppleOverlay.addItem(myPoint, "Apple4", "Apple4");
-
-			/*
-			 * path final PathOverlay p1Path = new PathOverlay(Color.RED, this);
-			 * p1Path.addPoint(applePoint1); p1Path.addPoint(applePoint2);
-			 * p1Path.addPoint(applePoint3); mapView.getOverlays().add(p1Path);
-			 * 
-			 * // magic button final Button button = (Button)
-			 * findViewById(R.id.button1);
-			 * 
-			 * button.setOnClickListener(new Button.OnClickListener() { public
-			 * void onClick(View v){ myPoint = new
-			 * GeoPoint(myPoint.getLatitudeE6() + 10000,
-			 * myPoint.getLongitudeE6() + 10000);
-			 * myPersonOverlay.removeItem("player1");
-			 * myPersonOverlay.addItem(myPoint, "player1", "player1");
-			 * //p1Path.addPoint(myPoint); //Drawable
-			 * marker=getResources().getDrawable(R.drawable.shit);
-			 * //myAppleOverlay.resetItemMarker("Apple3", marker);
-			 * mapView.invalidate(); } });
-			 */
-
-		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Exception", e);
-		}
+		logger.info("MainActivity:Initialized!");
 	}
 
 	@Override
 	protected void onResume() {
-		// TODO Auto-generated method stub
 		super.onResume();
 		myLocationOverlay.enableMyLocation();
 		myLocationOverlay.enableFollowLocation();
@@ -181,10 +173,27 @@ public class MainActivity extends Activity implements LocationListener {
 
 	@Override
 	protected void onPause() {
-		// TODO Auto-generated method stub
 		super.onPause();
 		myLocationOverlay.disableMyLocation();
 		myLocationOverlay.disableFollowLocation();
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putInt("zoomLevel", mapView.getZoomLevel());
+	}
+
+	protected void onRestoreInstanceState(Bundle outState) {
+		logger.info("MainActivity:onSaveInstanceState");
+		super.onRestoreInstanceState(outState);
+		outState.getInt("zoomLevel");
+		mapController.setZoom(outState.getInt("zoomLevel"));
 	}
 
 	@Override
@@ -193,10 +202,9 @@ public class MainActivity extends Activity implements LocationListener {
 		return true;
 	}
 
-	public void onSendClick(View view) {
-		String message = editText.getText().toString();
-		editText.setText("");
-		sendMessageToNetworkingThread(message);
+	public void onLogoutClick(View view) {
+		goToLoginActivity(view);
+		MainActivity.this.finish();
 	}
 
 	private void onMessageFromNetworkingThread(Object message) {
@@ -233,7 +241,7 @@ public class MainActivity extends Activity implements LocationListener {
 		networkingThread.messageHandler.sendMessage(msg);
 	}
 
-	static public class MessageHandler extends Handler {
+	public static class MessageHandler extends Handler {
 		private WeakReference<MainActivity> activity;
 
 		MessageHandler(MainActivity mainActivity) {
@@ -244,6 +252,12 @@ public class MainActivity extends Activity implements LocationListener {
 		public void handleMessage(Message msg) {
 			activity.get().onMessageFromNetworkingThread(msg.obj);
 		}
+	}
+
+	public void goToLoginActivity(View view) {
+		Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+		startActivity(intent);
+		this.onDestroy();
 	}
 
 	@Override
@@ -269,19 +283,16 @@ public class MainActivity extends Activity implements LocationListener {
 	@Override
 	public void onProviderDisabled(String provider) {
 		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void onProviderEnabled(String provider) {
 		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void onStatusChanged(String provider, int status, Bundle extras) {
 		// TODO Auto-generated method stub
-
-	};
+	}
 
 }

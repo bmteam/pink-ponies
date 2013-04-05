@@ -1,42 +1,14 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical" >
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal" >
-
-        <EditText
-            android:id="@+id/edit_message"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="@string/edit_message" />
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="onSendClick"
-            android:text="@string/button_send" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/text_view"
-        android:layout_width="match_parent"
-        android:layout_height="74dp"
-        android:layout_gravity="bottom"
-        android:layout_margin="10dip"
-        android:scrollbars="vertical"
-        android:textIsSelectable="true" />
-
+    android:orientation="vertical">
+    
     <org.osmdroid.views.MapView
-        android:id="@+id/mapview"
+        android:id="@+id/MainActivityMapview"
         android:layout_width="fill_parent"
-        android:layout_height="0dp"
-        android:layout_weight="0.73"
+        android:layout_height="fill_parent"
         android:clickable="true" />
 
     <Button
