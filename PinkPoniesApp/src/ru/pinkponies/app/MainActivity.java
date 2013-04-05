@@ -30,7 +30,6 @@ import android.view.Menu;
 import android.view.View;
 
 public class MainActivity extends Activity implements LocationListener {
-
 	private final static Logger logger = Logger.getLogger(MainActivity.class
 			.getName());
 
@@ -81,19 +80,24 @@ public class MainActivity extends Activity implements LocationListener {
 		// GUI.
 		mapView = (MapView) findViewById(R.id.MainActivityMapview);
 		mapView.setMultiTouchControls(true);
-		myLocationOverlay = new MyLocationOverlay(this, mapView);
-		mapView.getOverlays().add(myLocationOverlay);
-		myPath = new PathOverlay(Color.GREEN, this);
-		mapView.getOverlays().add(myPath);
-		mapView.postInvalidate();
+
 		mapController = mapView.getController();
 		mapController.setZoom(13);
+
+		myLocationOverlay = new MyLocationOverlay(this, mapView);
+		mapView.getOverlays().add(myLocationOverlay);
+
+		myPath = new PathOverlay(Color.GREEN, this);
+		mapView.getOverlays().add(myPath);
+
 		myLocationOverlay.runOnFirstFix(new Runnable() {
 			public void run() {
 				mapView.getController().animateTo(
 						myLocationOverlay.getMyLocation());
 			}
 		});
+
+		mapView.postInvalidate();
 
 		// textOverlay = new TextOverlay(this, mapView);
 		// textOverlay.setPosition(new GeoPoint(55.9, 37.5));
@@ -190,8 +194,7 @@ public class MainActivity extends Activity implements LocationListener {
 			if (!(packet.clientID).equals(Build.DISPLAY)) {
 				GeoPoint point = new GeoPoint(packet.latitude, packet.longitude);
 				myPersonOverlay.removeItem(packet.clientID);
-				myPersonOverlay
-						.addItem(point, packet.clientID);
+				myPersonOverlay.addItem(point, packet.clientID);
 			}
 		}
 	}
@@ -223,12 +226,14 @@ public class MainActivity extends Activity implements LocationListener {
 
 	@Override
 	public void onLocationChanged(Location location) {
-
 		String clientID = Build.DISPLAY;
 
 		double longitude = location.getLongitude();
 		double latitude = location.getLatitude();
 		double altitude = location.getAltitude();
+
+		GeoPoint point = new GeoPoint(latitude, longitude);
+		myPath.addPoint(point);
 
 		sendMessageToNetworkingThread(new LocationUpdatePacket(clientID,
 				longitude, latitude, altitude));
