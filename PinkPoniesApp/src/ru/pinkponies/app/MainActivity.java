@@ -114,6 +114,9 @@ public class MainActivity extends Activity implements LocationListener {
 		myPersonOverlay = new MyItemizedOverlay(marker, resourceProxy);
 		mapView.getOverlays().add(myPersonOverlay);
 
+		// FIXME(xairy): this code block is almost a complete duplicate
+		// of the one above. May be it's better to add a method that
+		// will create a new overlay?
 		// Add Apple overlay.
 		marker = getResources().getDrawable(R.drawable.apple);
 		markerWidth = marker.getIntrinsicWidth();
