@@ -76,7 +76,7 @@ public final class Server {
 	 */
 	private void initialize() {
 		try {
-			Server.LOGGER.info("Initializing...");
+			LOGGER.info("Initializing.");
 
 			this.serverSocketChannel = ServerSocketChannel.open();
 			this.serverSocketChannel.configureBlocking(false);
@@ -85,13 +85,13 @@ public final class Server {
 
 			this.selector = Selector.open();
 			final SelectionKey key = this.serverSocketChannel.register(this.selector, SelectionKey.OP_ACCEPT);
-			System.out.println("serverSocketChannel's registered key is " + key.channel().toString() + ".");
+			LOGGER.info("serverSocketChannel's registered key is " + key.channel().toString() + ".");
 
 			this.protocol = new Protocol();
 
-			Server.LOGGER.info("Initialized!");
+			LOGGER.info("Initialized.");
 		} catch (final Exception e) {
-			Server.LOGGER.log(Level.SEVERE, "Exception", e);
+			LOGGER.log(Level.SEVERE, "Exception", e);
 		}
 	}
 
@@ -99,13 +99,11 @@ public final class Server {
 	 * Starts this server.
 	 */
 	private void start() {
-		System.out.println("Server is listening on port " + this.serverSocketChannel.socket().getLocalPort() + ".");
-
 		while (true) {
 			try {
 				this.pumpEvents();
 			} catch (final Exception e) {
-				Server.LOGGER.log(Level.SEVERE, "Exception", e);
+				LOGGER.log(Level.SEVERE, "Exception", e);
 			}
 		}
 	}
@@ -139,7 +137,7 @@ public final class Server {
 				}
 			} catch (final IOException e) {
 				this.close(key);
-				Server.LOGGER.log(Level.SEVERE, "Exception", e);
+				LOGGER.log(Level.SEVERE, "Exception", e);
 			}
 		}
 	}
@@ -204,13 +202,13 @@ public final class Server {
 			numRead = channel.read(buffer);
 		} catch (final IOException e) {
 			this.close(key);
-			Server.LOGGER.log(Level.SEVERE, "Exception", e);
+			LOGGER.log(Level.SEVERE, "Exception", e);
 			return;
 		}
 
 		if (numRead == -1) {
 			this.close(key);
-			Server.LOGGER.severe("Read failed.");
+			LOGGER.severe("Read failed.");
 			return;
 		}
 
@@ -266,7 +264,7 @@ public final class Server {
 		try {
 			packet = this.protocol.unpack(buffer);
 		} catch (final Exception e) {
-			Server.LOGGER.log(Level.SEVERE, "Exception", e);
+			LOGGER.log(Level.SEVERE, "Exception", e);
 		}
 		buffer.compact();
 
@@ -304,7 +302,7 @@ public final class Server {
 			try {
 				buffer.put(data);
 			} catch (final BufferOverflowException e) {
-				Server.LOGGER.log(Level.SEVERE, "Exception", e);
+				LOGGER.log(Level.SEVERE, "Exception", e);
 				throw new IOException(e);
 			}
 		}
