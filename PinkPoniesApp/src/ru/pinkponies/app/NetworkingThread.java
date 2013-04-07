@@ -14,69 +14,171 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import ru.pinkponies.protocol.LocationUpdatePacket;
-import ru.pinkponies.protocol.LoginPacket;
-import ru.pinkponies.protocol.Packet;
-import ru.pinkponies.protocol.Protocol;
-import ru.pinkponies.protocol.SayPacket;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
+import ru.pinkponies.protocol.LocationUpdatePacket;
+import ru.pinkponies.protocol.LoginPacket;
+import ru.pinkponies.protocol.Packet;
+import ru.pinkponies.protocol.Protocol;
+import ru.pinkponies.protocol.SayPacket;
+
+/**
+ * The networking thread which provides asynchronous network IO for the main activity.
+ */
 public class NetworkingThread extends Thread {
-	private final String SERVER_IP = "192.168.0.199";
-	private final int SERVER_PORT = 4268;
+	/**
+	 * The class wide logger.
+	 */
+	private static final Logger LOGGER = Logger.getLogger(NetworkingThread.class.getName());
 
-	private static final int BUFFER_SIZE = 8192;
+	/**
+	 * The default server ip.
+	 */
+	private static final String SERVER_IP = "77.232.25.36";
 
-	private final static Logger logger = Logger
-			.getLogger(NetworkingThread.class.getName());
+	/**
+	 * The default server port.
+	 */
+	private static final int SERVER_PORT = 4264;
 
-	private Protocol protocol;
+	/**
+	 * A message handler class for the networking thread.
+	 */
+	private static final class MessageHandler extends Handler {
+		/**
+		 * The weak reference to the networking thread.
+		 */
+		private final WeakReference<NetworkingThread> thread;
 
-	private WeakReference<MainActivity> mainActivity;
+		/**
+		 * Creates a new message handler which handles messages sent to the networking thread.
+		 * 
+		 * @param networkingThread
+		 *            The networking thread.
+		 */
+		MessageHandler(final NetworkingThread networkingThread) {
+			this.thread = new WeakReference<NetworkingThread>(networkingThread);
+		}
 
-	public MessageHandler messageHandler;
+		/**
+		 * Handles incoming messages and sends them to the networking thread.
+		 * 
+		 * @param msg
+		 *            The incoming message.
+		 */
+		@Override
+		public void handleMessage(final Message msg) {
+			this.thread.get().onMessageFromUIThread(msg.obj);
+		}
+	};
 
-	private SocketChannel socket;
-	private Selector selector;
+	/**
+	 * The message handler which receives messages for this networking thread.
+	 */
+	private MessageHandler messageHandler = new MessageHandler(this);
 
-	private ByteBuffer incomingData = ByteBuffer.allocate(BUFFER_SIZE);
-	private ByteBuffer outgoingData = ByteBuffer.allocate(BUFFER_SIZE);
-
-	NetworkingThread(MainActivity activity) {
-		mainActivity = new WeakReference<MainActivity>(activity);
-		protocol = new Protocol();
+	/**
+	 * Returns the message handler associated with this networking thread.
+	 * 
+	 * @return The message handler.
+	 */
+	public final Handler getMessageHandler() {
+		return this.messageHandler;
 	}
 
-	public void run() {
+	/**
+	 * The default incoming/outgoing buffer size.
+	 */
+	private static final int BUFFER_SIZE = 8192;
+
+	/**
+	 * The protocol helper. Provides methods for serialization and deserialization of packets.
+	 */
+	private final Protocol protocol;
+
+	/**
+	 * The weak reference to the main activity.
+	 */
+	private final WeakReference<MainActivity> mainActivity;
+
+	/**
+	 * The socket channel.
+	 */
+	private SocketChannel socket;
+
+	/**
+	 * The selector.
+	 */
+	private Selector selector;
+
+	/**
+	 * The incoming data buffer.
+	 */
+	private final ByteBuffer incomingData = ByteBuffer.allocate(BUFFER_SIZE);
+
+	/**
+	 * The outgoing data buffer.
+	 */
+	private final ByteBuffer outgoingData = ByteBuffer.allocate(BUFFER_SIZE);
+
+	/**
+	 * Creates a new networking thread which will communicate and send updates to the given
+	 * activity.
+	 * 
+	 * @param activity
+	 *            The activity to which updates will be sent.
+	 */
+	NetworkingThread(final MainActivity activity) {
+		this.mainActivity = new WeakReference<MainActivity>(activity);
+		this.protocol = new Protocol();
+	}
+
+	/**
+	 * Starts the networking thread.
+	 */
+	@Override
+	public final void run() {
 		try {
 			Looper.prepare();
-			messageHandler = new MessageHandler(this);
-			sendMessageToUIThread("initialized");
+			this.messageHandler = new MessageHandler(this);
+			this.sendMessageToUIThread("initialized");
 			Looper.loop();
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Exception", e);
+			LOGGER.log(Level.SEVERE, "Exception", e);
 		}
 	}
 
+	/**
+	 * Initiates connection to the server.
+	 * 
+	 * @throws IOException
+	 *             If connection could not be initiated.
+	 */
 	private void connect() throws IOException {
-		logger.info("Connecting to " + SERVER_IP + ":" + SERVER_PORT + "...");
+		LOGGER.info("Connecting to " + NetworkingThread.SERVER_IP + ":" + NetworkingThread.SERVER_PORT + "...");
 
-		socket = SocketChannel.open();
-		socket.configureBlocking(false);
-		socket.connect(new InetSocketAddress(SERVER_IP, SERVER_PORT));
+		this.socket = SocketChannel.open();
+		this.socket.configureBlocking(false);
+		this.socket.connect(new InetSocketAddress(NetworkingThread.SERVER_IP, NetworkingThread.SERVER_PORT));
 
-		selector = Selector.open();
-		socket.register(selector, SelectionKey.OP_CONNECT);
+		this.selector = Selector.open();
+		this.socket.register(this.selector, SelectionKey.OP_CONNECT);
 
-		logger.info("Connection initiated, waiting for finishing...");
+		LOGGER.info("Connection initiated, waiting for finishing...");
 	}
 
+	/**
+	 * Pumps all available IO events.
+	 * 
+	 * @throws IOException
+	 *             If there was any sort of IO error.
+	 */
 	private void service() throws IOException {
-		if (selector.select() > 0) {
-			Set<SelectionKey> keys = selector.selectedKeys();
+		if (this.selector.select() > 0) {
+			Set<SelectionKey> keys = this.selector.selectedKeys();
 			Iterator<SelectionKey> iterator = keys.iterator();
 
 			while (iterator.hasNext()) {
@@ -88,62 +190,83 @@ public class NetworkingThread extends Thread {
 				}
 
 				if (key.isConnectable()) {
-					finishConnection(key);
+					this.finishConnection(key);
 				} else if (key.isReadable()) {
-					read(key);
+					this.read(key);
 				} else if (key.isWritable()) {
-					write(key);
+					this.write(key);
 				}
 			}
 		}
 	}
 
-	private void finishConnection(SelectionKey key) throws IOException {
-		SocketChannel channel = (SocketChannel) key.channel();
-		if (channel.isConnectionPending()) {
-			channel.finishConnect();
-			channel.register(selector, SelectionKey.OP_READ
-					| SelectionKey.OP_WRITE);
-			logger.info("Now reading.");
+	/**
+	 * Finishes the connection.
+	 * 
+	 * @param key
+	 *            The selection key.
+	 * @throws IOException
+	 *             If there was a problem finishing the connection.
+	 */
+	private void finishConnection(final SelectionKey key) throws IOException {
+		if (this.socket.isConnectionPending()) {
+			this.socket.finishConnect();
+			this.socket.register(this.selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+			LOGGER.info("Now reading.");
 
-			sendMessageToUIThread("connected");
+			this.sendMessageToUIThread("connected");
 		}
 	}
 
-	private void close(SelectionKey key) throws IOException {
-		SocketChannel channel = (SocketChannel) key.channel();
-		channel.close();
+	/**
+	 * Closes the connection and selection key.
+	 * 
+	 * @param key
+	 *            The selection key.
+	 * @throws IOException
+	 *             If there was a problem closing the connection or selection key.
+	 */
+	private void close(final SelectionKey key) throws IOException {
+		this.socket.close();
 		key.cancel();
 	}
 
-	private void read(SelectionKey key) throws IOException {
+	/**
+	 * Reads data available on the socket channel.
+	 * 
+	 * @param key
+	 *            The selection key.
+	 * @throws IOException
+	 *             If there was a problem reading data.
+	 */
+	private void read(final SelectionKey key) throws IOException {
 		SocketChannel channel = (SocketChannel) key.channel();
 
-		incomingData.limit(incomingData.capacity());
+		this.incomingData.limit(this.incomingData.capacity());
 
 		int numRead = -1;
 		try {
-			numRead = channel.read(incomingData);
+			numRead = channel.read(this.incomingData);
 		} catch (IOException e) {
-			close(key);
-			logger.log(Level.SEVERE, "Exception", e);
+			this.close(key);
+			LOGGER.log(Level.SEVERE, "Exception", e);
 			return;
 		}
 
 		if (numRead == -1) {
-			close(key);
+			this.close(key);
 			return;
 		}
 
 		Packet packet = null;
 
-		incomingData.flip();
+		this.incomingData.flip();
 		try {
-			packet = protocol.unpack(incomingData);
+			packet = this.protocol.unpack(this.incomingData);
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Exception", e);
+			LOGGER.log(Level.SEVERE, "Exception", e);
 		}
-		incomingData.compact();
+		this.incomingData.compact();
 
 		if (packet == null) {
 			return;
@@ -151,80 +274,109 @@ public class NetworkingThread extends Thread {
 
 		if (packet instanceof SayPacket) {
 			SayPacket sayPacket = (SayPacket) packet;
-			logger.info("Server: " + sayPacket.toString());
+			LOGGER.info("Server: " + sayPacket.toString());
 		} else if (packet instanceof LocationUpdatePacket) {
-			sendMessageToUIThread(packet);
+			this.sendMessageToUIThread(packet);
 		}
 	}
 
-	private void write(SelectionKey key) throws IOException {
+	/**
+	 * Writes all buffered outgoing data to the socket channel.
+	 * 
+	 * @param key
+	 *            The selection key.
+	 * @throws IOException
+	 *             If there was a problem writing data.
+	 */
+	private void write(final SelectionKey key) throws IOException {
 		SocketChannel channel = (SocketChannel) key.channel();
 
-		outgoingData.flip();
-		channel.write(outgoingData);
-		outgoingData.compact();
+		this.outgoingData.flip();
+		channel.write(this.outgoingData);
+		this.outgoingData.compact();
 	}
 
-	private void sendPacket(Packet packet) throws IOException {
+	/**
+	 * Writes a packet into the channel's output buffer.
+	 * 
+	 * @param packet
+	 *            The packet which should be written.
+	 * @throws IOException
+	 *             If there was a error writing to the output buffer (e.g not enough space).
+	 */
+	private void sendPacket(final Packet packet) throws IOException {
 		try {
-			outgoingData.put(protocol.pack(packet));
+			this.outgoingData.put(this.protocol.pack(packet));
 		} catch (BufferOverflowException e) {
-			logger.log(Level.SEVERE, "Exception", e);
+			LOGGER.log(Level.SEVERE, "Exception", e);
 		}
 	}
 
+	/**
+	 * Writes a login packet to the output buffer.
+	 * 
+	 * @throws IOException
+	 *             If there was a error writing to the output buffer (e.g not enough space).
+	 */
 	private void login() throws IOException {
 		LoginPacket packet = new LoginPacket(Build.DISPLAY);
-		sendPacket(packet);
+		this.sendPacket(packet);
 	}
 
-	private void say(String message) throws IOException {
+	/**
+	 * Writes a say packet to the output buffer.
+	 * 
+	 * @param message
+	 *            The message.
+	 * @throws IOException
+	 *             If there was a error writing to the output buffer (e.g not enough space).
+	 */
+	private void say(final String message) throws IOException {
 		SayPacket packet = new SayPacket(message);
-		sendPacket(packet);
+		this.sendPacket(packet);
 	}
 
-	private void onMessageFromUIThread(Object message) {
+	/**
+	 * Called when a new message was received from the activity.
+	 * 
+	 * @param message
+	 *            The message.
+	 */
+	private void onMessageFromUIThread(final Object message) {
 		try {
-			logger.info("MA: " + message.toString());
+			LOGGER.info("MA: " + message.toString());
 
 			if (message.equals("connect")) {
-				connect();
+				this.connect();
 			} else if (message.equals("service")) {
-				service();
+				this.service();
 			} else if (message.equals("login")) {
-				login();
+				this.login();
 			} else if (message instanceof Packet) {
-				sendPacket((Packet) message);
+				this.sendPacket((Packet) message);
 			} else if (message instanceof String) {
-				say((String) message);
+				this.say((String) message);
 			} else {
 				throw new InvalidParameterException("Unknown message type.");
 			}
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Exception", e);
+			LOGGER.log(Level.SEVERE, "Exception", e);
 		}
 	}
 
-	private void sendMessageToUIThread(Object message) {
+	/**
+	 * Sends message to the activity.
+	 * 
+	 * @param message
+	 *            The message.
+	 */
+	private void sendMessageToUIThread(final Object message) {
 		try {
-			Message msg = mainActivity.get().messageHandler.obtainMessage();
+			Message msg = this.mainActivity.get().getMessageHandler().obtainMessage();
 			msg.obj = message;
-			mainActivity.get().messageHandler.sendMessage(msg);
+			this.mainActivity.get().getMessageHandler().sendMessage(msg);
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Exception", e);
+			LOGGER.log(Level.SEVERE, "Exception", e);
 		}
 	}
-
-	static public class MessageHandler extends Handler {
-		private WeakReference<NetworkingThread> thread;
-
-		MessageHandler(NetworkingThread networkingThread) {
-			thread = new WeakReference<NetworkingThread>(networkingThread);
-		}
-
-		@Override
-		public void handleMessage(Message msg) {
-			thread.get().onMessageFromUIThread(msg.obj);
-		}
-	};
 }

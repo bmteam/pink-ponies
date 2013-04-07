@@ -27,7 +27,7 @@ import ru.pinkponies.protocol.SayPacket;
  */
 public final class Server {
 	/**
-	 * Class wide logger.
+	 * The class wide logger.
 	 */
 	private static final Logger LOGGER = Logger.getLogger(Server.class.getName());
 
@@ -37,7 +37,7 @@ public final class Server {
 	private static final int SERVER_PORT = 4264;
 
 	/**
-	 * Default incoming/outgoing buffer size.
+	 * The default incoming/outgoing buffer size.
 	 */
 	private static final int BUFFER_SIZE = 8192;
 
@@ -47,7 +47,7 @@ public final class Server {
 	private ServerSocketChannel serverSocketChannel;
 
 	/**
-	 * Selector.
+	 * The selector.
 	 */
 	private Selector selector;
 
@@ -67,7 +67,7 @@ public final class Server {
 	private final ArrayList<SocketChannel> clients = new ArrayList<SocketChannel>();
 
 	/**
-	 * Protocol helper class. Provides methods for serialization and deserialization of packets.
+	 * The protocol helper. Provides methods for serialization and deserialization of packets.
 	 */
 	private Protocol protocol;
 
@@ -76,7 +76,7 @@ public final class Server {
 	 */
 	private void initialize() {
 		try {
-			LOGGER.info("Initializing.");
+			Server.LOGGER.info("Initializing.");
 
 			this.serverSocketChannel = ServerSocketChannel.open();
 			this.serverSocketChannel.configureBlocking(false);
@@ -85,13 +85,13 @@ public final class Server {
 
 			this.selector = Selector.open();
 			final SelectionKey key = this.serverSocketChannel.register(this.selector, SelectionKey.OP_ACCEPT);
-			LOGGER.info("serverSocketChannel's registered key is " + key.channel().toString() + ".");
+			Server.LOGGER.info("serverSocketChannel's registered key is " + key.channel().toString() + ".");
 
 			this.protocol = new Protocol();
 
-			LOGGER.info("Initialized.");
+			Server.LOGGER.info("Initialized.");
 		} catch (final Exception e) {
-			LOGGER.log(Level.SEVERE, "Exception", e);
+			Server.LOGGER.log(Level.SEVERE, "Exception", e);
 		}
 	}
 
@@ -103,7 +103,7 @@ public final class Server {
 			try {
 				this.pumpEvents();
 			} catch (final Exception e) {
-				LOGGER.log(Level.SEVERE, "Exception", e);
+				Server.LOGGER.log(Level.SEVERE, "Exception", e);
 			}
 		}
 	}
@@ -137,7 +137,7 @@ public final class Server {
 				}
 			} catch (final IOException e) {
 				this.close(key);
-				LOGGER.log(Level.SEVERE, "Exception", e);
+				Server.LOGGER.log(Level.SEVERE, "Exception", e);
 			}
 		}
 	}
@@ -202,13 +202,13 @@ public final class Server {
 			numRead = channel.read(buffer);
 		} catch (final IOException e) {
 			this.close(key);
-			LOGGER.log(Level.SEVERE, "Exception", e);
+			Server.LOGGER.log(Level.SEVERE, "Exception", e);
 			return;
 		}
 
 		if (numRead == -1) {
 			this.close(key);
-			LOGGER.severe("Read failed.");
+			Server.LOGGER.severe("Read failed.");
 			return;
 		}
 
@@ -264,7 +264,7 @@ public final class Server {
 		try {
 			packet = this.protocol.unpack(buffer);
 		} catch (final Exception e) {
-			LOGGER.log(Level.SEVERE, "Exception", e);
+			Server.LOGGER.log(Level.SEVERE, "Exception", e);
 		}
 		buffer.compact();
 
@@ -302,7 +302,7 @@ public final class Server {
 			try {
 				buffer.put(data);
 			} catch (final BufferOverflowException e) {
-				LOGGER.log(Level.SEVERE, "Exception", e);
+				Server.LOGGER.log(Level.SEVERE, "Exception", e);
 				throw new IOException(e);
 			}
 		}

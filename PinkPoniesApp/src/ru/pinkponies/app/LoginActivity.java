@@ -2,7 +2,7 @@ package ru.pinkponies.app;
 
 import java.util.logging.Logger;
 
-import ru.pinkponiesapp.R;
+import ru.pinkponies.app.R;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
