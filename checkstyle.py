@@ -14,7 +14,7 @@ if __name__ == "__main__":
   errorsFound = 0
 
   for filename in files:
-    cmd = ["checkstyle", "-c", "stylecheck.xml", "-f", "xml", filename]
+    cmd = ["checkstyle", "-c", "javastyle.xml", "-f", "xml", filename]
 
     try:
       with open(os.devnull, "w") as fnull:
