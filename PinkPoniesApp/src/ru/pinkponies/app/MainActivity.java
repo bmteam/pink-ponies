@@ -13,7 +13,6 @@ import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MyLocationOverlay;
 import org.osmdroid.views.overlay.PathOverlay;
 
-import ru.pinkponies.protocol.LocationUpdatePacket;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -29,206 +28,356 @@ import android.os.Message;
 import android.view.Menu;
 import android.view.View;
 
-public class MainActivity extends Activity implements LocationListener {
-	private final static Logger logger = Logger.getLogger(MainActivity.class
-			.getName());
+import ru.pinkponies.protocol.LocationUpdatePacket;
 
+/**
+ * The main activity class.
+ */
+public final class MainActivity extends Activity implements LocationListener {
+	/**
+	 * The class wide logger.
+	 */
+	private static final Logger LOGGER = Logger.getLogger(MainActivity.class.getName());
+
+	/**
+	 * The delay between consecutive network IO updates.
+	 */
 	private static final int SERVICE_DELAY = 1000;
 
+	/**
+	 * The minimum time interval between location updates, in milliseconds.
+	 */
+	private static final long LOCATION_UPDATE_MIN_DELAY = 1000;
+
+	/**
+	 * The minimum distance between location updates, in meters.
+	 */
+	private static final float LOCATION_UPDATE_MIN_DISTANCE = 1;
+
+	/**
+	 * The initial map view zoom level.
+	 */
+	private static final int MAP_VIEW_INITIAL_ZOOM_LEVEL = 13;
+
+	/**
+	 * A message handler class for this activity.
+	 */
+	public static final class MessageHandler extends Handler {
+		/**
+		 * The weak reference to the activity.
+		 */
+		private final WeakReference<MainActivity> activity;
+
+		/**
+		 * Creates a new message handler which handles messages sent to the activity.
+		 * 
+		 * @param mainActivity
+		 *            The activity.
+		 */
+		MessageHandler(final MainActivity mainActivity) {
+			this.activity = new WeakReference<MainActivity>(mainActivity);
+		}
+
+		/**
+		 * Handles incoming messages and sends them to the activity.
+		 * 
+		 * @param msg
+		 *            The incoming message.
+		 */
+		@Override
+		public void handleMessage(final Message msg) {
+			this.activity.get().onMessageFromNetworkingThread(msg.obj);
+		}
+	}
+
+	/**
+	 * The message handler which receives messages for this activity.
+	 */
+	private final Handler messageHandler = new MessageHandler(this);
+
+	/**
+	 * The networking thread which provides this activity with an asynchronous access to network IO.
+	 */
 	private NetworkingThread networkingThread;
-	public Handler messageHandler;
+
+	/**
+	 * The location service manager.
+	 */
 	private LocationManager locationManager;
 
-	private MapController mapController;
+	/**
+	 * The map view widget.
+	 */
 	private MapView mapView;
 
-	private MyLocationOverlay myLocationOverlay = null;
-	private MyItemizedOverlay myPersonOverlay = null;
-	private MyItemizedOverlay myAppleOverlay = null;
-	private PathOverlay myPath = null;
+	/**
+	 * The map controller.
+	 */
+	private MapController mapController;
+
+	/**
+	 * The overlay displaying player's location.
+	 */
+	private MyLocationOverlay myLocationOverlay;
+
+	/**
+	 * The overlay displaying other people locations.
+	 */
+	private MyItemizedOverlay myPersonOverlay;
+
+	/**
+	 * The overlay displaying apple locations.
+	 */
+	private MyItemizedOverlay myAppleOverlay;
+
+	/**
+	 * The overlay which displays the path of the player.
+	 */
+	private PathOverlay myPath;
 
 	// private TextOverlay textOverlay;
 
 	// private String login = "";
 	// private String password = "";
 
+	/**
+	 * Creates a new itemized overlay. This overlay will render image markers with the given
+	 * resource id.
+	 * 
+	 * @param resourceId
+	 *            Resource id.
+	 * @return Created itemized overlay.
+	 */
+	private MyItemizedOverlay createItemizedOverlay(final int resourceId) {
+		Drawable marker = this.getResources().getDrawable(R.drawable.person);
+		int markerWidth = marker.getIntrinsicWidth();
+		int markerHeight = marker.getIntrinsicHeight();
+		marker.setBounds(0, markerHeight, markerWidth, 0);
+		ResourceProxy resourceProxy = new DefaultResourceProxyImpl(this.getApplicationContext());
+		return new MyItemizedOverlay(marker, resourceProxy);
+	}
+
+	/**
+	 * Returns the message handler associated with this activity.
+	 * 
+	 * @return the message handler
+	 */
+	public Handler getMessageHandler() {
+		return this.messageHandler;
+	}
+
+	/**
+	 * Called when the activity is first created. Initializes GUI, networking, creates overlays.
+	 * 
+	 * @param savedInstanceState
+	 *            If the activity is being re-initialized after previously being shut down then this
+	 *            Bundle contains the data it most recently supplied in onSaveInstanceState(Bundle).
+	 *            Note: Otherwise it is null.
+	 */
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {
+	protected void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		logger.info("MainActivity:Initializing...");
+		LOGGER.info("Initializing.");
 
 		// Intent intent = getIntent();
 		// Bundle extras = intent.getExtras();
 		// login = extras.getString("login");
 		// password = extras.getString("password");
 
-		setContentView(R.layout.activity_main);
+		this.setContentView(R.layout.activity_main);
 
-		// Networking.
-		messageHandler = new MessageHandler(this);
+		this.networkingThread = new NetworkingThread(this);
+		this.networkingThread.start();
 
-		networkingThread = new NetworkingThread(this);
-		networkingThread.start();
-
-		locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-		locationManager.requestLocationUpdates(
-				LocationManager.NETWORK_PROVIDER, 1000, 1, this);
-		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-				1000, 1, this);
+		this.locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+		this.locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, LOCATION_UPDATE_MIN_DELAY,
+				LOCATION_UPDATE_MIN_DISTANCE, this);
+		this.locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_UPDATE_MIN_DELAY,
+				LOCATION_UPDATE_MIN_DISTANCE, this);
 
 		// GUI.
-		mapView = (MapView) findViewById(R.id.MainActivityMapview);
-		mapView.setMultiTouchControls(true);
+		this.mapView = (MapView) this.findViewById(R.id.MainActivityMapview);
+		this.mapView.setMultiTouchControls(true);
 
-		mapController = mapView.getController();
-		mapController.setZoom(13);
+		this.mapController = this.mapView.getController();
+		this.mapController.setZoom(MAP_VIEW_INITIAL_ZOOM_LEVEL);
 
-		myLocationOverlay = new MyLocationOverlay(this, mapView);
-		mapView.getOverlays().add(myLocationOverlay);
+		this.myLocationOverlay = new MyLocationOverlay(this, this.mapView);
+		this.mapView.getOverlays().add(this.myLocationOverlay);
 
-		myPath = new PathOverlay(Color.GREEN, this);
-		mapView.getOverlays().add(myPath);
+		this.myPath = new PathOverlay(Color.GREEN, this);
+		this.mapView.getOverlays().add(this.myPath);
 
-		myLocationOverlay.runOnFirstFix(new Runnable() {
+		this.myLocationOverlay.runOnFirstFix(new Runnable() {
+			@Override
 			public void run() {
-				mapView.getController().animateTo(
-						myLocationOverlay.getMyLocation());
+				MainActivity.this.mapView.getController()
+						.animateTo(MainActivity.this.myLocationOverlay.getMyLocation());
 			}
 		});
 
-		mapView.postInvalidate();
+		this.mapView.postInvalidate();
 
 		// textOverlay = new TextOverlay(this, mapView);
 		// textOverlay.setPosition(new GeoPoint(55.9, 37.5));
 		// textOverlay.setText("Hello, world!");
 		// mapView.getOverlays().add(textOverlay);
 
-		// Add Person overlay.
-		Drawable marker = getResources().getDrawable(R.drawable.person);
-		int markerWidth = marker.getIntrinsicWidth();
-		int markerHeight = marker.getIntrinsicHeight();
-		marker.setBounds(0, markerHeight, markerWidth, 0);
-		ResourceProxy resourceProxy = new DefaultResourceProxyImpl(
-				getApplicationContext());
-		myPersonOverlay = new MyItemizedOverlay(marker, resourceProxy);
-		mapView.getOverlays().add(myPersonOverlay);
+		this.myPersonOverlay = this.createItemizedOverlay(R.drawable.person);
+		this.mapView.getOverlays().add(this.myPersonOverlay);
 
-		// FIXME(xairy): this code block is almost a complete duplicate
-		// of the one above. May be it's better to add a method that
-		// will create a new overlay?
-		// Add Apple overlay.
-		marker = getResources().getDrawable(R.drawable.apple);
-		markerWidth = marker.getIntrinsicWidth();
-		markerHeight = marker.getIntrinsicHeight();
-		marker.setBounds(0, markerHeight, markerWidth, 0);
-		resourceProxy = new DefaultResourceProxyImpl(getApplicationContext());
-		myAppleOverlay = new MyItemizedOverlay(marker, resourceProxy);
-		mapView.getOverlays().add(myAppleOverlay);
+		this.myAppleOverlay = this.createItemizedOverlay(R.drawable.apple);
+		this.mapView.getOverlays().add(this.myAppleOverlay);
 
 		// GeoPoint myPoint = new GeoPoint(55929563, 37523862);
 		// myAppleOverlay.addItem(myPoint, "Apple");
 
-		logger.info("MainActivity:Initialized!");
+		LOGGER.info("Initialized.");
 	}
 
+	/**
+	 * Called when the activity will start interacting with the user.
+	 */
 	@Override
 	protected void onResume() {
 		super.onResume();
-		myLocationOverlay.enableMyLocation();
-		myLocationOverlay.enableFollowLocation();
+		this.myLocationOverlay.enableMyLocation();
+		this.myLocationOverlay.enableFollowLocation();
 	}
 
+	/**
+	 * Called when the system is about to start resuming a previous activity.
+	 */
 	@Override
 	protected void onPause() {
 		super.onPause();
-		myLocationOverlay.disableMyLocation();
-		myLocationOverlay.disableFollowLocation();
+		this.myLocationOverlay.disableMyLocation();
+		this.myLocationOverlay.disableFollowLocation();
 	}
 
+	/**
+	 * The final call you receive before your activity is destroyed.
+	 */
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
 	}
 
+	/**
+	 * This method is called before an activity may be killed so that when it comes back some time
+	 * in the future it can restore its state.
+	 * 
+	 * @param outState
+	 *            Bundle in which this activity state is placed.
+	 */
 	@Override
-	protected void onSaveInstanceState(Bundle outState) {
+	protected void onSaveInstanceState(final Bundle outState) {
 		super.onSaveInstanceState(outState);
-		outState.putInt("zoomLevel", mapView.getZoomLevel());
+		outState.putInt("zoomLevel", this.mapView.getZoomLevel());
 	}
 
-	protected void onRestoreInstanceState(Bundle outState) {
-		logger.info("MainActivity:onSaveInstanceState");
+	/**
+	 * This method is called after onStart() when the activity is being re-initialized from a
+	 * previously saved state, given here in savedInstanceState.
+	 * 
+	 * @param outState
+	 *            The data most recently supplied in onSaveInstanceState(Bundle).
+	 */
+	@Override
+	protected void onRestoreInstanceState(final Bundle outState) {
+		MainActivity.LOGGER.info("MainActivity:onSaveInstanceState");
 		super.onRestoreInstanceState(outState);
 		outState.getInt("zoomLevel");
-		mapController.setZoom(outState.getInt("zoomLevel"));
+		this.mapController.setZoom(outState.getInt("zoomLevel"));
 	}
 
+	/**
+	 * Called once, the first time the options menu is displayed.
+	 * 
+	 * @param menu
+	 *            The options menu.
+	 * @return True.
+	 */
 	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		getMenuInflater().inflate(R.menu.main, menu);
+	public boolean onCreateOptionsMenu(final Menu menu) {
+		this.getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
 
-	public void onLogoutClick(View view) {
-		goToLoginActivity(view);
-		MainActivity.this.finish();
+	/**
+	 * Called when the logout button is pressed.
+	 * 
+	 * @param view
+	 *            The button widget.
+	 */
+	public void onLogoutClick(final View view) {
+		this.goToLoginActivity();
+		this.finish();
 	}
 
-	private void onMessageFromNetworkingThread(Object message) {
-		logger.info("NT: " + message.toString());
+	/**
+	 * Called when there is a new message from the networking thread.
+	 * 
+	 * @param message
+	 *            The message which was received.
+	 */
+	private void onMessageFromNetworkingThread(final Object message) {
+		MainActivity.LOGGER.info("NT: " + message.toString());
 		if (message.equals("initialized")) {
-			sendMessageToNetworkingThread("connect");
-			sendMessageToNetworkingThread("service");
+			this.sendMessageToNetworkingThread("connect");
+			this.sendMessageToNetworkingThread("service");
 		} else if (message.equals("connected")) {
-			sendMessageToNetworkingThread("login");
+			this.sendMessageToNetworkingThread("login");
 
 			new Timer().scheduleAtFixedRate(new TimerTask() {
 
 				@Override
 				public void run() {
-					sendMessageToNetworkingThread("service");
+					MainActivity.this.sendMessageToNetworkingThread("service");
 				}
 
-			}, 0, SERVICE_DELAY);
+			}, 0, MainActivity.SERVICE_DELAY);
 		} else if (message instanceof LocationUpdatePacket) {
 			LocationUpdatePacket packet = (LocationUpdatePacket) message;
-			logger.info(packet.clientID + "!" + Build.DISPLAY);
+			MainActivity.LOGGER.info(packet.clientID + "!" + Build.DISPLAY);
 			if (!(packet.clientID).equals(Build.DISPLAY)) {
 				GeoPoint point = new GeoPoint(packet.latitude, packet.longitude);
-				myPersonOverlay.removeItem(packet.clientID);
-				myPersonOverlay.addItem(point, packet.clientID);
+				this.myPersonOverlay.removeItem(packet.clientID);
+				this.myPersonOverlay.addItem(point, packet.clientID);
 			}
 		}
 	}
 
-	private void sendMessageToNetworkingThread(Object message) {
-		Message msg = networkingThread.messageHandler.obtainMessage();
+	/**
+	 * Asynchronously sends the given message to the networking thread.
+	 * 
+	 * @param message
+	 *            The message to send.
+	 */
+	private void sendMessageToNetworkingThread(final Object message) {
+		Message msg = this.networkingThread.getMessageHandler().obtainMessage();
 		msg.obj = message;
-		networkingThread.messageHandler.sendMessage(msg);
+		this.networkingThread.getMessageHandler().sendMessage(msg);
 	}
 
-	public static class MessageHandler extends Handler {
-		private WeakReference<MainActivity> activity;
-
-		MessageHandler(MainActivity mainActivity) {
-			activity = new WeakReference<MainActivity>(mainActivity);
-		}
-
-		@Override
-		public void handleMessage(Message msg) {
-			activity.get().onMessageFromNetworkingThread(msg.obj);
-		}
-	}
-
-	public void goToLoginActivity(View view) {
+	/**
+	 * Switches current activity to login activity.
+	 */
+	public void goToLoginActivity() {
 		Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-		startActivity(intent);
+		this.startActivity(intent);
 		this.onDestroy();
 	}
 
+	/**
+	 * Called when the player's location is changed.
+	 * 
+	 * @param location
+	 *            The new location, as a Location object.
+	 */
 	@Override
-	public void onLocationChanged(Location location) {
+	public void onLocationChanged(final Location location) {
 		String clientID = Build.DISPLAY;
 
 		double longitude = location.getLongitude();
@@ -236,26 +385,46 @@ public class MainActivity extends Activity implements LocationListener {
 		double altitude = location.getAltitude();
 
 		GeoPoint point = new GeoPoint(latitude, longitude);
-		myPath.addPoint(point);
+		this.myPath.addPoint(point);
 
-		sendMessageToNetworkingThread(new LocationUpdatePacket(clientID,
-				longitude, latitude, altitude));
-		logger.info("Location updated.");
+		this.sendMessageToNetworkingThread(new LocationUpdatePacket(clientID, longitude, latitude, altitude));
+		MainActivity.LOGGER.info("Location updated.");
 	}
 
+	/**
+	 * Called when the location provider is disabled by the user.
+	 * 
+	 * @param provider
+	 *            The name of the location provider associated with this update.
+	 */
 	@Override
-	public void onProviderDisabled(String provider) {
-		// TODO Auto-generated method stub
+	public void onProviderDisabled(final String provider) {
 	}
 
+	/**
+	 * Called when the location provider is enabled by the user.
+	 * 
+	 * @param provider
+	 *            The name of the location provider associated with this update.
+	 */
 	@Override
-	public void onProviderEnabled(String provider) {
-		// TODO Auto-generated method stub
+	public void onProviderEnabled(final String provider) {
 	}
 
+	/**
+	 * Called when the provider status changes. This method is called when a provider is unable to
+	 * fetch a location or if the provider has recently become available after a period of
+	 * unavailability.
+	 * 
+	 * @param provider
+	 *            The name of the location provider associated with this update.
+	 * @param status
+	 *            The status of the provider.
+	 * @param extras
+	 *            Extra information about this update.
+	 */
 	@Override
-	public void onStatusChanged(String provider, int status, Bundle extras) {
-		// TODO Auto-generated method stub
+	public void onStatusChanged(final String provider, final int status, final Bundle extras) {
 	}
 
 }

@@ -27,7 +27,7 @@ import ru.pinkponies.protocol.SayPacket;
  */
 public final class Server {
 	/**
-	 * Class wide logger.
+	 * The class wide logger.
 	 */
 	private static final Logger LOGGER = Logger.getLogger(Server.class.getName());
 
@@ -37,7 +37,7 @@ public final class Server {
 	private static final int SERVER_PORT = 4264;
 
 	/**
-	 * Default incoming/outgoing buffer size.
+	 * The default incoming/outgoing buffer size.
 	 */
 	private static final int BUFFER_SIZE = 8192;
 
@@ -47,7 +47,7 @@ public final class Server {
 	private ServerSocketChannel serverSocketChannel;
 
 	/**
-	 * Selector.
+	 * The selector.
 	 */
 	private Selector selector;
 
@@ -67,7 +67,7 @@ public final class Server {
 	private final ArrayList<SocketChannel> clients = new ArrayList<SocketChannel>();
 
 	/**
-	 * Protocol helper class. Provides methods for serialization and deserialization of packets.
+	 * The protocol helper. Provides methods for serialization and deserialization of packets.
 	 */
 	private Protocol protocol;
 
@@ -76,7 +76,7 @@ public final class Server {
 	 */
 	private void initialize() {
 		try {
-			Server.LOGGER.info("Initializing...");
+			Server.LOGGER.info("Initializing.");
 
 			this.serverSocketChannel = ServerSocketChannel.open();
 			this.serverSocketChannel.configureBlocking(false);
@@ -85,11 +85,11 @@ public final class Server {
 
 			this.selector = Selector.open();
 			final SelectionKey key = this.serverSocketChannel.register(this.selector, SelectionKey.OP_ACCEPT);
-			System.out.println("serverSocketChannel's registered key is " + key.channel().toString() + ".");
+			Server.LOGGER.info("serverSocketChannel's registered key is " + key.channel().toString() + ".");
 
 			this.protocol = new Protocol();
 
-			Server.LOGGER.info("Initialized!");
+			Server.LOGGER.info("Initialized.");
 		} catch (final Exception e) {
 			Server.LOGGER.log(Level.SEVERE, "Exception", e);
 		}
@@ -99,8 +99,6 @@ public final class Server {
 	 * Starts this server.
 	 */
 	private void start() {
-		System.out.println("Server is listening on port " + this.serverSocketChannel.socket().getLocalPort() + ".");
-
 		while (true) {
 			try {
 				this.pumpEvents();
