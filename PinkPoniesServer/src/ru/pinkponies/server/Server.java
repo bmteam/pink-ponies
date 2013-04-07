@@ -22,62 +22,107 @@ import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.Protocol;
 import ru.pinkponies.protocol.SayPacket;
 
+/**
+ * Main server class.
+ */
 public final class Server {
+	/**
+	 * Class wide logger.
+	 */
+	private static final Logger LOGGER = Logger.getLogger(Server.class.getName());
+
+	/**
+	 * The port on which the server will listen for incoming connections.
+	 */
 	private static final int SERVER_PORT = 4264;
+
+	/**
+	 * Default incoming/outgoing buffer size.
+	 */
 	private static final int BUFFER_SIZE = 8192;
 
-	private final static Logger logger = Logger.getLogger(Server.class
-			.getName());
-
+	/**
+	 * The main socket channel on which the server listens for incoming connections.
+	 */
 	private ServerSocketChannel serverSocketChannel;
+
+	/**
+	 * Selector.
+	 */
 	private Selector selector;
 
-	private Map<SocketChannel, ByteBuffer> incomingData = new HashMap<SocketChannel, ByteBuffer>();
-	private Map<SocketChannel, ByteBuffer> outgoingData = new HashMap<SocketChannel, ByteBuffer>();
+	/**
+	 * Incoming data buffers. One for each socket channel (for each connected peer).
+	 */
+	private final Map<SocketChannel, ByteBuffer> incomingData = new HashMap<SocketChannel, ByteBuffer>();
 
-	private ArrayList<SocketChannel> clients = new ArrayList<SocketChannel>();
+	/**
+	 * Outgoing data buffers. One for each socket channel (for each connected peer).
+	 */
+	private final Map<SocketChannel, ByteBuffer> outgoingData = new HashMap<SocketChannel, ByteBuffer>();
 
+	/**
+	 * The list of all connected clients.
+	 */
+	private final ArrayList<SocketChannel> clients = new ArrayList<SocketChannel>();
+
+	/**
+	 * Protocol helper class. Provides methods for serialization and deserialization of packets.
+	 */
 	private Protocol protocol;
 
+	/**
+	 * Initializes this server.
+	 */
 	private void initialize() {
 		try {
-			logger.info("Initializing...");
+			Server.LOGGER.info("Initializing...");
 
-			serverSocketChannel = ServerSocketChannel.open();
-			serverSocketChannel.configureBlocking(false);
-			InetSocketAddress address = new InetSocketAddress(SERVER_PORT);
-			serverSocketChannel.socket().bind(address);
+			this.serverSocketChannel = ServerSocketChannel.open();
+			this.serverSocketChannel.configureBlocking(false);
+			final InetSocketAddress address = new InetSocketAddress(Server.SERVER_PORT);
+			this.serverSocketChannel.socket().bind(address);
 
-			selector = Selector.open();
-			SelectionKey key = serverSocketChannel.register(selector,
-					SelectionKey.OP_ACCEPT);
-			System.out.println("serverSocketChannel's registered key is "
-					+ key.channel().toString() + ".");
+			this.selector = Selector.open();
+			final SelectionKey key = this.serverSocketChannel.register(this.selector, SelectionKey.OP_ACCEPT);
+			System.out.println("serverSocketChannel's registered key is " + key.channel().toString() + ".");
 
-			protocol = new Protocol();
+			this.protocol = new Protocol();
 
-			logger.info("Initialized!");
-		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Exception", e);
+			Server.LOGGER.info("Initialized!");
+		} catch (final Exception e) {
+			Server.LOGGER.log(Level.SEVERE, "Exception", e);
 		}
 	}
 
-	private void start() throws IOException {
-		System.out.println("Server is listening on port "
-				+ serverSocketChannel.socket().getLocalPort() + ".");
+	/**
+	 * Starts this server.
+	 */
+	private void start() {
+		System.out.println("Server is listening on port " + this.serverSocketChannel.socket().getLocalPort() + ".");
 
 		while (true) {
-			pumpEvents();
+			try {
+				this.pumpEvents();
+			} catch (final Exception e) {
+				Server.LOGGER.log(Level.SEVERE, "Exception", e);
+			}
 		}
 	}
 
+	/**
+	 * Pumps all available IO events.
+	 * 
+	 * @throws IOException
+	 *             If there was any sort of IO error.
+	 */
 	private void pumpEvents() throws IOException {
-		selector.select();
-		Set<SelectionKey> selectedKeys = selector.selectedKeys();
-		Iterator<SelectionKey> iterator = selectedKeys.iterator();
+		this.selector.select();
+		final Set<SelectionKey> selectedKeys = this.selector.selectedKeys();
+		final Iterator<SelectionKey> iterator = selectedKeys.iterator();
 
 		while (iterator.hasNext()) {
-			SelectionKey key = (SelectionKey) iterator.next();
+			final SelectionKey key = iterator.next();
 			iterator.remove();
 
 			if (!key.isValid()) {
@@ -86,73 +131,105 @@ public final class Server {
 
 			try {
 				if (key.isAcceptable()) {
-					accept(key);
+					this.accept(key);
 				} else if (key.isReadable()) {
-					read(key);
+					this.read(key);
 				} else if (key.isWritable()) {
-					write(key);
+					this.write(key);
 				}
-			} catch (IOException e) {
-				close(key);
-				logger.log(Level.SEVERE, "Exception", e);
+			} catch (final IOException e) {
+				this.close(key);
+				Server.LOGGER.log(Level.SEVERE, "Exception", e);
 			}
 		}
 	}
 
-	public void accept(SelectionKey key) throws IOException {
-		SocketChannel channel = serverSocketChannel.accept();
+	/**
+	 * Accepts a new client.
+	 * 
+	 * @param key
+	 *            The selection key.
+	 * @throws IOException
+	 *             If there was any problem accepting the client.
+	 */
+	public void accept(final SelectionKey key) throws IOException {
+		final SocketChannel channel = this.serverSocketChannel.accept();
 		channel.configureBlocking(false);
-		channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+		channel.register(this.selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
 
-		incomingData.put(channel, ByteBuffer.allocate(BUFFER_SIZE));
-		outgoingData.put(channel, ByteBuffer.allocate(BUFFER_SIZE));
+		this.incomingData.put(channel, ByteBuffer.allocate(Server.BUFFER_SIZE));
+		this.outgoingData.put(channel, ByteBuffer.allocate(Server.BUFFER_SIZE));
 
-		clients.add(channel);
+		this.clients.add(channel);
 
-		onConnect(channel);
+		this.onConnect(channel);
 	}
 
-	public void close(SelectionKey key) throws IOException {
-		SocketChannel channel = (SocketChannel) key.channel();
+	/**
+	 * Closes the connection and selection key.
+	 * 
+	 * @param key
+	 *            The selection key.
+	 * @throws IOException
+	 *             If there was any problem during client disconnect.
+	 */
+	public void close(final SelectionKey key) throws IOException {
+		final SocketChannel channel = (SocketChannel) key.channel();
 
-		incomingData.remove(channel);
-		outgoingData.remove(channel);
+		this.incomingData.remove(channel);
+		this.outgoingData.remove(channel);
 
-		clients.remove(channel);
+		this.clients.remove(channel);
 
 		channel.close();
 		key.cancel();
 	}
 
-	public void read(SelectionKey key) throws IOException {
-		SocketChannel channel = (SocketChannel) key.channel();
-		ByteBuffer buffer = incomingData.get(channel);
+	/**
+	 * Reads available data from the channel corresponding to the given selection key.
+	 * 
+	 * @param key
+	 *            The selection key.
+	 * @throws IOException
+	 *             If there was any IO error.
+	 */
+	public void read(final SelectionKey key) throws IOException {
+		final SocketChannel channel = (SocketChannel) key.channel();
+		final ByteBuffer buffer = this.incomingData.get(channel);
 
 		buffer.limit(buffer.capacity());
 
 		int numRead = -1;
 		try {
 			numRead = channel.read(buffer);
-		} catch (IOException e) {
-			close(key);
-			logger.log(Level.SEVERE, "Exception", e);
+		} catch (final IOException e) {
+			this.close(key);
+			Server.LOGGER.log(Level.SEVERE, "Exception", e);
 			return;
 		}
 
 		if (numRead == -1) {
-			close(key);
-			logger.severe("Read failed.");
+			this.close(key);
+			Server.LOGGER.severe("Read failed.");
 			return;
 		}
 
-		onMessage(channel, buffer);
+		this.onMessage(channel, buffer);
 	}
 
-	public void write(SelectionKey key) throws IOException {
-		SocketChannel channel = (SocketChannel) key.channel();
+	/**
+	 * Writes buffered data to the socket channel corresponding to the given selection key.
+	 * 
+	 * @param key
+	 *            The selection key.
+	 * @throws IOException
+	 *             If there was any problem writing data.
+	 */
+	public void write(final SelectionKey key) throws IOException {
+		final SocketChannel channel = (SocketChannel) key.channel();
 
-		synchronized (outgoingData) {
-			ByteBuffer buffer = outgoingData.get(channel);
+		synchronized (this.outgoingData) {
+			final ByteBuffer buffer = this.outgoingData.get(channel);
 
 			buffer.flip();
 			channel.write(buffer);
@@ -160,23 +237,36 @@ public final class Server {
 		}
 	}
 
-	public void onConnect(SocketChannel channel) {
-		System.out.println("Client connected from "
-				+ channel.socket().getRemoteSocketAddress().toString() + ".");
+	/**
+	 * Called when new connection was established.
+	 * 
+	 * @param channel
+	 *            The socket channel connecting to the new peer.
+	 */
+	public void onConnect(final SocketChannel channel) {
+		System.out.println("Client connected from " + channel.socket().getRemoteSocketAddress().toString() + ".");
 	}
 
-	public void onMessage(SocketChannel channel, ByteBuffer buffer)
-			throws IOException {
-		System.out.println("Message from "
-				+ channel.socket().getRemoteSocketAddress().toString() + ":");
+	/**
+	 * Called when there is new available data in the incoming buffer for the given socket channel.
+	 * 
+	 * @param channel
+	 *            The socket channel from which new data has arrived.
+	 * @param buffer
+	 *            Corresponding data buffer.
+	 * @throws IOException
+	 *             If there was any problem during packet processing.
+	 */
+	public void onMessage(final SocketChannel channel, final ByteBuffer buffer) throws IOException {
+		System.out.println("Message from " + channel.socket().getRemoteSocketAddress().toString() + ":");
 
 		Packet packet = null;
 
 		buffer.flip();
 		try {
-			packet = protocol.unpack(buffer);
-		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Exception", e);
+			packet = this.protocol.unpack(buffer);
+		} catch (final Exception e) {
+			Server.LOGGER.log(Level.SEVERE, "Exception", e);
 		}
 		buffer.compact();
 
@@ -185,55 +275,78 @@ public final class Server {
 		}
 
 		if (packet instanceof LoginPacket) {
-			LoginPacket loginPacket = (LoginPacket) packet;
+			final LoginPacket loginPacket = (LoginPacket) packet;
 			System.out.println(loginPacket.toString());
 		} else if (packet instanceof SayPacket) {
-			SayPacket sayPacket = (SayPacket) packet;
+			final SayPacket sayPacket = (SayPacket) packet;
 			System.out.println(sayPacket.toString());
 		} else if (packet instanceof LocationUpdatePacket) {
-			LocationUpdatePacket locUpdate = (LocationUpdatePacket) packet;
+			final LocationUpdatePacket locUpdate = (LocationUpdatePacket) packet;
 			System.out.println(locUpdate.toString());
-			broadcastPacket(locUpdate);
+			this.broadcastPacket(locUpdate);
 		}
 	}
 
-	public void sendMessage(SocketChannel channel, byte[] data) {
-		synchronized (outgoingData) {
-			ByteBuffer buffer = outgoingData.get(channel);
+	/**
+	 * Writes raw byte data into the channel's output buffer.
+	 * 
+	 * @param channel
+	 *            The channel to which output buffer data should be written.
+	 * @param data
+	 *            Raw byte data which should be written.
+	 * @throws IOException
+	 *             If there is not enough space in the output buffer.
+	 */
+	public void sendMessage(final SocketChannel channel, final byte[] data) throws IOException {
+		synchronized (this.outgoingData) {
+			final ByteBuffer buffer = this.outgoingData.get(channel);
 
 			try {
 				buffer.put(data);
-			} catch (BufferOverflowException e) {
-				logger.log(Level.SEVERE, "Exception", e);
+			} catch (final BufferOverflowException e) {
+				Server.LOGGER.log(Level.SEVERE, "Exception", e);
+				throw new IOException(e);
 			}
 		}
 	}
 
-	private void sendPacket(SocketChannel channel, Packet packet)
-			throws IOException {
-		sendMessage(channel, protocol.pack(packet));
-	}
-
-	private void broadcastPacket(Packet packet) throws IOException {
-		for (SocketChannel client : clients) {
-			sendPacket(client, packet);
-		}
-	}
-
-	/*
-	 * private void say(SocketChannel channel, String message) throws
-	 * IOException { SayPacket packet = new SayPacket(message);
-	 * sendPacket(channel, packet); }
+	/**
+	 * Writes a packet into the channel's output buffer.
+	 * 
+	 * @param channel
+	 *            The channel to which output buffer packet should be written.
+	 * @param packet
+	 *            The packet which should be written.
+	 * @throws IOException
+	 *             If there was a error writing to the output buffer (e.g not enough space).
 	 */
+	private void sendPacket(final SocketChannel channel, final Packet packet) throws IOException {
+		this.sendMessage(channel, this.protocol.pack(packet));
+	}
 
-	public static void main(String[] args) {
-		try {
-			Server server = new Server();
-			server.initialize();
-			server.start();
-		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Exception", e);
+	/**
+	 * Writes a broadcast packet to all output buffers.
+	 * 
+	 * @param packet
+	 *            The packet which should be written.
+	 * @throws IOException
+	 *             If there was a error writing to any of the output buffers (e.g not enough space).
+	 */
+	private void broadcastPacket(final Packet packet) throws IOException {
+		for (final SocketChannel client : this.clients) {
+			this.sendPacket(client, packet);
 		}
 	}
 
+	/**
+	 * Main server method.
+	 * 
+	 * @param args
+	 *            An array of strings containing command line arguments.
+	 */
+	public static void main(final String[] args) {
+		final Server server = new Server();
+		server.initialize();
+		server.start();
+	}
 }

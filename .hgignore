@@ -6,3 +6,4 @@ syntax: regexp
 ^PinkPoniesServer/bin$
 ^PinkPoniesServer/gen$
 ^.metadata$
+.pyc$
