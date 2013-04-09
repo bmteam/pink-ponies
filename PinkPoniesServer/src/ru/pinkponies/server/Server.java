@@ -69,7 +69,7 @@ public final class Server {
 	/**
 	 * The protocol helper. Provides methods for serialization and deserialization of packets.
 	 */
-	private Protocol protocol;
+	private final Protocol protocol = new Protocol();
 
 	/**
 	 * Initializes this server.
@@ -86,8 +86,6 @@ public final class Server {
 			this.selector = Selector.open();
 			final SelectionKey key = this.serverSocketChannel.register(this.selector, SelectionKey.OP_ACCEPT);
 			Server.LOGGER.info("serverSocketChannel's registered key is " + key.channel().toString() + ".");
-
-			this.protocol = new Protocol();
 
 			Server.LOGGER.info("Initialized.");
 		} catch (final Exception e) {
@@ -212,7 +210,21 @@ public final class Server {
 			return;
 		}
 
-		this.onMessage(channel, buffer);
+		Packet packet = null;
+
+		buffer.flip();
+		try {
+			packet = this.protocol.unpack(buffer);
+		} catch (final Exception e) {
+			Server.LOGGER.log(Level.SEVERE, "Exception", e);
+		}
+		buffer.compact();
+
+		if (packet == null) {
+			return;
+		}
+
+		this.onPacket(channel, packet);
 	}
 
 	/**
@@ -246,31 +258,17 @@ public final class Server {
 	}
 
 	/**
-	 * Called when there is new available data in the incoming buffer for the given socket channel.
+	 * Called when there is new available packet on the given socket channel.
 	 * 
 	 * @param channel
 	 *            The socket channel from which new data has arrived.
-	 * @param buffer
-	 *            Corresponding data buffer.
+	 * @param packet
+	 *            The incoming packet.
 	 * @throws IOException
 	 *             If there was any problem during packet processing.
 	 */
-	public void onMessage(final SocketChannel channel, final ByteBuffer buffer) throws IOException {
+	public void onPacket(final SocketChannel channel, final Packet packet) throws IOException {
 		System.out.println("Message from " + channel.socket().getRemoteSocketAddress().toString() + ":");
-
-		Packet packet = null;
-
-		buffer.flip();
-		try {
-			packet = this.protocol.unpack(buffer);
-		} catch (final Exception e) {
-			Server.LOGGER.log(Level.SEVERE, "Exception", e);
-		}
-		buffer.compact();
-
-		if (packet == null) {
-			return;
-		}
 
 		if (packet instanceof LoginPacket) {
 			final LoginPacket loginPacket = (LoginPacket) packet;
