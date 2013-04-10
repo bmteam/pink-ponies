@@ -3,19 +3,19 @@ package ru.pinkponies.server;
 import ru.pinkponies.protocol.Location;
 
 public final class Apple {
-	private String id;
+	private long id;
 	private Location location;
 
-	public Apple(String id, Location location) {
+	public Apple(final long id, final Location location) {
 		this.id = id;
 		this.location = location;
 	}
 
-	public String getID() {
+	public long getID() {
 		return id;
 	}
 
-	public void setID(String id) {
+	public void setID(final long id) {
 		this.id = id;
 	}
 
@@ -23,8 +23,7 @@ public final class Apple {
 		return location;
 	}
 
-	public void setLocation(Location location) {
+	public void setLocation(final Location location) {
 		this.location = location;
 	}
-
 }

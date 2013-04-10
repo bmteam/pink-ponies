@@ -16,6 +16,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import ru.pinkponies.protocol.Location;
 import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.Packet;
@@ -65,13 +66,21 @@ public final class Server {
 	 * The protocol helper. Provides methods for serialization and deserialization of packets.
 	 */
 	private final Protocol protocol = new Protocol();
-	
+
 	/**
 	 * The list of all connected clients.
 	 */
 	private final ArrayList<SocketChannel> clients = new ArrayList<SocketChannel>();
-	
+
+	/**
+	 * The list of all existing apples.
+	 */
 	private final ArrayList<Apple> apples = new ArrayList<Apple>();
+
+	/**
+	 * ID manager for generating new identifiers.
+	 */
+	private final IdManager idManager = new IdManager();
 
 	/**
 	 * Initializes this server.
@@ -334,6 +343,28 @@ public final class Server {
 		for (final SocketChannel client : this.clients) {
 			this.sendPacket(client, packet);
 		}
+	}
+
+	/**
+	 * Adds a new apple with a specified location.
+	 * 
+	 * @param location
+	 *            Location of the apple added.
+	 */
+	private void addApple(final Location location) {
+		apples.add(new Apple(idManager.newId(), location));
+		// TODO: send update to clients.
+	}
+
+	/**
+	 * Removes the apple with the specified id.
+	 * 
+	 * @param id
+	 *            The id of the apple being removed.
+	 */
+	private void removeApple(final String id) {
+		apples.remove(id);
+		// TODO: send update to clients.
 	}
 
 	/**
