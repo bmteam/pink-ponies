@@ -178,27 +178,25 @@ public class NetworkingThread extends Thread {
 	 *             If there was any sort of IO error.
 	 */
 	private void service() throws IOException {
-		if (this.selector.select() > 0) {
-			Set<SelectionKey> keys = this.selector.selectedKeys();
-			Iterator<SelectionKey> iterator = keys.iterator();
+		this.selector.select();
+		Set<SelectionKey> keys = this.selector.selectedKeys();
+		Iterator<SelectionKey> iterator = keys.iterator();
 
-			while (iterator.hasNext()) {
-				SelectionKey key = iterator.next();
-				iterator.remove();
+		while (iterator.hasNext()) {
+			SelectionKey key = iterator.next();
+			iterator.remove();
 
-				if (!key.isValid()) {
-					continue;
-				}
+			if (!key.isValid()) {
+				continue;
+			}
 
-				if (key.isConnectable()) {
-					this.finishConnection(key);
-				}
-				if (key.isWritable()) {
-					this.write(key);
-				}
-				if (key.isReadable()) {
-					this.read(key);
-				}
+			if (key.isConnectable()) {
+				this.finishConnection(key);
+			}
+			if (key.isReadable()) {
+				this.read(key);
+			} else if (key.isWritable()) {
+				this.write(key);
 			}
 		}
 	}
@@ -263,25 +261,32 @@ public class NetworkingThread extends Thread {
 		Packet packet = null;
 
 		this.incomingData.flip();
-		try {
-			packet = this.protocol.unpack(this.incomingData);
-		} catch (Exception e) {
-			LOGGER.log(Level.SEVERE, "Exception", e);
+
+		while (this.incomingData.remaining() > 0) {
+			try {
+				packet = this.protocol.unpack(this.incomingData);
+			} catch (Exception e) {
+				LOGGER.log(Level.SEVERE, "Exception", e);
+			}
+
+			if (packet == null) {
+				break;
+			}
+
+			if (packet instanceof SayPacket) {
+				SayPacket sayPacket = (SayPacket) packet;
+				LOGGER.info("Server: " + sayPacket.toString());
+			} else if (packet instanceof LocationUpdatePacket) {
+				this.sendMessageToUIThread(packet);
+			} else if (packet instanceof AppleUpdatePacket) {
+				this.sendMessageToUIThread(packet);
+			}
+
+			this.incomingData.compact();
+			this.incomingData.flip();
 		}
+
 		this.incomingData.compact();
-
-		if (packet == null) {
-			return;
-		}
-
-		if (packet instanceof SayPacket) {
-			SayPacket sayPacket = (SayPacket) packet;
-			LOGGER.info("Server: " + sayPacket.toString());
-		} else if (packet instanceof LocationUpdatePacket) {
-			this.sendMessageToUIThread(packet);
-		} else if (packet instanceof AppleUpdatePacket) {
-			this.sendMessageToUIThread(packet);
-		}
 	}
 
 	/**

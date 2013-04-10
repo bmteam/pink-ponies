@@ -233,8 +233,8 @@ public final class MainActivity extends Activity implements LocationListener {
 		this.myAppleOverlay = this.createItemizedOverlay(R.drawable.apple);
 		this.mapView.getOverlays().add(this.myAppleOverlay);
 
-		GeoPoint myPoint = new GeoPoint(55929563, 37523862);
-		this.myAppleOverlay.addItem(myPoint, "Apple");
+		// GeoPoint myPoint = new GeoPoint(55929563, 37523862);
+		// this.myAppleOverlay.addItem(myPoint, "Apple");
 
 		LOGGER.info("Initialized.");
 	}
@@ -332,7 +332,6 @@ public final class MainActivity extends Activity implements LocationListener {
 			this.sendMessageToNetworkingThread("service");
 		} else if (message.equals("connected")) {
 			this.sendMessageToNetworkingThread("login");
-
 			new Timer().scheduleAtFixedRate(new TimerTask() {
 				@Override
 				public void run() {
@@ -340,7 +339,7 @@ public final class MainActivity extends Activity implements LocationListener {
 				}
 			}, 0, MainActivity.SERVICE_DELAY);
 		} else if (message.equals("failed")) {
-			this.showMessageBox("Connection failed.", null);
+			this.showMessageBox("Socket exception.", null);
 		} else if (message instanceof LocationUpdatePacket) {
 			LocationUpdatePacket packet = (LocationUpdatePacket) message;
 			if (!(packet.clientID).equals(Build.DISPLAY)) {
@@ -352,7 +351,7 @@ public final class MainActivity extends Activity implements LocationListener {
 			AppleUpdatePacket packet = (AppleUpdatePacket) message;
 			GeoPoint point = new GeoPoint(packet.latitude, packet.longitude);
 			String title = "Apple" + String.valueOf(packet.appleId);
-			// this.myAppleOverlay.removeItem(title);
+			this.myAppleOverlay.removeItem(title);
 			this.myAppleOverlay.addItem(point, title);
 			LOGGER.info("Apple " + String.valueOf(packet.appleId) + " updated.");
 		}

@@ -141,11 +141,9 @@ public final class Server {
 			try {
 				if (key.isAcceptable()) {
 					this.accept(key);
-				}
-				if (key.isReadable()) {
+				} else if (key.isReadable()) {
 					this.read(key);
-				}
-				if (key.isWritable()) {
+				} else if (key.isWritable()) {
 					this.write(key);
 				}
 			} catch (final IOException e) {
@@ -295,7 +293,7 @@ public final class Server {
 			final LocationUpdatePacket locUpdate = (LocationUpdatePacket) packet;
 			System.out.println(locUpdate.toString());
 			this.broadcastPacket(locUpdate);
-			
+
 			// XXX: temporary.
 			this.addApple(new Location(locUpdate.longitude, locUpdate.latitude, locUpdate.altitude));
 		}
@@ -379,7 +377,7 @@ public final class Server {
 		AppleUpdatePacket packet = new AppleUpdatePacket(id, location.getLongitude(), location.getLatitude(),
 				location.getAltitude(), false);
 		this.broadcastPacket(packet);
-		apples.remove(id);
+		this.apples.remove(id);
 	}
 
 	/**
