@@ -62,14 +62,16 @@ public final class Server {
 	private final Map<SocketChannel, ByteBuffer> outgoingData = new HashMap<SocketChannel, ByteBuffer>();
 
 	/**
-	 * The list of all connected clients.
-	 */
-	private final ArrayList<SocketChannel> clients = new ArrayList<SocketChannel>();
-
-	/**
 	 * The protocol helper. Provides methods for serialization and deserialization of packets.
 	 */
 	private final Protocol protocol = new Protocol();
+	
+	/**
+	 * The list of all connected clients.
+	 */
+	private final ArrayList<SocketChannel> clients = new ArrayList<SocketChannel>();
+	
+	private final ArrayList<Apple> apples = new ArrayList<Apple>();
 
 	/**
 	 * Initializes this server.
