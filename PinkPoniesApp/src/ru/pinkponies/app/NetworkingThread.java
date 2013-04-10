@@ -37,7 +37,7 @@ public class NetworkingThread extends Thread {
 	/**
 	 * The default server ip.
 	 */
-	private static final String SERVER_IP = "77.232.25.36";
+	private static final String SERVER_IP = "81.5.108.58";
 
 	/**
 	 * The default server port.
@@ -360,6 +360,7 @@ public class NetworkingThread extends Thread {
 				throw new InvalidParameterException("Unknown message type.");
 			}
 		} catch (Exception e) {
+			this.sendMessageToUIThread("failed");
 			LOGGER.log(Level.SEVERE, "Exception", e);
 		}
 	}

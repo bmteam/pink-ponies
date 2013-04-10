@@ -14,7 +14,9 @@ import org.osmdroid.views.overlay.MyLocationOverlay;
 import org.osmdroid.views.overlay.PathOverlay;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -57,7 +59,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	/**
 	 * The initial map view zoom level.
 	 */
-	private static final int MAP_VIEW_INITIAL_ZOOM_LEVEL = 13;
+	private static final int MAP_VIEW_INITIAL_ZOOM_LEVEL = 15;
 
 	/**
 	 * A message handler class for this activity.
@@ -338,6 +340,8 @@ public final class MainActivity extends Activity implements LocationListener {
 				}
 
 			}, 0, MainActivity.SERVICE_DELAY);
+		} else if (message.equals("failed")) {
+			this.showMessageBox("Connection failed.", null);
 		} else if (message instanceof LocationUpdatePacket) {
 			LocationUpdatePacket packet = (LocationUpdatePacket) message;
 			MainActivity.LOGGER.info(packet.clientID + "!" + Build.DISPLAY);
@@ -427,4 +431,22 @@ public final class MainActivity extends Activity implements LocationListener {
 	public void onStatusChanged(final String provider, final int status, final Bundle extras) {
 	}
 
+	/**
+	 * Shows a message box with the specified message.
+	 * 
+	 * @param message
+	 *            The message that will be shown in the message box.
+	 */
+	public void showMessageBox(final String title, final String message) {
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+		alertDialogBuilder.setTitle(title);
+		alertDialogBuilder.setMessage(message).setCancelable(false)
+				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(final DialogInterface dialog, final int id) {
+					}
+				});
+		AlertDialog alertDialog = alertDialogBuilder.create();
+		alertDialog.show();
+	}
 }
