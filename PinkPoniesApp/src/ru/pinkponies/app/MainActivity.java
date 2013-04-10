@@ -30,6 +30,7 @@ import android.os.Message;
 import android.view.Menu;
 import android.view.View;
 
+import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.LocationUpdatePacket;
 
 /**
@@ -151,7 +152,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	 * @return Created itemized overlay.
 	 */
 	private MyItemizedOverlay createItemizedOverlay(final int resourceId) {
-		Drawable marker = this.getResources().getDrawable(R.drawable.person);
+		Drawable marker = this.getResources().getDrawable(resourceId);
 		int markerWidth = marker.getIntrinsicWidth();
 		int markerHeight = marker.getIntrinsicHeight();
 		marker.setBounds(0, markerHeight, markerWidth, 0);
@@ -232,8 +233,8 @@ public final class MainActivity extends Activity implements LocationListener {
 		this.myAppleOverlay = this.createItemizedOverlay(R.drawable.apple);
 		this.mapView.getOverlays().add(this.myAppleOverlay);
 
-		// GeoPoint myPoint = new GeoPoint(55929563, 37523862);
-		// myAppleOverlay.addItem(myPoint, "Apple");
+		GeoPoint myPoint = new GeoPoint(55929563, 37523862);
+		this.myAppleOverlay.addItem(myPoint, "Apple");
 
 		LOGGER.info("Initialized.");
 	}
@@ -333,23 +334,27 @@ public final class MainActivity extends Activity implements LocationListener {
 			this.sendMessageToNetworkingThread("login");
 
 			new Timer().scheduleAtFixedRate(new TimerTask() {
-
 				@Override
 				public void run() {
 					MainActivity.this.sendMessageToNetworkingThread("service");
 				}
-
 			}, 0, MainActivity.SERVICE_DELAY);
 		} else if (message.equals("failed")) {
 			this.showMessageBox("Connection failed.", null);
 		} else if (message instanceof LocationUpdatePacket) {
 			LocationUpdatePacket packet = (LocationUpdatePacket) message;
-			MainActivity.LOGGER.info(packet.clientID + "!" + Build.DISPLAY);
 			if (!(packet.clientID).equals(Build.DISPLAY)) {
 				GeoPoint point = new GeoPoint(packet.latitude, packet.longitude);
 				this.myPersonOverlay.removeItem(packet.clientID);
 				this.myPersonOverlay.addItem(point, packet.clientID);
 			}
+		} else if (message instanceof AppleUpdatePacket) {
+			AppleUpdatePacket packet = (AppleUpdatePacket) message;
+			GeoPoint point = new GeoPoint(packet.latitude, packet.longitude);
+			String title = "Apple" + String.valueOf(packet.appleId);
+			// this.myAppleOverlay.removeItem(title);
+			this.myAppleOverlay.addItem(point, title);
+			LOGGER.info("Apple " + String.valueOf(packet.appleId) + " updated.");
 		}
 	}
 

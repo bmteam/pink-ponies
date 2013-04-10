@@ -141,9 +141,11 @@ public final class Server {
 			try {
 				if (key.isAcceptable()) {
 					this.accept(key);
-				} else if (key.isReadable()) {
+				}
+				if (key.isReadable()) {
 					this.read(key);
-				} else if (key.isWritable()) {
+				}
+				if (key.isWritable()) {
 					this.write(key);
 				}
 			} catch (final IOException e) {
@@ -357,11 +359,13 @@ public final class Server {
 	 *            Location of the apple added.
 	 */
 	private void addApple(final Location location) throws IOException {
-		long id = this.idManager.newId();
-		this.apples.put(id, new Apple(id, location));
+		final long id = this.idManager.newId();
+		final Apple apple = new Apple(id, location);
+		this.apples.put(id, apple);
 		AppleUpdatePacket packet = new AppleUpdatePacket(id, location.getLongitude(), location.getLatitude(),
 				location.getAltitude(), true);
 		this.broadcastPacket(packet);
+		System.out.println("Added " + apple + ".");
 	}
 
 	/**
@@ -371,7 +375,7 @@ public final class Server {
 	 *            The id of the apple being removed.
 	 */
 	private void removeApple(final long id) throws IOException {
-		Location location = this.apples.get(id).getLocation();
+		final Location location = this.apples.get(id).getLocation();
 		AppleUpdatePacket packet = new AppleUpdatePacket(id, location.getLongitude(), location.getLatitude(),
 				location.getAltitude(), false);
 		this.broadcastPacket(packet);

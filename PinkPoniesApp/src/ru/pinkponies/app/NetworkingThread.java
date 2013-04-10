@@ -19,6 +19,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
+import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.Packet;
@@ -37,7 +38,7 @@ public class NetworkingThread extends Thread {
 	/**
 	 * The default server ip.
 	 */
-	private static final String SERVER_IP = "81.5.108.58";
+	private static final String SERVER_IP = "192.168.0.199";
 
 	/**
 	 * The default server port.
@@ -191,10 +192,12 @@ public class NetworkingThread extends Thread {
 
 				if (key.isConnectable()) {
 					this.finishConnection(key);
-				} else if (key.isReadable()) {
-					this.read(key);
-				} else if (key.isWritable()) {
+				}
+				if (key.isWritable()) {
 					this.write(key);
+				}
+				if (key.isReadable()) {
+					this.read(key);
 				}
 			}
 		}
@@ -212,7 +215,6 @@ public class NetworkingThread extends Thread {
 		if (this.socket.isConnectionPending()) {
 			this.socket.finishConnect();
 			this.socket.register(this.selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-			LOGGER.info("Now reading.");
 
 			this.sendMessageToUIThread("connected");
 		}
@@ -276,6 +278,8 @@ public class NetworkingThread extends Thread {
 			SayPacket sayPacket = (SayPacket) packet;
 			LOGGER.info("Server: " + sayPacket.toString());
 		} else if (packet instanceof LocationUpdatePacket) {
+			this.sendMessageToUIThread(packet);
+		} else if (packet instanceof AppleUpdatePacket) {
 			this.sendMessageToUIThread(packet);
 		}
 	}
@@ -344,7 +348,7 @@ public class NetworkingThread extends Thread {
 	 */
 	private void onMessageFromUIThread(final Object message) {
 		try {
-			LOGGER.info("MA: " + message.toString());
+			// LOGGER.info("MA: " + message.toString());
 
 			if (message.equals("connect")) {
 				this.connect();

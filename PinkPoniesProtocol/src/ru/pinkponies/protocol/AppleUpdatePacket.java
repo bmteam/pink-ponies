@@ -29,6 +29,7 @@ public class AppleUpdatePacket extends Packet {
 		this.longitude = 0;
 		this.latitude = 0;
 		this.altitude = 0;
+		this.status = false;
 	}
 
 	public AppleUpdatePacket(final long appleId, final double longitude, final double latitude, final double altitude,

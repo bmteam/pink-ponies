@@ -43,9 +43,9 @@ public final class Location {
 	 */
 	public Location(final double longitude, final double latitude, final double altitude) {
 		super();
-		this.longitude = longitude;
-		this.latitude = latitude;
-		this.altitude = altitude;
+		this.setLongitude(longitude);
+		this.setLatitude(latitude);
+		this.setAltitude(altitude);
 	}
 
 	/**

@@ -26,4 +26,14 @@ public final class Apple {
 	public void setLocation(final Location location) {
 		this.location = location;
 	}
+	
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "Apple [id=" + this.id + ", " + location + "]";
+	}
 }
