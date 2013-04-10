@@ -13,9 +13,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.Location;
 import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponies.protocol.LoginPacket;
@@ -73,9 +75,9 @@ public final class Server {
 	private final ArrayList<SocketChannel> clients = new ArrayList<SocketChannel>();
 
 	/**
-	 * The list of all existing apples.
+	 * The map of all existing apples.
 	 */
-	private final ArrayList<Apple> apples = new ArrayList<Apple>();
+	private final Map<Long, Apple> apples = new TreeMap<Long, Apple>();
 
 	/**
 	 * ID manager for generating new identifiers.
@@ -291,6 +293,9 @@ public final class Server {
 			final LocationUpdatePacket locUpdate = (LocationUpdatePacket) packet;
 			System.out.println(locUpdate.toString());
 			this.broadcastPacket(locUpdate);
+			
+			// XXX: temporary.
+			this.addApple(new Location(locUpdate.longitude, locUpdate.latitude, locUpdate.altitude));
 		}
 	}
 
@@ -351,9 +356,12 @@ public final class Server {
 	 * @param location
 	 *            Location of the apple added.
 	 */
-	private void addApple(final Location location) {
-		apples.add(new Apple(idManager.newId(), location));
-		// TODO: send update to clients.
+	private void addApple(final Location location) throws IOException {
+		long id = this.idManager.newId();
+		this.apples.put(id, new Apple(id, location));
+		AppleUpdatePacket packet = new AppleUpdatePacket(id, location.getLongitude(), location.getLatitude(),
+				location.getAltitude(), true);
+		this.broadcastPacket(packet);
 	}
 
 	/**
@@ -362,9 +370,12 @@ public final class Server {
 	 * @param id
 	 *            The id of the apple being removed.
 	 */
-	private void removeApple(final String id) {
+	private void removeApple(final long id) throws IOException {
+		Location location = this.apples.get(id).getLocation();
+		AppleUpdatePacket packet = new AppleUpdatePacket(id, location.getLongitude(), location.getLatitude(),
+				location.getAltitude(), false);
+		this.broadcastPacket(packet);
 		apples.remove(id);
-		// TODO: send update to clients.
 	}
 
 	/**

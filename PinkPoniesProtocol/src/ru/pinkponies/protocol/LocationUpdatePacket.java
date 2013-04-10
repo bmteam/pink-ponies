@@ -25,8 +25,8 @@ public class LocationUpdatePacket extends Packet {
 		this.altitude = 0;
 	}
 
-	public LocationUpdatePacket(String clientID, double longitude,
-			double latitude, double altitude) {
+	public LocationUpdatePacket(final String clientID, final double longitude, final double latitude,
+			final double altitude) {
 		super();
 		this.clientID = clientID;
 		this.longitude = longitude;
@@ -36,8 +36,7 @@ public class LocationUpdatePacket extends Packet {
 
 	@Override
 	public String toString() {
-		return "LocationUpdate [clientID=" + clientID + ", longitude="
-				+ longitude + ", latitude=" + latitude + ", altitude="
-				+ altitude + "]";
+		return "LocationUpdate [clientID=" + this.clientID + ", longitude=" + this.longitude + ", latitude="
+				+ this.latitude + ", altitude=" + this.altitude + "]";
 	}
 }
