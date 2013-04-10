@@ -432,8 +432,10 @@ public final class MainActivity extends Activity implements LocationListener {
 	}
 
 	/**
-	 * Shows a message box with the specified message.
+	 * Shows a message box with the specified title and message.
 	 * 
+	 * @param title
+	 *            The title of the message box.
 	 * @param message
 	 *            The message that will be shown in the message box.
 	 */
