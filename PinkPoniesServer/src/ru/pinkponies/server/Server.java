@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
@@ -302,7 +303,10 @@ public final class Server {
 			this.broadcastPacket(locUpdate);
 
 			// XXX: temporary.
-			this.addApple(new Location(locUpdate.longitude, locUpdate.latitude, locUpdate.altitude));
+			Random generator = new Random();
+			final double longitude = locUpdate.longitude + (generator.nextDouble() - 0.5) * 0.01;
+			final double latitude = locUpdate.latitude + (generator.nextDouble() - 0.5) * 0.01;
+			this.addApple(new Location(longitude, latitude, 0.0));
 		}
 	}
 
