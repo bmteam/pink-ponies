@@ -45,6 +45,11 @@ public final class Server {
 	private static final int BUFFER_SIZE = 8192;
 
 	/**
+	 * The distance at which a player picks up an apple.
+	 */
+	private static final double INTERACTION_DISTANCE = 20.0;
+
+	/**
 	 * The main socket channel on which the server listens for incoming connections.
 	 */
 	private ServerSocketChannel serverSocketChannel;
@@ -113,6 +118,7 @@ public final class Server {
 		while (true) {
 			try {
 				this.pumpEvents();
+				// this.pickupApples();
 			} catch (final Exception e) {
 				Server.LOGGER.log(Level.SEVERE, "Exception", e);
 			}
@@ -312,7 +318,10 @@ public final class Server {
 			Random generator = new Random();
 			final double longitude = locUpdate.location.getLongitude() + (generator.nextDouble() - 0.5) * 0.01;
 			final double latitude = locUpdate.location.getLatitude() + (generator.nextDouble() - 0.5) * 0.01;
-			this.addApple(new Location(longitude, latitude, 0.0));
+			Location appleLocation = new Location(longitude, latitude, 0.0);
+			// System.out.println("Distance: " + locUpdate.location.distanceTo(appleLocation) +
+			// ".");
+			this.addApple(appleLocation);
 		}
 	}
 
@@ -374,8 +383,8 @@ public final class Server {
 	 *            Location of the apple added.
 	 */
 	private void addApple(final Location location) throws IOException {
-		final long id = this.idManager.newId();
-		final Apple apple = new Apple(id, location);
+		long id = this.idManager.newId();
+		Apple apple = new Apple(id, location);
 		this.apples.put(id, apple);
 		AppleUpdatePacket packet = new AppleUpdatePacket(id, location, true);
 		this.broadcastPacket(packet);
@@ -389,10 +398,22 @@ public final class Server {
 	 *            The id of the apple being removed.
 	 */
 	private void removeApple(final long id) throws IOException {
-		final Location location = this.apples.get(id).getLocation();
+		Location location = this.apples.get(id).getLocation();
 		AppleUpdatePacket packet = new AppleUpdatePacket(id, location, false);
 		this.broadcastPacket(packet);
 		this.apples.remove(id);
+	}
+
+	private void pickupApples() throws IOException {
+		for (Player player : this.players.values()) {
+			for (Apple apple : this.apples.values()) {
+				if (player.getLocation().distanceTo(apple.getLocation()) <= INTERACTION_DISTANCE) {
+					System.out.println("Player " + player.getId() + " picked up Apple " + apple.getId() + ".");
+					this.removeApple(apple.getId());
+					return;
+				}
+			}
+		}
 	}
 
 	/**
