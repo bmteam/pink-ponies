@@ -226,18 +226,25 @@ public final class Server {
 		Packet packet = null;
 
 		buffer.flip();
-		try {
-			packet = this.protocol.unpack(buffer);
-		} catch (final Exception e) {
-			Server.LOGGER.log(Level.SEVERE, "Exception", e);
+
+		while (buffer.remaining() > 0) {
+			try {
+				packet = this.protocol.unpack(buffer);
+			} catch (final Exception e) {
+				Server.LOGGER.log(Level.SEVERE, "Exception", e);
+			}
+
+			if (packet == null) {
+				break;
+			}
+
+			this.onPacket(channel, packet);
+
+			buffer.compact();
+			buffer.flip();
 		}
+
 		buffer.compact();
-
-		if (packet == null) {
-			return;
-		}
-
-		this.onPacket(channel, packet);
 	}
 
 	/**
