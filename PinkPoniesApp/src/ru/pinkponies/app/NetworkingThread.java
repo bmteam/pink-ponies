@@ -243,18 +243,17 @@ public class NetworkingThread extends Thread {
 
 		this.incomingData.limit(this.incomingData.capacity());
 
-		int numRead = -1;
+		int numRead;
 		try {
 			numRead = channel.read(this.incomingData);
 		} catch (IOException e) {
 			this.close(key);
-			LOGGER.log(Level.SEVERE, "Exception", e);
-			return;
+			throw e;
 		}
 
 		if (numRead == -1) {
 			this.close(key);
-			return;
+			throw new IOException("Read failed.");
 		}
 
 		Packet packet = null;
@@ -272,14 +271,7 @@ public class NetworkingThread extends Thread {
 				break;
 			}
 
-			if (packet instanceof SayPacket) {
-				SayPacket sayPacket = (SayPacket) packet;
-				LOGGER.info("Server: " + sayPacket.toString());
-			} else if (packet instanceof LocationUpdatePacket) {
-				this.sendMessageToUIThread(packet);
-			} else if (packet instanceof AppleUpdatePacket) {
-				this.sendMessageToUIThread(packet);
-			}
+			this.onPacket(packet);
 
 			this.incomingData.compact();
 			this.incomingData.flip();
@@ -302,6 +294,23 @@ public class NetworkingThread extends Thread {
 		this.outgoingData.flip();
 		channel.write(this.outgoingData);
 		this.outgoingData.compact();
+	}
+
+	/**
+	 * Parses a packet.
+	 * 
+	 * @param packet
+	 *            The packet to be parsed.
+	 */
+	private void onPacket(final Packet packet) {
+		if (packet instanceof SayPacket) {
+			SayPacket sayPacket = (SayPacket) packet;
+			LOGGER.info("Server: " + sayPacket.toString());
+		} else if (packet instanceof LocationUpdatePacket) {
+			this.sendMessageToUIThread(packet);
+		} else if (packet instanceof AppleUpdatePacket) {
+			this.sendMessageToUIThread(packet);
+		}
 	}
 
 	/**
