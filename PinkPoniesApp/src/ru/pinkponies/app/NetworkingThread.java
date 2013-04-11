@@ -192,8 +192,7 @@ public class NetworkingThread extends Thread {
 
 			if (key.isConnectable()) {
 				this.finishConnection(key);
-			}
-			if (key.isReadable()) {
+			} else if (key.isReadable()) {
 				this.read(key);
 			} else if (key.isWritable()) {
 				this.write(key);

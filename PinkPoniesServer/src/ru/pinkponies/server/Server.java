@@ -295,8 +295,7 @@ public final class Server {
 			this.broadcastPacket(locUpdate);
 
 			// XXX: temporary.
-			// this.addApple(new Location(locUpdate.longitude, locUpdate.latitude,
-			// locUpdate.altitude));
+			this.addApple(new Location(locUpdate.longitude, locUpdate.latitude, locUpdate.altitude));
 		}
 	}
 
