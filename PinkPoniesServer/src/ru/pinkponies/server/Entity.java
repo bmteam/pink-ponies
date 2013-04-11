@@ -3,7 +3,7 @@ package ru.pinkponies.server;
 import ru.pinkponies.protocol.Location;
 
 public class Entity {
-	private long id;
+	private final long id;
 	private Location location;
 
 	public Entity(final long id, final Location location) {
@@ -11,12 +11,8 @@ public class Entity {
 		this.location = location;
 	}
 
-	public long getID() {
+	public long getId() {
 		return this.id;
-	}
-
-	public void setID(final long id) {
-		this.id = id;
 	}
 
 	public Location getLocation() {

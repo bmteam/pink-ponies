@@ -8,7 +8,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -71,9 +70,9 @@ public final class Server {
 	private final Protocol protocol = new Protocol();
 
 	/**
-	 * The list of all connected clients.
+	 * The map of all connected clients.
 	 */
-	private final ArrayList<SocketChannel> clients = new ArrayList<SocketChannel>();
+	private final Map<Long, Player> players = new TreeMap<Long, Player>();
 
 	/**
 	 * The map of all existing apples.
@@ -170,7 +169,8 @@ public final class Server {
 		this.incomingData.put(channel, ByteBuffer.allocate(Server.BUFFER_SIZE));
 		this.outgoingData.put(channel, ByteBuffer.allocate(Server.BUFFER_SIZE));
 
-		this.clients.add(channel);
+		long id = this.idManager.newId();
+		this.players.put(id, new Player(id, null, channel));
 
 		this.onConnect(channel);
 	}
@@ -189,7 +189,13 @@ public final class Server {
 		this.incomingData.remove(channel);
 		this.outgoingData.remove(channel);
 
-		this.clients.remove(channel);
+		// XXX(xairy): is there any way to optimize this?
+		for (Player player : this.players.values()) {
+			if (player.getChannel() == channel) {
+				this.players.remove(player.getId());
+				break;
+			}
+		}
 
 		channel.close();
 		key.cancel();
@@ -302,7 +308,7 @@ public final class Server {
 			System.out.println(locUpdate.toString());
 			this.broadcastPacket(locUpdate);
 
-			// XXX: temporary.
+			// XXX(xairy): temporary.
 			Random generator = new Random();
 			final double longitude = locUpdate.location.getLongitude() + (generator.nextDouble() - 0.5) * 0.01;
 			final double latitude = locUpdate.location.getLatitude() + (generator.nextDouble() - 0.5) * 0.01;
@@ -356,8 +362,8 @@ public final class Server {
 	 *             If there was a error writing to any of the output buffers (e.g not enough space).
 	 */
 	private void broadcastPacket(final Packet packet) throws IOException {
-		for (final SocketChannel client : this.clients) {
-			this.sendPacket(client, packet);
+		for (final Player player : this.players.values()) {
+			this.sendPacket(player.getChannel(), packet);
 		}
 	}
 
