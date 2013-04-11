@@ -22,14 +22,14 @@ public class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
 		// TODO Auto-generated constructor stub
 	}
 
-	public synchronized void addItem(final GeoPoint p, final String title) {
+	public synchronized void addItem(final GeoPoint point, final String title) {
 		for (OverlayItem i : this.overlayItemList) {
 			if (i.mTitle.equals(title)) {
 				logger.info("Item named " + title + " already exists.");
 				throw new IllegalArgumentException();
 			}
 		}
-		OverlayItem newItem = new OverlayItem(title, title, p);
+		OverlayItem newItem = new OverlayItem(title, title, point);
 		this.overlayItemList.add(newItem);
 		this.populate();
 	}
@@ -38,16 +38,20 @@ public class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
 		for (OverlayItem i : this.overlayItemList) {
 			if (i.mTitle.equals(title)) {
 				this.overlayItemList.remove(i);
+				break;
 			}
 		}
+		this.populate();
 	}
 
 	public synchronized void resetItemMarker(final String title, final Drawable newMarker) {
 		for (OverlayItem i : this.overlayItemList) {
 			if (i.mTitle.equals(title)) {
 				i.setMarker(newMarker);
+				break;
 			}
 		}
+		this.populate();
 	}
 
 	@Override

@@ -23,7 +23,6 @@ import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -32,6 +31,7 @@ import android.view.View;
 
 import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.LocationUpdatePacket;
+import ru.pinkponies.protocol.LoginPacket;
 
 /**
  * The main activity class.
@@ -137,6 +137,16 @@ public final class MainActivity extends Activity implements LocationListener {
 	 * The overlay which displays the path of the player.
 	 */
 	private PathOverlay myPath;
+
+	/**
+	 * This value is used the identifier is not yet defined.
+	 */
+	private static final long BAD_ID = -1;
+
+	/**
+	 * The identifier of the player.
+	 */
+	private long myId = BAD_ID;
 
 	// private TextOverlay textOverlay;
 
@@ -327,6 +337,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	 */
 	private void onMessageFromNetworkingThread(final Object message) {
 		MainActivity.LOGGER.info("NT: " + message.toString());
+
 		if (message.equals("initialized")) {
 			this.sendMessageToNetworkingThread("connect");
 			this.sendMessageToNetworkingThread("service");
@@ -342,18 +353,27 @@ public final class MainActivity extends Activity implements LocationListener {
 			this.showMessageBox("Socket exception.", null);
 		} else if (message instanceof LocationUpdatePacket) {
 			LocationUpdatePacket packet = (LocationUpdatePacket) message;
-			if (!(packet.clientId).equals(Build.DISPLAY)) {
+			if (this.myId != BAD_ID && packet.clientId != this.myId) {
 				GeoPoint point = new GeoPoint(packet.location.getLatitude(), packet.location.getLongitude());
-				this.myPersonOverlay.removeItem(packet.clientId);
-				this.myPersonOverlay.addItem(point, packet.clientId);
+				String title = "Player" + String.valueOf(packet.clientId);
+				this.myPersonOverlay.removeItem(title);
+				this.myPersonOverlay.addItem(point, title);
 			}
 		} else if (message instanceof AppleUpdatePacket) {
 			AppleUpdatePacket packet = (AppleUpdatePacket) message;
-			GeoPoint point = new GeoPoint(packet.location.getLatitude(), packet.location.getLongitude());
 			String title = "Apple" + String.valueOf(packet.appleId);
-			this.myAppleOverlay.removeItem(title);
-			this.myAppleOverlay.addItem(point, title);
+			if (packet.status == true) {
+				GeoPoint point = new GeoPoint(packet.location.getLatitude(), packet.location.getLongitude());
+				this.myAppleOverlay.addItem(point, title);
+				LOGGER.info("1");
+			} else {
+				this.myAppleOverlay.removeItem(title);
+				LOGGER.info("2");
+			}
 			LOGGER.info("Apple " + String.valueOf(packet.appleId) + " updated.");
+		} else if (message instanceof LoginPacket) {
+			LoginPacket packet = (LoginPacket) message;
+			this.myId = packet.clientId;
 		}
 	}
 
@@ -386,8 +406,6 @@ public final class MainActivity extends Activity implements LocationListener {
 	 */
 	@Override
 	public void onLocationChanged(final Location location) {
-		String clientId = Build.DISPLAY;
-
 		double longitude = location.getLongitude();
 		double latitude = location.getLatitude();
 		double altitude = location.getAltitude();
@@ -396,7 +414,7 @@ public final class MainActivity extends Activity implements LocationListener {
 		this.myPath.addPoint(point);
 
 		ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude, latitude, altitude);
-		LocationUpdatePacket packet = new LocationUpdatePacket(clientId, loc);
+		LocationUpdatePacket packet = new LocationUpdatePacket(this.myId, loc);
 		this.sendMessageToNetworkingThread(packet);
 
 		MainActivity.LOGGER.info("Location updated.");

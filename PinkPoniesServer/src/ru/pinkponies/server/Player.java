@@ -15,4 +15,9 @@ public final class Player extends Entity {
 	public SocketChannel getChannel() {
 		return this.channel;
 	}
+
+	@Override
+	public String toString() {
+		return "Player [id=" + this.getId() + ", " + this.getLocation() + "]";
+	}
 }

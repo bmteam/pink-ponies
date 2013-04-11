@@ -23,11 +23,6 @@ public class Entity {
 		this.location = location;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Object#toString()
-	 */
 	@Override
 	public String toString() {
 		return "Entity [id=" + this.id + ", " + this.location + "]";

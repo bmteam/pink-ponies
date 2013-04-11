@@ -6,18 +6,18 @@ import org.msgpack.annotation.Message;
 @Message
 public class LocationUpdatePacket extends Packet {
 	@Index(0)
-	public String clientId;
+	public long clientId;
 
 	@Index(1)
 	public Location location;
 
 	public LocationUpdatePacket() {
 		super();
-		this.clientId = null;
+		this.clientId = -1;
 		this.location = null;
 	}
 
-	public LocationUpdatePacket(final String clientId, final Location location) {
+	public LocationUpdatePacket(final long clientId, final Location location) {
 		super();
 		this.clientId = clientId;
 		this.location = location;

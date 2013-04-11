@@ -14,7 +14,6 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -310,6 +309,10 @@ public class NetworkingThread extends Thread {
 			this.sendMessageToUIThread(packet);
 		} else if (packet instanceof AppleUpdatePacket) {
 			this.sendMessageToUIThread(packet);
+		} else if (packet instanceof LoginPacket) {
+			this.sendMessageToUIThread(packet);
+		} else {
+			LOGGER.info("Unknown packet type.");
 		}
 	}
 
@@ -336,8 +339,7 @@ public class NetworkingThread extends Thread {
 	 *             If there was a error writing to the output buffer (e.g not enough space).
 	 */
 	private void login() throws IOException {
-		LoginPacket packet = new LoginPacket(Build.DISPLAY);
-		this.sendPacket(packet);
+		// TODO(xairy): login.
 	}
 
 	/**

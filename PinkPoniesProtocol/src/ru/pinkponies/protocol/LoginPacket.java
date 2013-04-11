@@ -1,22 +1,24 @@
 package ru.pinkponies.protocol;
 
+import org.msgpack.annotation.Index;
 import org.msgpack.annotation.Message;
 
 @Message
 public class LoginPacket extends Packet {
-	public String clientID;
+	@Index(0)
+	public long clientId;
 
 	public LoginPacket() {
 		super();
 	}
 
-	public LoginPacket(String clientID) {
+	public LoginPacket(final long clientId) {
 		super();
-		this.clientID = clientID;
+		this.clientId = clientId;
 	}
 
 	@Override
 	public String toString() {
-		return "Login [clientID=" + clientID + "]";
+		return "Login [clientId=" + this.clientId + "]";
 	}
 }
