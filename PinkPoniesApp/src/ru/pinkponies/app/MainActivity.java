@@ -342,14 +342,14 @@ public final class MainActivity extends Activity implements LocationListener {
 			this.showMessageBox("Socket exception.", null);
 		} else if (message instanceof LocationUpdatePacket) {
 			LocationUpdatePacket packet = (LocationUpdatePacket) message;
-			if (!(packet.clientID).equals(Build.DISPLAY)) {
-				GeoPoint point = new GeoPoint(packet.latitude, packet.longitude);
-				this.myPersonOverlay.removeItem(packet.clientID);
-				this.myPersonOverlay.addItem(point, packet.clientID);
+			if (!(packet.clientId).equals(Build.DISPLAY)) {
+				GeoPoint point = new GeoPoint(packet.location.getLatitude(), packet.location.getLongitude());
+				this.myPersonOverlay.removeItem(packet.clientId);
+				this.myPersonOverlay.addItem(point, packet.clientId);
 			}
 		} else if (message instanceof AppleUpdatePacket) {
 			AppleUpdatePacket packet = (AppleUpdatePacket) message;
-			GeoPoint point = new GeoPoint(packet.latitude, packet.longitude);
+			GeoPoint point = new GeoPoint(packet.location.getLatitude(), packet.location.getLongitude());
 			String title = "Apple" + String.valueOf(packet.appleId);
 			this.myAppleOverlay.removeItem(title);
 			this.myAppleOverlay.addItem(point, title);
@@ -386,7 +386,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	 */
 	@Override
 	public void onLocationChanged(final Location location) {
-		String clientID = Build.DISPLAY;
+		String clientId = Build.DISPLAY;
 
 		double longitude = location.getLongitude();
 		double latitude = location.getLatitude();
@@ -395,7 +395,10 @@ public final class MainActivity extends Activity implements LocationListener {
 		GeoPoint point = new GeoPoint(latitude, longitude);
 		this.myPath.addPoint(point);
 
-		this.sendMessageToNetworkingThread(new LocationUpdatePacket(clientID, longitude, latitude, altitude));
+		ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude, latitude, altitude);
+		LocationUpdatePacket packet = new LocationUpdatePacket(clientId, loc);
+		this.sendMessageToNetworkingThread(packet);
+
 		MainActivity.LOGGER.info("Location updated.");
 	}
 

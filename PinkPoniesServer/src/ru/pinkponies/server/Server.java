@@ -304,8 +304,8 @@ public final class Server {
 
 			// XXX: temporary.
 			Random generator = new Random();
-			final double longitude = locUpdate.longitude + (generator.nextDouble() - 0.5) * 0.01;
-			final double latitude = locUpdate.latitude + (generator.nextDouble() - 0.5) * 0.01;
+			final double longitude = locUpdate.location.getLongitude() + (generator.nextDouble() - 0.5) * 0.01;
+			final double latitude = locUpdate.location.getLatitude() + (generator.nextDouble() - 0.5) * 0.01;
 			this.addApple(new Location(longitude, latitude, 0.0));
 		}
 	}
@@ -371,8 +371,7 @@ public final class Server {
 		final long id = this.idManager.newId();
 		final Apple apple = new Apple(id, location);
 		this.apples.put(id, apple);
-		AppleUpdatePacket packet = new AppleUpdatePacket(id, location.getLongitude(), location.getLatitude(),
-				location.getAltitude(), true);
+		AppleUpdatePacket packet = new AppleUpdatePacket(id, location, true);
 		this.broadcastPacket(packet);
 		System.out.println("Added " + apple + ".");
 	}
@@ -385,8 +384,7 @@ public final class Server {
 	 */
 	private void removeApple(final long id) throws IOException {
 		final Location location = this.apples.get(id).getLocation();
-		AppleUpdatePacket packet = new AppleUpdatePacket(id, location.getLongitude(), location.getLatitude(),
-				location.getAltitude(), false);
+		AppleUpdatePacket packet = new AppleUpdatePacket(id, location, false);
 		this.broadcastPacket(packet);
 		this.apples.remove(id);
 	}

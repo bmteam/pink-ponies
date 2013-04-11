@@ -6,37 +6,25 @@ import org.msgpack.annotation.Message;
 @Message
 public class LocationUpdatePacket extends Packet {
 	@Index(0)
-	public String clientID;
+	public String clientId;
 
 	@Index(1)
-	public double altitude;
-
-	@Index(2)
-	public double latitude;
-
-	@Index(3)
-	public double longitude;
+	public Location location;
 
 	public LocationUpdatePacket() {
 		super();
-		this.clientID = "";
-		this.longitude = 0;
-		this.latitude = 0;
-		this.altitude = 0;
+		this.clientId = null;
+		this.location = null;
 	}
 
-	public LocationUpdatePacket(final String clientID, final double longitude, final double latitude,
-			final double altitude) {
+	public LocationUpdatePacket(final String clientId, final Location location) {
 		super();
-		this.clientID = clientID;
-		this.longitude = longitude;
-		this.latitude = latitude;
-		this.altitude = altitude;
+		this.clientId = clientId;
+		this.location = location;
 	}
 
 	@Override
 	public String toString() {
-		return "LocationUpdate [clientID=" + this.clientID + ", longitude=" + this.longitude + ", latitude="
-				+ this.latitude + ", altitude=" + this.altitude + "]";
+		return "LocationUpdate [clientID=" + this.clientId + ", " + this.location + "]";
 	}
 }
