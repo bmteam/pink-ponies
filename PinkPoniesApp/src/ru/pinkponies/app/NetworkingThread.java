@@ -19,7 +19,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
-import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.Packet;
@@ -38,7 +37,7 @@ public class NetworkingThread extends Thread {
 	/**
 	 * The default server ip.
 	 */
-	private static final String SERVER_IP = "192.168.0.199";
+	private static final String SERVER_IP = "77.232.25.36";
 
 	/**
 	 * The default server port.
@@ -178,25 +177,25 @@ public class NetworkingThread extends Thread {
 	 *             If there was any sort of IO error.
 	 */
 	private void service() throws IOException {
-		this.selector.select();
-		Set<SelectionKey> keys = this.selector.selectedKeys();
-		Iterator<SelectionKey> iterator = keys.iterator();
+		if (this.selector.select() > 0) {
+			Set<SelectionKey> keys = this.selector.selectedKeys();
+			Iterator<SelectionKey> iterator = keys.iterator();
 
-		while (iterator.hasNext()) {
-			SelectionKey key = iterator.next();
-			iterator.remove();
+			while (iterator.hasNext()) {
+				SelectionKey key = iterator.next();
+				iterator.remove();
 
-			if (!key.isValid()) {
-				continue;
-			}
+				if (!key.isValid()) {
+					continue;
+				}
 
-			if (key.isConnectable()) {
-				this.finishConnection(key);
-			}
-			if (key.isReadable()) {
-				this.read(key);
-			} else if (key.isWritable()) {
-				this.write(key);
+				if (key.isConnectable()) {
+					this.finishConnection(key);
+				} else if (key.isReadable()) {
+					this.read(key);
+				} else if (key.isWritable()) {
+					this.write(key);
+				}
 			}
 		}
 	}
@@ -213,6 +212,7 @@ public class NetworkingThread extends Thread {
 		if (this.socket.isConnectionPending()) {
 			this.socket.finishConnect();
 			this.socket.register(this.selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+			LOGGER.info("Now reading.");
 
 			this.sendMessageToUIThread("connected");
 		}
@@ -261,32 +261,23 @@ public class NetworkingThread extends Thread {
 		Packet packet = null;
 
 		this.incomingData.flip();
+		try {
+			packet = this.protocol.unpack(this.incomingData);
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "Exception", e);
+		}
+		this.incomingData.compact();
 
-		while (this.incomingData.remaining() > 0) {
-			try {
-				packet = this.protocol.unpack(this.incomingData);
-			} catch (Exception e) {
-				LOGGER.log(Level.SEVERE, "Exception", e);
-			}
-
-			if (packet == null) {
-				break;
-			}
-
-			if (packet instanceof SayPacket) {
-				SayPacket sayPacket = (SayPacket) packet;
-				LOGGER.info("Server: " + sayPacket.toString());
-			} else if (packet instanceof LocationUpdatePacket) {
-				this.sendMessageToUIThread(packet);
-			} else if (packet instanceof AppleUpdatePacket) {
-				this.sendMessageToUIThread(packet);
-			}
-
-			this.incomingData.compact();
-			this.incomingData.flip();
+		if (packet == null) {
+			return;
 		}
 
-		this.incomingData.compact();
+		if (packet instanceof SayPacket) {
+			SayPacket sayPacket = (SayPacket) packet;
+			LOGGER.info("Server: " + sayPacket.toString());
+		} else if (packet instanceof LocationUpdatePacket) {
+			this.sendMessageToUIThread(packet);
+		}
 	}
 
 	/**
@@ -353,7 +344,7 @@ public class NetworkingThread extends Thread {
 	 */
 	private void onMessageFromUIThread(final Object message) {
 		try {
-			// LOGGER.info("MA: " + message.toString());
+			LOGGER.info("MA: " + message.toString());
 
 			if (message.equals("connect")) {
 				this.connect();
@@ -369,7 +360,6 @@ public class NetworkingThread extends Thread {
 				throw new InvalidParameterException("Unknown message type.");
 			}
 		} catch (Exception e) {
-			this.sendMessageToUIThread("failed");
 			LOGGER.log(Level.SEVERE, "Exception", e);
 		}
 	}

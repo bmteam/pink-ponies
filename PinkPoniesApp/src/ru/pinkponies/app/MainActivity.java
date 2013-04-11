@@ -14,9 +14,7 @@ import org.osmdroid.views.overlay.MyLocationOverlay;
 import org.osmdroid.views.overlay.PathOverlay;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -30,7 +28,6 @@ import android.os.Message;
 import android.view.Menu;
 import android.view.View;
 
-import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.LocationUpdatePacket;
 
 /**
@@ -60,7 +57,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	/**
 	 * The initial map view zoom level.
 	 */
-	private static final int MAP_VIEW_INITIAL_ZOOM_LEVEL = 15;
+	private static final int MAP_VIEW_INITIAL_ZOOM_LEVEL = 13;
 
 	/**
 	 * A message handler class for this activity.
@@ -152,7 +149,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	 * @return Created itemized overlay.
 	 */
 	private MyItemizedOverlay createItemizedOverlay(final int resourceId) {
-		Drawable marker = this.getResources().getDrawable(resourceId);
+		Drawable marker = this.getResources().getDrawable(R.drawable.person);
 		int markerWidth = marker.getIntrinsicWidth();
 		int markerHeight = marker.getIntrinsicHeight();
 		marker.setBounds(0, markerHeight, markerWidth, 0);
@@ -234,7 +231,7 @@ public final class MainActivity extends Activity implements LocationListener {
 		this.mapView.getOverlays().add(this.myAppleOverlay);
 
 		// GeoPoint myPoint = new GeoPoint(55929563, 37523862);
-		// this.myAppleOverlay.addItem(myPoint, "Apple");
+		// myAppleOverlay.addItem(myPoint, "Apple");
 
 		LOGGER.info("Initialized.");
 	}
@@ -332,28 +329,23 @@ public final class MainActivity extends Activity implements LocationListener {
 			this.sendMessageToNetworkingThread("service");
 		} else if (message.equals("connected")) {
 			this.sendMessageToNetworkingThread("login");
+
 			new Timer().scheduleAtFixedRate(new TimerTask() {
+
 				@Override
 				public void run() {
 					MainActivity.this.sendMessageToNetworkingThread("service");
 				}
+
 			}, 0, MainActivity.SERVICE_DELAY);
-		} else if (message.equals("failed")) {
-			this.showMessageBox("Socket exception.", null);
 		} else if (message instanceof LocationUpdatePacket) {
 			LocationUpdatePacket packet = (LocationUpdatePacket) message;
+			MainActivity.LOGGER.info(packet.clientID + "!" + Build.DISPLAY);
 			if (!(packet.clientID).equals(Build.DISPLAY)) {
 				GeoPoint point = new GeoPoint(packet.latitude, packet.longitude);
 				this.myPersonOverlay.removeItem(packet.clientID);
 				this.myPersonOverlay.addItem(point, packet.clientID);
 			}
-		} else if (message instanceof AppleUpdatePacket) {
-			AppleUpdatePacket packet = (AppleUpdatePacket) message;
-			GeoPoint point = new GeoPoint(packet.latitude, packet.longitude);
-			String title = "Apple" + String.valueOf(packet.appleId);
-			this.myAppleOverlay.removeItem(title);
-			this.myAppleOverlay.addItem(point, title);
-			LOGGER.info("Apple " + String.valueOf(packet.appleId) + " updated.");
 		}
 	}
 
@@ -435,24 +427,4 @@ public final class MainActivity extends Activity implements LocationListener {
 	public void onStatusChanged(final String provider, final int status, final Bundle extras) {
 	}
 
-	/**
-	 * Shows a message box with the specified title and message.
-	 * 
-	 * @param title
-	 *            The title of the message box.
-	 * @param message
-	 *            The message that will be shown in the message box.
-	 */
-	public void showMessageBox(final String title, final String message) {
-		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-		alertDialogBuilder.setTitle(title);
-		alertDialogBuilder.setMessage(message).setCancelable(false)
-				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(final DialogInterface dialog, final int id) {
-					}
-				});
-		AlertDialog alertDialog = alertDialogBuilder.create();
-		alertDialog.show();
-	}
 }

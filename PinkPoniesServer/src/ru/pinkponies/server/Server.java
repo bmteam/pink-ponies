@@ -13,12 +13,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import ru.pinkponies.protocol.AppleUpdatePacket;
-import ru.pinkponies.protocol.Location;
 import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.Packet;
@@ -65,24 +62,14 @@ public final class Server {
 	private final Map<SocketChannel, ByteBuffer> outgoingData = new HashMap<SocketChannel, ByteBuffer>();
 
 	/**
-	 * The protocol helper. Provides methods for serialization and deserialization of packets.
-	 */
-	private final Protocol protocol = new Protocol();
-
-	/**
 	 * The list of all connected clients.
 	 */
 	private final ArrayList<SocketChannel> clients = new ArrayList<SocketChannel>();
 
 	/**
-	 * The map of all existing apples.
+	 * The protocol helper. Provides methods for serialization and deserialization of packets.
 	 */
-	private final Map<Long, Apple> apples = new TreeMap<Long, Apple>();
-
-	/**
-	 * ID manager for generating new identifiers.
-	 */
-	private final IdManager idManager = new IdManager();
+	private final Protocol protocol = new Protocol();
 
 	/**
 	 * Initializes this server.
@@ -293,10 +280,6 @@ public final class Server {
 			final LocationUpdatePacket locUpdate = (LocationUpdatePacket) packet;
 			System.out.println(locUpdate.toString());
 			this.broadcastPacket(locUpdate);
-
-			// XXX: temporary.
-			// this.addApple(new Location(locUpdate.longitude, locUpdate.latitude,
-			// locUpdate.altitude));
 		}
 	}
 
@@ -349,36 +332,6 @@ public final class Server {
 		for (final SocketChannel client : this.clients) {
 			this.sendPacket(client, packet);
 		}
-	}
-
-	/**
-	 * Adds a new apple with a specified location.
-	 * 
-	 * @param location
-	 *            Location of the apple added.
-	 */
-	private void addApple(final Location location) throws IOException {
-		final long id = this.idManager.newId();
-		final Apple apple = new Apple(id, location);
-		this.apples.put(id, apple);
-		AppleUpdatePacket packet = new AppleUpdatePacket(id, location.getLongitude(), location.getLatitude(),
-				location.getAltitude(), true);
-		this.broadcastPacket(packet);
-		System.out.println("Added " + apple + ".");
-	}
-
-	/**
-	 * Removes the apple with the specified id.
-	 * 
-	 * @param id
-	 *            The id of the apple being removed.
-	 */
-	private void removeApple(final long id) throws IOException {
-		final Location location = this.apples.get(id).getLocation();
-		AppleUpdatePacket packet = new AppleUpdatePacket(id, location.getLongitude(), location.getLatitude(),
-				location.getAltitude(), false);
-		this.broadcastPacket(packet);
-		this.apples.remove(id);
 	}
 
 	/**
