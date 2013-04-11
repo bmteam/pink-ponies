@@ -46,7 +46,7 @@ public final class Server {
 	/**
 	 * The distance at which a player picks up an apple.
 	 */
-	private static final double INTERACTION_DISTANCE = 300.0;
+	private static final double INTERACTION_DISTANCE = 100.0;
 
 	/**
 	 * The main socket channel on which the server listens for incoming connections.
@@ -282,8 +282,13 @@ public final class Server {
 		long id = this.idManager.newId();
 		this.players.put(channel, new Player(id, null, channel));
 
-		LoginPacket packet = new LoginPacket(id);
-		this.sendPacket(channel, packet);
+		LoginPacket loginPacket = new LoginPacket(id);
+		this.sendPacket(channel, loginPacket);
+
+		for (Apple apple : this.apples.values()) {
+			AppleUpdatePacket applePacket = new AppleUpdatePacket(apple.getId(), apple.getLocation(), true);
+			this.sendPacket(channel, applePacket);
+		}
 	}
 
 	/**
