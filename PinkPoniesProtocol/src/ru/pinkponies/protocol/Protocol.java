@@ -13,22 +13,24 @@ public final class Protocol {
 	private static final byte LOGIN_PACKET = 0;
 	private static final byte LOCATION_UPDATE_PACKET = 1;
 	private static final byte SAY_PACKET = 2;
+	private static final byte APPLE_UPDATE_PACKET = 3;
 
-	private MessagePack messagePack;
+	private final MessagePack messagePack;
 
 	public Protocol() {
-		messagePack = new MessagePack();
-		messagePack.register(LocationUpdatePacket.class);
-		messagePack.register(LoginPacket.class);
-		messagePack.register(SayPacket.class);
+		this.messagePack = new MessagePack();
+		this.messagePack.register(LocationUpdatePacket.class);
+		this.messagePack.register(LoginPacket.class);
+		this.messagePack.register(SayPacket.class);
+		this.messagePack.register(AppleUpdatePacket.class);
 	}
 
-	public byte[] pack(Packet packet) throws IOException {
+	public byte[] pack(final Packet packet) throws IOException {
 		if (packet == null) {
 			throw new NullPointerException("Packet can not be null.");
 		}
 
-		BufferPacker packer = messagePack.createBufferPacker();
+		BufferPacker packer = this.messagePack.createBufferPacker();
 
 		if (packet instanceof LoginPacket) {
 			packer.write(LOGIN_PACKET);
@@ -38,6 +40,9 @@ public final class Protocol {
 			packer.write(packet);
 		} else if (packet instanceof SayPacket) {
 			packer.write(SAY_PACKET);
+			packer.write(packet);
+		} else if (packet instanceof AppleUpdatePacket) {
+			packer.write(APPLE_UPDATE_PACKET);
 			packer.write(packet);
 		} else {
 			throw new InvalidClassException("Unknown packet type.");
@@ -46,13 +51,12 @@ public final class Protocol {
 		return packer.toByteArray();
 	}
 
-	public void pack(Packet packet, ByteBuffer buffer) throws IOException,
-			BufferOverflowException {
+	public void pack(final Packet packet, final ByteBuffer buffer) throws IOException, BufferOverflowException {
 		if (packet == null) {
 			throw new NullPointerException("Packet can not be null.");
 		}
 
-		BufferPacker packer = messagePack.createBufferPacker();
+		BufferPacker packer = this.messagePack.createBufferPacker();
 
 		if (packet instanceof LoginPacket) {
 			packer.write(LOGIN_PACKET);
@@ -63,6 +67,9 @@ public final class Protocol {
 		} else if (packet instanceof SayPacket) {
 			packer.write(SAY_PACKET);
 			packer.write(packet);
+		} else if (packet instanceof AppleUpdatePacket) {
+			packer.write(APPLE_UPDATE_PACKET);
+			packer.write(packet);
 		} else {
 			throw new InvalidClassException("Unknown packet type.");
 		}
@@ -70,8 +77,8 @@ public final class Protocol {
 		buffer.put(packer.toByteArray());
 	}
 
-	public Packet unpack(byte[] data) throws IOException {
-		BufferUnpacker unpacker = messagePack.createBufferUnpacker(data);
+	public Packet unpack(final byte[] data) throws IOException {
+		BufferUnpacker unpacker = this.messagePack.createBufferUnpacker(data);
 
 		byte type = unpacker.readByte();
 
@@ -81,17 +88,18 @@ public final class Protocol {
 			return unpacker.read(LocationUpdatePacket.class);
 		} else if (type == SAY_PACKET) {
 			return unpacker.read(SayPacket.class);
+		} else if (type == APPLE_UPDATE_PACKET) {
+			return unpacker.read(AppleUpdatePacket.class);
 		} else {
 			// FIXME(alexknvl): check if its the right type of exception
 			throw new InvalidClassException("Unknown packet type.");
 		}
 	}
 
-	public Packet unpack(ByteBuffer buffer) throws IOException {
+	public Packet unpack(final ByteBuffer buffer) throws IOException {
 		// FIXME(alexknvl): wtf, there is no way to read directly from
 		// ByteBuffer?
-		BufferUnpacker unpacker = messagePack.createBufferUnpacker(buffer
-				.array());
+		BufferUnpacker unpacker = this.messagePack.createBufferUnpacker(buffer.array());
 
 		byte type = unpacker.readByte();
 		Packet result = null;
@@ -102,6 +110,8 @@ public final class Protocol {
 			result = unpacker.read(LocationUpdatePacket.class);
 		} else if (type == SAY_PACKET) {
 			result = unpacker.read(SayPacket.class);
+		} else if (type == APPLE_UPDATE_PACKET) {
+			result = unpacker.read(AppleUpdatePacket.class);
 		} else {
 			// FIXME(alexknvl): check if its the right type of exception
 			throw new InvalidClassException("Unknown packet type.");
