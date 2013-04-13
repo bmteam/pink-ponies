@@ -14,8 +14,11 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import android.app.Service;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 
@@ -28,7 +31,7 @@ import ru.pinkponies.protocol.SayPacket;
 /**
  * The networking thread which provides asynchronous network IO for the main activity.
  */
-public class NetworkingThread extends Thread {
+public class NetworkingThread extends Service {
 	/**
 	 * The class wide logger.
 	 */
@@ -139,7 +142,24 @@ public class NetworkingThread extends Thread {
 	/**
 	 * Starts the networking thread.
 	 */
+
 	@Override
+	public void onCreate() {
+		super.onCreate();
+		LOGGER.info("NetworkingThread Created");
+	}
+
+	@Override
+	public int onStartCommand(final Intent intent, final int flags, final int startId) {
+		LOGGER.info("NetworkingTread onStartCommand");
+		return super.onStartCommand(intent, flags, startId);
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+	}
+
 	public final void run() {
 		try {
 			Looper.prepare();
@@ -378,5 +398,11 @@ public class NetworkingThread extends Thread {
 		} catch (Exception e) {
 			LOGGER.log(Level.SEVERE, "Exception", e);
 		}
+	}
+
+	@Override
+	public IBinder onBind(final Intent arg0) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }
