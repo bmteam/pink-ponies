@@ -6,19 +6,23 @@ import org.msgpack.annotation.Message;
 @Message
 public class LoginPacket extends Packet {
 	@Index(0)
-	public long clientId;
+	public String login;
+
+	@Index(1)
+	public String password;
 
 	public LoginPacket() {
 		super();
 	}
 
-	public LoginPacket(final long clientId) {
+	public LoginPacket(final String login, final String password) {
 		super();
-		this.clientId = clientId;
+		this.login = login;
+		this.password = password;
 	}
 
 	@Override
 	public String toString() {
-		return "Login [clientId=" + this.clientId + "]";
+		return "Login [login=" + this.login + ", password=" + this.password + "]";
 	}
 }

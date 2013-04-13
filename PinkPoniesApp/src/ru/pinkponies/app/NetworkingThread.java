@@ -19,8 +19,8 @@ import android.os.Looper;
 import android.os.Message;
 
 import ru.pinkponies.protocol.AppleUpdatePacket;
+import ru.pinkponies.protocol.ClientOptionsPacket;
 import ru.pinkponies.protocol.LocationUpdatePacket;
-import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.Protocol;
 import ru.pinkponies.protocol.SayPacket;
@@ -309,7 +309,7 @@ public class NetworkingThread extends Thread {
 			this.sendMessageToUIThread(packet);
 		} else if (packet instanceof AppleUpdatePacket) {
 			this.sendMessageToUIThread(packet);
-		} else if (packet instanceof LoginPacket) {
+		} else if (packet instanceof ClientOptionsPacket) {
 			this.sendMessageToUIThread(packet);
 		} else {
 			LOGGER.info("Unknown packet type.");

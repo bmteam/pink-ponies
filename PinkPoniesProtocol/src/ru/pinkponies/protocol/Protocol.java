@@ -14,6 +14,7 @@ public final class Protocol {
 	private static final byte LOCATION_UPDATE_PACKET = 1;
 	private static final byte SAY_PACKET = 2;
 	private static final byte APPLE_UPDATE_PACKET = 3;
+	private static final byte CLIENT_OPTIONS_PACKET = 4;
 
 	private final MessagePack messagePack;
 
@@ -23,6 +24,7 @@ public final class Protocol {
 		this.messagePack.register(LoginPacket.class);
 		this.messagePack.register(SayPacket.class);
 		this.messagePack.register(AppleUpdatePacket.class);
+		this.messagePack.register(ClientOptionsPacket.class);
 	}
 
 	public byte[] pack(final Packet packet) throws IOException {
@@ -43,6 +45,9 @@ public final class Protocol {
 			packer.write(packet);
 		} else if (packet instanceof AppleUpdatePacket) {
 			packer.write(APPLE_UPDATE_PACKET);
+			packer.write(packet);
+		} else if (packet instanceof ClientOptionsPacket) {
+			packer.write(CLIENT_OPTIONS_PACKET);
 			packer.write(packet);
 		} else {
 			throw new InvalidClassException("Unknown packet type.");
@@ -70,6 +75,9 @@ public final class Protocol {
 		} else if (packet instanceof AppleUpdatePacket) {
 			packer.write(APPLE_UPDATE_PACKET);
 			packer.write(packet);
+		} else if (packet instanceof ClientOptionsPacket) {
+			packer.write(CLIENT_OPTIONS_PACKET);
+			packer.write(packet);
 		} else {
 			throw new InvalidClassException("Unknown packet type.");
 		}
@@ -90,6 +98,8 @@ public final class Protocol {
 			return unpacker.read(SayPacket.class);
 		} else if (type == APPLE_UPDATE_PACKET) {
 			return unpacker.read(AppleUpdatePacket.class);
+		} else if (type == CLIENT_OPTIONS_PACKET) {
+			return unpacker.read(ClientOptionsPacket.class);
 		} else {
 			// FIXME(alexknvl): check if its the right type of exception
 			throw new InvalidClassException("Unknown packet type.");
@@ -112,6 +122,8 @@ public final class Protocol {
 			result = unpacker.read(SayPacket.class);
 		} else if (type == APPLE_UPDATE_PACKET) {
 			result = unpacker.read(AppleUpdatePacket.class);
+		} else if (type == CLIENT_OPTIONS_PACKET) {
+			result = unpacker.read(ClientOptionsPacket.class);
 		} else {
 			// FIXME(alexknvl): check if its the right type of exception
 			throw new InvalidClassException("Unknown packet type.");

@@ -17,9 +17,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import ru.pinkponies.protocol.AppleUpdatePacket;
+import ru.pinkponies.protocol.ClientOptionsPacket;
 import ru.pinkponies.protocol.Location;
 import ru.pinkponies.protocol.LocationUpdatePacket;
-import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.Protocol;
 import ru.pinkponies.protocol.SayPacket;
@@ -282,8 +282,8 @@ public final class Server {
 		long id = this.idManager.newId();
 		this.players.put(channel, new Player(id, null, channel));
 
-		LoginPacket loginPacket = new LoginPacket(id);
-		this.sendPacket(channel, loginPacket);
+		ClientOptionsPacket packet = new ClientOptionsPacket(id);
+		this.sendPacket(channel, packet);
 
 		for (Apple apple : this.apples.values()) {
 			AppleUpdatePacket applePacket = new AppleUpdatePacket(apple.getId(), apple.getLocation(), true);

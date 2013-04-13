@@ -30,8 +30,8 @@ import android.view.Menu;
 import android.view.View;
 
 import ru.pinkponies.protocol.AppleUpdatePacket;
+import ru.pinkponies.protocol.ClientOptionsPacket;
 import ru.pinkponies.protocol.LocationUpdatePacket;
-import ru.pinkponies.protocol.LoginPacket;
 
 /**
  * The main activity class.
@@ -371,8 +371,8 @@ public final class MainActivity extends Activity implements LocationListener {
 				LOGGER.info("2");
 			}
 			LOGGER.info("Apple " + String.valueOf(packet.appleId) + " updated.");
-		} else if (message instanceof LoginPacket) {
-			LoginPacket packet = (LoginPacket) message;
+		} else if (message instanceof ClientOptionsPacket) {
+			ClientOptionsPacket packet = (ClientOptionsPacket) message;
 			this.myId = packet.clientId;
 		}
 	}
