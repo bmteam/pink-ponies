@@ -302,17 +302,16 @@ public class NetworkingThread extends Thread {
 	 *            The packet to be parsed.
 	 */
 	private void onPacket(final Packet packet) {
-		if (packet instanceof SayPacket) {
-			SayPacket sayPacket = (SayPacket) packet;
-			LOGGER.info("Server: " + sayPacket.toString());
+		if (packet instanceof ClientOptionsPacket) {
+			this.sendMessageToUIThread(packet);
+		} else if (packet instanceof SayPacket) {
+			this.sendMessageToUIThread(packet);
 		} else if (packet instanceof LocationUpdatePacket) {
 			this.sendMessageToUIThread(packet);
 		} else if (packet instanceof AppleUpdatePacket) {
 			this.sendMessageToUIThread(packet);
-		} else if (packet instanceof ClientOptionsPacket) {
-			this.sendMessageToUIThread(packet);
 		} else {
-			LOGGER.info("Unknown packet type.");
+			LOGGER.severe("Unknown packet type.");
 		}
 	}
 

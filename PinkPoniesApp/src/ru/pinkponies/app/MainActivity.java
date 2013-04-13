@@ -32,6 +32,7 @@ import android.view.View;
 import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.ClientOptionsPacket;
 import ru.pinkponies.protocol.LocationUpdatePacket;
+import ru.pinkponies.protocol.SayPacket;
 
 /**
  * The main activity class.
@@ -351,6 +352,12 @@ public final class MainActivity extends Activity implements LocationListener {
 			}, 0, MainActivity.SERVICE_DELAY);
 		} else if (message.equals("failed")) {
 			this.showMessageBox("Socket exception.", null);
+		} else if (message instanceof ClientOptionsPacket) {
+			ClientOptionsPacket packet = (ClientOptionsPacket) message;
+			this.myId = packet.clientId;
+		} else if (message instanceof SayPacket) {
+			SayPacket packet = (SayPacket) message;
+			LOGGER.info(packet.toString());
 		} else if (message instanceof LocationUpdatePacket) {
 			LocationUpdatePacket packet = (LocationUpdatePacket) message;
 			if (this.myId != BAD_ID && packet.clientId != this.myId) {
@@ -365,15 +372,10 @@ public final class MainActivity extends Activity implements LocationListener {
 			if (packet.status == true) {
 				GeoPoint point = new GeoPoint(packet.location.getLatitude(), packet.location.getLongitude());
 				this.myAppleOverlay.addItem(point, title);
-				LOGGER.info("1");
 			} else {
 				this.myAppleOverlay.removeItem(title);
-				LOGGER.info("2");
 			}
 			LOGGER.info("Apple " + String.valueOf(packet.appleId) + " updated.");
-		} else if (message instanceof ClientOptionsPacket) {
-			ClientOptionsPacket packet = (ClientOptionsPacket) message;
-			this.myId = packet.clientId;
 		}
 	}
 
