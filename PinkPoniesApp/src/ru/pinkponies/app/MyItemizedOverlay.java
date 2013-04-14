@@ -1,7 +1,7 @@
 package ru.pinkponies.app;
 
 import java.util.ArrayList;
-import java.util.logging.Logger;
+import java.util.List;
 
 import org.osmdroid.ResourceProxy;
 import org.osmdroid.api.IMapView;
@@ -13,20 +13,17 @@ import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 
 public class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
-	private final static Logger logger = Logger.getLogger(MyItemizedOverlay.class.getName());
+	private final List<OverlayItem> overlayItemList = new ArrayList<OverlayItem>();
 
-	private final ArrayList<OverlayItem> overlayItemList = new ArrayList<OverlayItem>();
-
-	public MyItemizedOverlay(final Drawable pDefaultMarker, final ResourceProxy pResourceProxy) {
-		super(pDefaultMarker, pResourceProxy);
+	public MyItemizedOverlay(final Drawable defaultMarker, final ResourceProxy resourceProxy) {
+		super(defaultMarker, resourceProxy);
 		// TODO Auto-generated constructor stub
 	}
 
 	public synchronized void addItem(final GeoPoint point, final String title) {
 		for (OverlayItem i : this.overlayItemList) {
 			if (i.mTitle.equals(title)) {
-				logger.info("Item named " + title + " already exists.");
-				throw new IllegalArgumentException();
+				throw new IllegalArgumentException("Item named " + title + " already exists.");
 			}
 		}
 		OverlayItem newItem = new OverlayItem(title, title, point);
@@ -45,9 +42,9 @@ public class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
 	}
 
 	public synchronized void resetItemMarker(final String title, final Drawable newMarker) {
-		for (OverlayItem i : this.overlayItemList) {
-			if (i.mTitle.equals(title)) {
-				i.setMarker(newMarker);
+		for (OverlayItem item : this.overlayItemList) {
+			if (item.mTitle.equals(title)) {
+				item.setMarker(newMarker);
 				break;
 			}
 		}
@@ -55,15 +52,15 @@ public class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
 	}
 
 	@Override
-	public boolean onSnapToItem(final int arg0, final int arg1, final Point arg2, final IMapView arg3) {
+	public boolean onSnapToItem(final int x, final int y, final Point snapPoint, final IMapView mapView) {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	protected OverlayItem createItem(final int arg0) {
+	protected OverlayItem createItem(final int i) {
 		// TODO Auto-generated method stub
-		return this.overlayItemList.get(arg0);
+		return this.overlayItemList.get(i);
 	}
 
 	@Override
