@@ -1,7 +1,7 @@
 package ru.pinkponies.app;
 
 import java.util.ArrayList;
-import java.util.logging.Logger;
+import java.util.List;
 
 import org.osmdroid.ResourceProxy;
 import org.osmdroid.api.IMapView;
@@ -13,58 +13,60 @@ import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 
 public class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
-	private final static Logger logger = Logger
-			.getLogger(MyItemizedOverlay.class.getName());
+	private final List<OverlayItem> overlayItemList = new ArrayList<OverlayItem>();
 
-	private ArrayList<OverlayItem> overlayItemList = new ArrayList<OverlayItem>();
-
-	public MyItemizedOverlay(Drawable pDefaultMarker,
-			ResourceProxy pResourceProxy) {
-		super(pDefaultMarker, pResourceProxy);
+	public MyItemizedOverlay(final Drawable defaultMarker, final ResourceProxy resourceProxy) {
+		super(defaultMarker, resourceProxy);
 		// TODO Auto-generated constructor stub
 	}
 
-	public synchronized void addItem(GeoPoint p, String title) {
-		for (OverlayItem i : overlayItemList) {
-			if (i.mTitle.equals(title))
-				logger.info("Item named " + title + " already exists.");
-			throw new IllegalArgumentException();
+	public synchronized void addItem(final GeoPoint point, final String title) {
+		for (OverlayItem i : this.overlayItemList) {
+			if (i.mTitle.equals(title)) {
+				throw new IllegalArgumentException("Item named " + title + " already exists.");
+			}
 		}
-		OverlayItem newItem = new OverlayItem(title, title, p);
-		overlayItemList.add(newItem);
-		populate();
+		OverlayItem newItem = new OverlayItem(title, title, point);
+		this.overlayItemList.add(newItem);
+		this.populate();
 	}
 
-	public synchronized void removeItem(String title) {
-		for (OverlayItem i : overlayItemList) {
-			if (i.mTitle.equals(title))
-				overlayItemList.remove(i);
+	public synchronized void removeItem(final String title) {
+		for (OverlayItem i : this.overlayItemList) {
+			if (i.mTitle.equals(title)) {
+				this.overlayItemList.remove(i);
+				break;
+			}
 		}
+		this.populate();
 	}
 
-	public synchronized void resetItemMarker(String title, Drawable newMarker) {
-		for (OverlayItem i : overlayItemList) {
-			if (i.mTitle.equals(title))
-				i.setMarker(newMarker);
+	public synchronized void resetItemMarker(final String title, final Drawable newMarker) {
+		for (OverlayItem item : this.overlayItemList) {
+			if (item.mTitle.equals(title)) {
+				item.setMarker(newMarker);
+				break;
+			}
 		}
+		this.populate();
 	}
 
 	@Override
-	public boolean onSnapToItem(int arg0, int arg1, Point arg2, IMapView arg3) {
+	public boolean onSnapToItem(final int x, final int y, final Point snapPoint, final IMapView mapView) {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	protected OverlayItem createItem(int arg0) {
+	protected OverlayItem createItem(final int i) {
 		// TODO Auto-generated method stub
-		return overlayItemList.get(arg0);
+		return this.overlayItemList.get(i);
 	}
 
 	@Override
 	public int size() {
 		// TODO Auto-generated method stub
-		return overlayItemList.size();
+		return this.overlayItemList.size();
 	}
 
 }

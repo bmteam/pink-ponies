@@ -14,13 +14,13 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
+import ru.pinkponies.protocol.AppleUpdatePacket;
+import ru.pinkponies.protocol.ClientOptionsPacket;
 import ru.pinkponies.protocol.LocationUpdatePacket;
-import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.Protocol;
 import ru.pinkponies.protocol.SayPacket;
@@ -37,7 +37,7 @@ public class NetworkingThread extends Thread {
 	/**
 	 * The default server ip.
 	 */
-	private static final String SERVER_IP = "77.232.25.36";
+	private static final String SERVER_IP = "192.168.0.199";
 
 	/**
 	 * The default server port.
@@ -177,25 +177,24 @@ public class NetworkingThread extends Thread {
 	 *             If there was any sort of IO error.
 	 */
 	private void service() throws IOException {
-		if (this.selector.select() > 0) {
-			Set<SelectionKey> keys = this.selector.selectedKeys();
-			Iterator<SelectionKey> iterator = keys.iterator();
+		this.selector.select();
+		Set<SelectionKey> keys = this.selector.selectedKeys();
+		Iterator<SelectionKey> iterator = keys.iterator();
 
-			while (iterator.hasNext()) {
-				SelectionKey key = iterator.next();
-				iterator.remove();
+		while (iterator.hasNext()) {
+			SelectionKey key = iterator.next();
+			iterator.remove();
 
-				if (!key.isValid()) {
-					continue;
-				}
+			if (!key.isValid()) {
+				continue;
+			}
 
-				if (key.isConnectable()) {
-					this.finishConnection(key);
-				} else if (key.isReadable()) {
-					this.read(key);
-				} else if (key.isWritable()) {
-					this.write(key);
-				}
+			if (key.isConnectable()) {
+				this.finishConnection(key);
+			} else if (key.isReadable()) {
+				this.read(key);
+			} else if (key.isWritable()) {
+				this.write(key);
 			}
 		}
 	}
@@ -212,7 +211,6 @@ public class NetworkingThread extends Thread {
 		if (this.socket.isConnectionPending()) {
 			this.socket.finishConnect();
 			this.socket.register(this.selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-			LOGGER.info("Now reading.");
 
 			this.sendMessageToUIThread("connected");
 		}
@@ -244,40 +242,41 @@ public class NetworkingThread extends Thread {
 
 		this.incomingData.limit(this.incomingData.capacity());
 
-		int numRead = -1;
+		int numRead;
 		try {
 			numRead = channel.read(this.incomingData);
 		} catch (IOException e) {
 			this.close(key);
-			LOGGER.log(Level.SEVERE, "Exception", e);
-			return;
+			throw e;
 		}
 
 		if (numRead == -1) {
 			this.close(key);
-			return;
+			throw new IOException("Read failed.");
 		}
 
 		Packet packet = null;
 
 		this.incomingData.flip();
-		try {
-			packet = this.protocol.unpack(this.incomingData);
-		} catch (Exception e) {
-			LOGGER.log(Level.SEVERE, "Exception", e);
+
+		while (this.incomingData.remaining() > 0) {
+			try {
+				packet = this.protocol.unpack(this.incomingData);
+			} catch (Exception e) {
+				LOGGER.log(Level.SEVERE, "Exception", e);
+			}
+
+			if (packet == null) {
+				break;
+			}
+
+			this.onPacket(packet);
+
+			this.incomingData.compact();
+			this.incomingData.flip();
 		}
+
 		this.incomingData.compact();
-
-		if (packet == null) {
-			return;
-		}
-
-		if (packet instanceof SayPacket) {
-			SayPacket sayPacket = (SayPacket) packet;
-			LOGGER.info("Server: " + sayPacket.toString());
-		} else if (packet instanceof LocationUpdatePacket) {
-			this.sendMessageToUIThread(packet);
-		}
 	}
 
 	/**
@@ -294,6 +293,26 @@ public class NetworkingThread extends Thread {
 		this.outgoingData.flip();
 		channel.write(this.outgoingData);
 		this.outgoingData.compact();
+	}
+
+	/**
+	 * Parses a packet.
+	 * 
+	 * @param packet
+	 *            The packet to be parsed.
+	 */
+	private void onPacket(final Packet packet) {
+		if (packet instanceof ClientOptionsPacket) {
+			this.sendMessageToUIThread(packet);
+		} else if (packet instanceof SayPacket) {
+			this.sendMessageToUIThread(packet);
+		} else if (packet instanceof LocationUpdatePacket) {
+			this.sendMessageToUIThread(packet);
+		} else if (packet instanceof AppleUpdatePacket) {
+			this.sendMessageToUIThread(packet);
+		} else {
+			LOGGER.severe("Unknown packet type.");
+		}
 	}
 
 	/**
@@ -319,8 +338,7 @@ public class NetworkingThread extends Thread {
 	 *             If there was a error writing to the output buffer (e.g not enough space).
 	 */
 	private void login() throws IOException {
-		LoginPacket packet = new LoginPacket(Build.DISPLAY);
-		this.sendPacket(packet);
+		// TODO(xairy): login.
 	}
 
 	/**
@@ -344,7 +362,7 @@ public class NetworkingThread extends Thread {
 	 */
 	private void onMessageFromUIThread(final Object message) {
 		try {
-			LOGGER.info("MA: " + message.toString());
+			// LOGGER.info("MA: " + message.toString());
 
 			if (message.equals("connect")) {
 				this.connect();
@@ -360,6 +378,7 @@ public class NetworkingThread extends Thread {
 				throw new InvalidParameterException("Unknown message type.");
 			}
 		} catch (Exception e) {
+			this.sendMessageToUIThread("failed");
 			LOGGER.log(Level.SEVERE, "Exception", e);
 		}
 	}
