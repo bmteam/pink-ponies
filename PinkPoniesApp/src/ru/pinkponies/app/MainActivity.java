@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2013 Alexander Konovalov, Andrey Konovalov, Sergey Voronov, Vitaly Malyshev. All
+ * rights reserved. Use of this source code is governed by a BSD-style license that can be found in
+ * the LICENSE file.
+ */
+
 package ru.pinkponies.app;
 
 import java.lang.ref.WeakReference;
@@ -60,37 +66,6 @@ public final class MainActivity extends Activity implements LocationListener {
 	private static final int MAP_VIEW_INITIAL_ZOOM_LEVEL = 13;
 
 	/**
-	 * A message handler class for this activity.
-	 */
-	public static final class MessageHandler extends Handler {
-		/**
-		 * The weak reference to the activity.
-		 */
-		private final WeakReference<MainActivity> activity;
-
-		/**
-		 * Creates a new message handler which handles messages sent to the activity.
-		 * 
-		 * @param mainActivity
-		 *            The activity.
-		 */
-		MessageHandler(final MainActivity mainActivity) {
-			this.activity = new WeakReference<MainActivity>(mainActivity);
-		}
-
-		/**
-		 * Handles incoming messages and sends them to the activity.
-		 * 
-		 * @param msg
-		 *            The incoming message.
-		 */
-		@Override
-		public void handleMessage(final Message msg) {
-			this.activity.get().onMessageFromNetworkingThread(msg.obj);
-		}
-	}
-
-	/**
 	 * The message handler which receives messages for this activity.
 	 */
 	private final Handler messageHandler = new MessageHandler(this);
@@ -149,11 +124,13 @@ public final class MainActivity extends Activity implements LocationListener {
 	 * @return Created itemized overlay.
 	 */
 	private MyItemizedOverlay createItemizedOverlay(final int resourceId) {
-		Drawable marker = this.getResources().getDrawable(R.drawable.person);
-		int markerWidth = marker.getIntrinsicWidth();
-		int markerHeight = marker.getIntrinsicHeight();
+		final Drawable marker = this.getResources().getDrawable(R.drawable.person);
+
+		final int markerWidth = marker.getIntrinsicWidth();
+		final int markerHeight = marker.getIntrinsicHeight();
 		marker.setBounds(0, markerHeight, markerWidth, 0);
-		ResourceProxy resourceProxy = new DefaultResourceProxyImpl(this.getApplicationContext());
+
+		final ResourceProxy resourceProxy = new DefaultResourceProxyImpl(this.getApplicationContext());
 		return new MyItemizedOverlay(marker, resourceProxy);
 	}
 
@@ -339,12 +316,12 @@ public final class MainActivity extends Activity implements LocationListener {
 
 			}, 0, MainActivity.SERVICE_DELAY);
 		} else if (message instanceof LocationUpdatePacket) {
-			LocationUpdatePacket packet = (LocationUpdatePacket) message;
-			MainActivity.LOGGER.info(packet.clientID + "!" + Build.DISPLAY);
-			if (!(packet.clientID).equals(Build.DISPLAY)) {
-				GeoPoint point = new GeoPoint(packet.latitude, packet.longitude);
-				this.myPersonOverlay.removeItem(packet.clientID);
-				this.myPersonOverlay.addItem(point, packet.clientID);
+			final LocationUpdatePacket packet = (LocationUpdatePacket) message;
+			MainActivity.LOGGER.info(packet.getClientID() + "!" + Build.DISPLAY);
+			if (!(packet.getClientID()).equals(Build.DISPLAY)) {
+				final GeoPoint point = new GeoPoint(packet.getLatitude(), packet.getLongitude());
+				this.myPersonOverlay.removeItem(packet.getClientID());
+				this.myPersonOverlay.addItem(point, packet.getClientID());
 			}
 		}
 	}
@@ -356,7 +333,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	 *            The message to send.
 	 */
 	private void sendMessageToNetworkingThread(final Object message) {
-		Message msg = this.networkingThread.getMessageHandler().obtainMessage();
+		final Message msg = this.networkingThread.getMessageHandler().obtainMessage();
 		msg.obj = message;
 		this.networkingThread.getMessageHandler().sendMessage(msg);
 	}
@@ -365,7 +342,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	 * Switches current activity to login activity.
 	 */
 	public void goToLoginActivity() {
-		Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+		final Intent intent = new Intent(MainActivity.this, LoginActivity.class);
 		this.startActivity(intent);
 		this.onDestroy();
 	}
@@ -378,13 +355,13 @@ public final class MainActivity extends Activity implements LocationListener {
 	 */
 	@Override
 	public void onLocationChanged(final Location location) {
-		String clientID = Build.DISPLAY;
+		final String clientID = Build.DISPLAY;
 
-		double longitude = location.getLongitude();
-		double latitude = location.getLatitude();
-		double altitude = location.getAltitude();
+		final double longitude = location.getLongitude();
+		final double latitude = location.getLatitude();
+		final double altitude = location.getAltitude();
 
-		GeoPoint point = new GeoPoint(latitude, longitude);
+		final GeoPoint point = new GeoPoint(latitude, longitude);
 		this.myPath.addPoint(point);
 
 		this.sendMessageToNetworkingThread(new LocationUpdatePacket(clientID, longitude, latitude, altitude));
@@ -427,4 +404,34 @@ public final class MainActivity extends Activity implements LocationListener {
 	public void onStatusChanged(final String provider, final int status, final Bundle extras) {
 	}
 
+	/**
+	 * A message handler class for this activity.
+	 */
+	public static final class MessageHandler extends Handler {
+		/**
+		 * The weak reference to the activity.
+		 */
+		private final WeakReference<MainActivity> activity;
+
+		/**
+		 * Creates a new message handler which handles messages sent to the activity.
+		 * 
+		 * @param mainActivity
+		 *            The activity.
+		 */
+		MessageHandler(final MainActivity mainActivity) {
+			this.activity = new WeakReference<MainActivity>(mainActivity);
+		}
+
+		/**
+		 * Handles incoming messages and sends them to the activity.
+		 * 
+		 * @param msg
+		 *            The incoming message.
+		 */
+		@Override
+		public void handleMessage(final Message msg) {
+			this.activity.get().onMessageFromNetworkingThread(msg.obj);
+		}
+	}
 }

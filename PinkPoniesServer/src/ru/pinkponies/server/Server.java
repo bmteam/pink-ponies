@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2013 Alexander Konovalov, Andrey Konovalov, Sergey Voronov, Vitaly Malyshev. All
+ * rights reserved. Use of this source code is governed by a BSD-style license that can be found in
+ * the LICENSE file.
+ */
+
 package ru.pinkponies.server;
 
 import java.io.IOException;
@@ -11,6 +17,7 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
@@ -64,7 +71,7 @@ public final class Server {
 	/**
 	 * The list of all connected clients.
 	 */
-	private final ArrayList<SocketChannel> clients = new ArrayList<SocketChannel>();
+	private final List<SocketChannel> clients = new ArrayList<SocketChannel>();
 
 	/**
 	 * The protocol helper. Provides methods for serialization and deserialization of packets.
@@ -88,8 +95,8 @@ public final class Server {
 			Server.LOGGER.info("serverSocketChannel's registered key is " + key.channel().toString() + ".");
 
 			Server.LOGGER.info("Initialized.");
-		} catch (final Exception e) {
-			Server.LOGGER.log(Level.SEVERE, "Exception", e);
+		} catch (final IOException e) {
+			Server.LOGGER.log(Level.SEVERE, "IOException during initalization", e);
 		}
 	}
 
@@ -100,8 +107,8 @@ public final class Server {
 		while (true) {
 			try {
 				this.pumpEvents();
-			} catch (final Exception e) {
-				Server.LOGGER.log(Level.SEVERE, "Exception", e);
+			} catch (final IOException e) {
+				Server.LOGGER.log(Level.SEVERE, "IOException during event pumping", e);
 			}
 		}
 	}
@@ -215,8 +222,8 @@ public final class Server {
 		buffer.flip();
 		try {
 			packet = this.protocol.unpack(buffer);
-		} catch (final Exception e) {
-			Server.LOGGER.log(Level.SEVERE, "Exception", e);
+		} catch (final IOException e) {
+			Server.LOGGER.log(Level.SEVERE, "IOException during packet unpacking", e);
 		}
 		buffer.compact();
 

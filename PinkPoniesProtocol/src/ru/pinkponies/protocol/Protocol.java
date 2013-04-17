@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2013 Alexander Konovalov, Andrey Konovalov, Sergey Voronov, Vitaly Malyshev. All
+ * rights reserved. Use of this source code is governed by a BSD-style license that can be found in
+ * the LICENSE file.
+ */
+
 package ru.pinkponies.protocol;
 
 import java.io.IOException;
@@ -9,26 +15,54 @@ import org.msgpack.MessagePack;
 import org.msgpack.packer.BufferPacker;
 import org.msgpack.unpacker.BufferUnpacker;
 
+/**
+ * This class provides methods related to packet packing / unpacking.
+ */
 public final class Protocol {
+	/**
+	 * LoginPacket id.
+	 */
 	private static final byte LOGIN_PACKET = 0;
+	/**
+	 * LocationUpdatePacket id.
+	 */
 	private static final byte LOCATION_UPDATE_PACKET = 1;
+	/**
+	 * SayPacket id.
+	 */
 	private static final byte SAY_PACKET = 2;
 
-	private MessagePack messagePack;
+	/**
+	 * The underlying serialization and deserialization API.
+	 */
+	private final MessagePack messagePack;
 
+	/**
+	 * Create a new protocol class. Registers packet classes, generating fast class-specific
+	 * serializers / deserializers.
+	 */
 	public Protocol() {
-		messagePack = new MessagePack();
-		messagePack.register(LocationUpdatePacket.class);
-		messagePack.register(LoginPacket.class);
-		messagePack.register(SayPacket.class);
+		this.messagePack = new MessagePack();
+		this.messagePack.register(LocationUpdatePacket.class);
+		this.messagePack.register(LoginPacket.class);
+		this.messagePack.register(SayPacket.class);
 	}
 
-	public byte[] pack(Packet packet) throws IOException {
+	/**
+	 * Packs packet into a byte array.
+	 * 
+	 * @param packet
+	 *            the packet
+	 * @return the serialized packet data
+	 * @throws IOException
+	 *             if there was some problem serializing packet.
+	 */
+	public byte[] pack(final Packet packet) throws IOException {
 		if (packet == null) {
 			throw new NullPointerException("Packet can not be null.");
 		}
 
-		BufferPacker packer = messagePack.createBufferPacker();
+		final BufferPacker packer = this.messagePack.createBufferPacker();
 
 		if (packet instanceof LoginPacket) {
 			packer.write(LOGIN_PACKET);
@@ -46,13 +80,24 @@ public final class Protocol {
 		return packer.toByteArray();
 	}
 
-	public void pack(Packet packet, ByteBuffer buffer) throws IOException,
-			BufferOverflowException {
+	/**
+	 * Packs packet into a byte buffer.
+	 * 
+	 * @param packet
+	 *            the packet
+	 * @param buffer
+	 *            the buffer to which the packet is to be serialized.
+	 * @throws IOException
+	 *             if there was some problem serializing packet.
+	 * @throws BufferOverflowException
+	 *             if there was not enough space in the buffer to store the packed packet data.
+	 */
+	public void pack(final Packet packet, final ByteBuffer buffer) throws IOException, BufferOverflowException {
 		if (packet == null) {
 			throw new NullPointerException("Packet can not be null.");
 		}
 
-		BufferPacker packer = messagePack.createBufferPacker();
+		final BufferPacker packer = this.messagePack.createBufferPacker();
 
 		if (packet instanceof LoginPacket) {
 			packer.write(LOGIN_PACKET);
@@ -70,10 +115,19 @@ public final class Protocol {
 		buffer.put(packer.toByteArray());
 	}
 
-	public Packet unpack(byte[] data) throws IOException {
-		BufferUnpacker unpacker = messagePack.createBufferUnpacker(data);
+	/**
+	 * Unpacks a packet from the byte array.
+	 * 
+	 * @param data
+	 *            the serialized packet data
+	 * @return the packet
+	 * @throws IOException
+	 *             if there was some problem unpacking packet.
+	 */
+	public Packet unpack(final byte[] data) throws IOException {
+		final BufferUnpacker unpacker = this.messagePack.createBufferUnpacker(data);
 
-		byte type = unpacker.readByte();
+		final byte type = unpacker.readByte();
 
 		if (type == LOGIN_PACKET) {
 			return unpacker.read(LoginPacket.class);
@@ -87,13 +141,21 @@ public final class Protocol {
 		}
 	}
 
-	public Packet unpack(ByteBuffer buffer) throws IOException {
+	/**
+	 * Unpacks a packet from the byte buffer.
+	 * 
+	 * @param buffer
+	 *            the buffer from which the packet should be unpacked
+	 * @return the packet
+	 * @throws IOException
+	 *             if there was some problem unpacking packet.
+	 */
+	public Packet unpack(final ByteBuffer buffer) throws IOException {
 		// FIXME(alexknvl): wtf, there is no way to read directly from
 		// ByteBuffer?
-		BufferUnpacker unpacker = messagePack.createBufferUnpacker(buffer
-				.array());
+		final BufferUnpacker unpacker = this.messagePack.createBufferUnpacker(buffer.array());
 
-		byte type = unpacker.readByte();
+		final byte type = unpacker.readByte();
 		Packet result = null;
 
 		if (type == LOGIN_PACKET) {
@@ -107,7 +169,7 @@ public final class Protocol {
 			throw new InvalidClassException("Unknown packet type.");
 		}
 
-		int totalRead = unpacker.getReadByteCount();
+		final int totalRead = unpacker.getReadByteCount();
 		buffer.position(buffer.position() + totalRead);
 
 		return result;

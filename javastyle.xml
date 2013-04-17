@@ -80,10 +80,6 @@
         </module>
         <!-- See http://checkstyle.sourceforge.net/config_coding.html#InnerAssignment -->
         <module name="InnerAssignment"/>
-        <!-- See http://checkstyle.sourceforge.net/config_coding.html#MagicNumber -->
-        <module name="MagicNumber">
-            <property name="ignoreHashCodeMethod" value="true"/>
-        </module>
         <!-- See http://checkstyle.sourceforge.net/config_coding.html#MissingSwitchDefault -->
         <module name="MissingSwitchDefault"/>
         <!-- See http://checkstyle.sourceforge.net/config_coding.html#ModifiedControlVariable -->

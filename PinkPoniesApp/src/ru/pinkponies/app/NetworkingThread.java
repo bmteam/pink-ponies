@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2013 Alexander Konovalov, Andrey Konovalov, Sergey Voronov, Vitaly Malyshev. All
+ * rights reserved. Use of this source code is governed by a BSD-style license that can be found in
+ * the LICENSE file.
+ */
+
 package ru.pinkponies.app;
 
 import java.io.IOException;
@@ -45,51 +51,6 @@ public class NetworkingThread extends Thread {
 	private static final int SERVER_PORT = 4264;
 
 	/**
-	 * A message handler class for the networking thread.
-	 */
-	private static final class MessageHandler extends Handler {
-		/**
-		 * The weak reference to the networking thread.
-		 */
-		private final WeakReference<NetworkingThread> thread;
-
-		/**
-		 * Creates a new message handler which handles messages sent to the networking thread.
-		 * 
-		 * @param networkingThread
-		 *            The networking thread.
-		 */
-		MessageHandler(final NetworkingThread networkingThread) {
-			this.thread = new WeakReference<NetworkingThread>(networkingThread);
-		}
-
-		/**
-		 * Handles incoming messages and sends them to the networking thread.
-		 * 
-		 * @param msg
-		 *            The incoming message.
-		 */
-		@Override
-		public void handleMessage(final Message msg) {
-			this.thread.get().onMessageFromUIThread(msg.obj);
-		}
-	};
-
-	/**
-	 * The message handler which receives messages for this networking thread.
-	 */
-	private MessageHandler messageHandler = new MessageHandler(this);
-
-	/**
-	 * Returns the message handler associated with this networking thread.
-	 * 
-	 * @return The message handler.
-	 */
-	public final Handler getMessageHandler() {
-		return this.messageHandler;
-	}
-
-	/**
 	 * The default incoming/outgoing buffer size.
 	 */
 	private static final int BUFFER_SIZE = 8192;
@@ -98,6 +59,11 @@ public class NetworkingThread extends Thread {
 	 * The protocol helper. Provides methods for serialization and deserialization of packets.
 	 */
 	private final Protocol protocol;
+
+	/**
+	 * The message handler which receives messages for this networking thread.
+	 */
+	private final MessageHandler messageHandler = new MessageHandler(this);
 
 	/**
 	 * The weak reference to the main activity.
@@ -137,18 +103,22 @@ public class NetworkingThread extends Thread {
 	}
 
 	/**
+	 * Returns the message handler associated with this networking thread.
+	 * 
+	 * @return The message handler.
+	 */
+	public final Handler getMessageHandler() {
+		return this.messageHandler;
+	}
+
+	/**
 	 * Starts the networking thread.
 	 */
 	@Override
 	public final void run() {
-		try {
-			Looper.prepare();
-			this.messageHandler = new MessageHandler(this);
-			this.sendMessageToUIThread("initialized");
-			Looper.loop();
-		} catch (Exception e) {
-			LOGGER.log(Level.SEVERE, "Exception", e);
-		}
+		Looper.prepare();
+		this.sendMessageToUIThread("initialized");
+		Looper.loop();
 	}
 
 	/**
@@ -178,11 +148,11 @@ public class NetworkingThread extends Thread {
 	 */
 	private void service() throws IOException {
 		if (this.selector.select() > 0) {
-			Set<SelectionKey> keys = this.selector.selectedKeys();
-			Iterator<SelectionKey> iterator = keys.iterator();
+			final Set<SelectionKey> keys = this.selector.selectedKeys();
+			final Iterator<SelectionKey> iterator = keys.iterator();
 
 			while (iterator.hasNext()) {
-				SelectionKey key = iterator.next();
+				final SelectionKey key = iterator.next();
 				iterator.remove();
 
 				if (!key.isValid()) {
@@ -240,14 +210,14 @@ public class NetworkingThread extends Thread {
 	 *             If there was a problem reading data.
 	 */
 	private void read(final SelectionKey key) throws IOException {
-		SocketChannel channel = (SocketChannel) key.channel();
+		final SocketChannel channel = (SocketChannel) key.channel();
 
 		this.incomingData.limit(this.incomingData.capacity());
 
 		int numRead = -1;
 		try {
 			numRead = channel.read(this.incomingData);
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			this.close(key);
 			LOGGER.log(Level.SEVERE, "Exception", e);
 			return;
@@ -263,7 +233,7 @@ public class NetworkingThread extends Thread {
 		this.incomingData.flip();
 		try {
 			packet = this.protocol.unpack(this.incomingData);
-		} catch (Exception e) {
+		} catch (final IOException e) {
 			LOGGER.log(Level.SEVERE, "Exception", e);
 		}
 		this.incomingData.compact();
@@ -273,7 +243,7 @@ public class NetworkingThread extends Thread {
 		}
 
 		if (packet instanceof SayPacket) {
-			SayPacket sayPacket = (SayPacket) packet;
+			final SayPacket sayPacket = (SayPacket) packet;
 			LOGGER.info("Server: " + sayPacket.toString());
 		} else if (packet instanceof LocationUpdatePacket) {
 			this.sendMessageToUIThread(packet);
@@ -289,7 +259,7 @@ public class NetworkingThread extends Thread {
 	 *             If there was a problem writing data.
 	 */
 	private void write(final SelectionKey key) throws IOException {
-		SocketChannel channel = (SocketChannel) key.channel();
+		final SocketChannel channel = (SocketChannel) key.channel();
 
 		this.outgoingData.flip();
 		channel.write(this.outgoingData);
@@ -307,7 +277,7 @@ public class NetworkingThread extends Thread {
 	private void sendPacket(final Packet packet) throws IOException {
 		try {
 			this.outgoingData.put(this.protocol.pack(packet));
-		} catch (BufferOverflowException e) {
+		} catch (final BufferOverflowException e) {
 			LOGGER.log(Level.SEVERE, "Exception", e);
 		}
 	}
@@ -319,7 +289,7 @@ public class NetworkingThread extends Thread {
 	 *             If there was a error writing to the output buffer (e.g not enough space).
 	 */
 	private void login() throws IOException {
-		LoginPacket packet = new LoginPacket(Build.DISPLAY);
+		final LoginPacket packet = new LoginPacket(Build.DISPLAY);
 		this.sendPacket(packet);
 	}
 
@@ -332,7 +302,7 @@ public class NetworkingThread extends Thread {
 	 *             If there was a error writing to the output buffer (e.g not enough space).
 	 */
 	private void say(final String message) throws IOException {
-		SayPacket packet = new SayPacket(message);
+		final SayPacket packet = new SayPacket(message);
 		this.sendPacket(packet);
 	}
 
@@ -359,7 +329,7 @@ public class NetworkingThread extends Thread {
 			} else {
 				throw new InvalidParameterException("Unknown message type.");
 			}
-		} catch (Exception e) {
+		} catch (final IOException e) {
 			LOGGER.log(Level.SEVERE, "Exception", e);
 		}
 	}
@@ -371,12 +341,39 @@ public class NetworkingThread extends Thread {
 	 *            The message.
 	 */
 	private void sendMessageToUIThread(final Object message) {
-		try {
-			Message msg = this.mainActivity.get().getMessageHandler().obtainMessage();
-			msg.obj = message;
-			this.mainActivity.get().getMessageHandler().sendMessage(msg);
-		} catch (Exception e) {
-			LOGGER.log(Level.SEVERE, "Exception", e);
+		final Message msg = this.mainActivity.get().getMessageHandler().obtainMessage();
+		msg.obj = message;
+		this.mainActivity.get().getMessageHandler().sendMessage(msg);
+	}
+
+	/**
+	 * A message handler class for the networking thread.
+	 */
+	private static final class MessageHandler extends Handler {
+		/**
+		 * The weak reference to the networking thread.
+		 */
+		private final WeakReference<NetworkingThread> thread;
+
+		/**
+		 * Creates a new message handler which handles messages sent to the networking thread.
+		 * 
+		 * @param networkingThread
+		 *            The networking thread.
+		 */
+		MessageHandler(final NetworkingThread networkingThread) {
+			this.thread = new WeakReference<NetworkingThread>(networkingThread);
+		}
+
+		/**
+		 * Handles incoming messages and sends them to the networking thread.
+		 * 
+		 * @param msg
+		 *            The incoming message.
+		 */
+		@Override
+		public void handleMessage(final Message msg) {
+			this.thread.get().onMessageFromUIThread(msg.obj);
 		}
 	}
 }
