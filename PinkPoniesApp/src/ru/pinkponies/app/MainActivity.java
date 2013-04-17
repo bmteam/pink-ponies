@@ -20,21 +20,25 @@ import org.osmdroid.views.overlay.MyLocationOverlay;
 import org.osmdroid.views.overlay.PathOverlay;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.view.Menu;
 import android.view.View;
 
+import ru.pinkponies.protocol.AppleUpdatePacket;
+import ru.pinkponies.protocol.ClientOptionsPacket;
 import ru.pinkponies.protocol.LocationUpdatePacket;
+import ru.pinkponies.protocol.SayPacket;
 
 /**
  * The main activity class.
@@ -63,7 +67,12 @@ public final class MainActivity extends Activity implements LocationListener {
 	/**
 	 * The initial map view zoom level.
 	 */
-	private static final int MAP_VIEW_INITIAL_ZOOM_LEVEL = 13;
+	private static final int MAP_VIEW_INITIAL_ZOOM_LEVEL = 15;
+
+	/**
+	 * This value is used the identifier is not yet defined.
+	 */
+	private static final long BAD_ID = -1;
 
 	/**
 	 * The message handler which receives messages for this activity.
@@ -110,6 +119,11 @@ public final class MainActivity extends Activity implements LocationListener {
 	 */
 	private PathOverlay myPath;
 
+	/**
+	 * The identifier of the player.
+	 */
+	private long myId = BAD_ID;
+
 	// private TextOverlay textOverlay;
 
 	// private String login = "";
@@ -124,7 +138,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	 * @return Created itemized overlay.
 	 */
 	private MyItemizedOverlay createItemizedOverlay(final int resourceId) {
-		final Drawable marker = this.getResources().getDrawable(R.drawable.person);
+		final Drawable marker = this.getResources().getDrawable(resourceId);
 
 		final int markerWidth = marker.getIntrinsicWidth();
 		final int markerHeight = marker.getIntrinsicHeight();
@@ -208,7 +222,7 @@ public final class MainActivity extends Activity implements LocationListener {
 		this.mapView.getOverlays().add(this.myAppleOverlay);
 
 		// GeoPoint myPoint = new GeoPoint(55929563, 37523862);
-		// myAppleOverlay.addItem(myPoint, "Apple");
+		// this.myAppleOverlay.addItem(myPoint, "Apple");
 
 		LOGGER.info("Initialized.");
 	}
@@ -301,6 +315,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	 */
 	private void onMessageFromNetworkingThread(final Object message) {
 		MainActivity.LOGGER.info("NT: " + message.toString());
+
 		if (message.equals("initialized")) {
 			this.sendMessageToNetworkingThread("connect");
 			this.sendMessageToNetworkingThread("service");
@@ -315,14 +330,35 @@ public final class MainActivity extends Activity implements LocationListener {
 				}
 
 			}, 0, MainActivity.SERVICE_DELAY);
+		} else if (message.equals("failed")) {
+			this.showMessageBox("Socket exception.", null);
+		} else if (message instanceof ClientOptionsPacket) {
+			final ClientOptionsPacket packet = (ClientOptionsPacket) message;
+			this.myId = packet.getClientId();
+		} else if (message instanceof SayPacket) {
+			final SayPacket packet = (SayPacket) message;
+			LOGGER.info(packet.toString());
 		} else if (message instanceof LocationUpdatePacket) {
 			final LocationUpdatePacket packet = (LocationUpdatePacket) message;
-			MainActivity.LOGGER.info(packet.getClientID() + "!" + Build.DISPLAY);
-			if (!(packet.getClientID()).equals(Build.DISPLAY)) {
-				final GeoPoint point = new GeoPoint(packet.getLatitude(), packet.getLongitude());
-				this.myPersonOverlay.removeItem(packet.getClientID());
-				this.myPersonOverlay.addItem(point, packet.getClientID());
+			if (this.myId != BAD_ID && packet.getClientId() != this.myId) {
+				final GeoPoint point = new GeoPoint(packet.getLocation().getLatitude(), packet.getLocation()
+						.getLongitude());
+				final String title = "Player" + String.valueOf(packet.getClientId());
+
+				this.myPersonOverlay.removeItem(title);
+				this.myPersonOverlay.addItem(point, title);
 			}
+		} else if (message instanceof AppleUpdatePacket) {
+			final AppleUpdatePacket packet = (AppleUpdatePacket) message;
+			final String title = "Apple" + String.valueOf(packet.getAppleId());
+			if (packet.getStatus()) {
+				final GeoPoint point = new GeoPoint(packet.getLocation().getLatitude(), packet.getLocation()
+						.getLongitude());
+				this.myAppleOverlay.addItem(point, title);
+			} else {
+				this.myAppleOverlay.removeItem(title);
+			}
+			LOGGER.info("Apple " + String.valueOf(packet.getAppleId()) + " updated.");
 		}
 	}
 
@@ -355,8 +391,6 @@ public final class MainActivity extends Activity implements LocationListener {
 	 */
 	@Override
 	public void onLocationChanged(final Location location) {
-		final String clientID = Build.DISPLAY;
-
 		final double longitude = location.getLongitude();
 		final double latitude = location.getLatitude();
 		final double altitude = location.getAltitude();
@@ -364,7 +398,10 @@ public final class MainActivity extends Activity implements LocationListener {
 		final GeoPoint point = new GeoPoint(latitude, longitude);
 		this.myPath.addPoint(point);
 
-		this.sendMessageToNetworkingThread(new LocationUpdatePacket(clientID, longitude, latitude, altitude));
+		final ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude, latitude, altitude);
+		final LocationUpdatePacket packet = new LocationUpdatePacket(this.myId, loc);
+		this.sendMessageToNetworkingThread(packet);
+
 		MainActivity.LOGGER.info("Location updated.");
 	}
 
@@ -402,6 +439,27 @@ public final class MainActivity extends Activity implements LocationListener {
 	 */
 	@Override
 	public void onStatusChanged(final String provider, final int status, final Bundle extras) {
+	}
+
+	/**
+	 * Shows a message box with the specified title and message.
+	 * 
+	 * @param title
+	 *            The title of the message box.
+	 * @param message
+	 *            The message that will be shown in the message box.
+	 */
+	public void showMessageBox(final String title, final String message) {
+		final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+		alertDialogBuilder.setTitle(title);
+		alertDialogBuilder.setMessage(message).setCancelable(false)
+				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(final DialogInterface dialog, final int id) {
+					}
+				});
+		final AlertDialog alertDialog = alertDialogBuilder.create();
+		alertDialog.show();
 	}
 
 	/**

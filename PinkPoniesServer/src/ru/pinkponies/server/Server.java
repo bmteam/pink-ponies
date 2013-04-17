@@ -14,17 +14,18 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import ru.pinkponies.protocol.AppleUpdatePacket;
+import ru.pinkponies.protocol.ClientOptionsPacket;
+import ru.pinkponies.protocol.Location;
 import ru.pinkponies.protocol.LocationUpdatePacket;
-import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.Protocol;
 import ru.pinkponies.protocol.SayPacket;
@@ -49,6 +50,11 @@ public final class Server {
 	private static final int BUFFER_SIZE = 8192;
 
 	/**
+	 * The distance at which players pick up apples.
+	 */
+	private static final double INTERACTION_DISTANCE = 100.0;
+
+	/**
 	 * The main socket channel on which the server listens for incoming connections.
 	 */
 	private ServerSocketChannel serverSocketChannel;
@@ -69,14 +75,24 @@ public final class Server {
 	private final Map<SocketChannel, ByteBuffer> outgoingData = new HashMap<SocketChannel, ByteBuffer>();
 
 	/**
-	 * The list of all connected clients.
-	 */
-	private final List<SocketChannel> clients = new ArrayList<SocketChannel>();
-
-	/**
 	 * The protocol helper. Provides methods for serialization and deserialization of packets.
 	 */
 	private final Protocol protocol = new Protocol();
+
+	/**
+	 * The map of all connected clients.
+	 */
+	private final Map<SocketChannel, Player> players = new HashMap<SocketChannel, Player>();
+
+	/**
+	 * The map of all existing apples.
+	 */
+	private final Map<Long, Apple> apples = new HashMap<Long, Apple>();
+
+	/**
+	 * ID manager for generating new identifiers.
+	 */
+	private final IdManager idManager = new IdManager();
 
 	/**
 	 * Initializes this server.
@@ -107,6 +123,7 @@ public final class Server {
 		while (true) {
 			try {
 				this.pumpEvents();
+				this.pickupApples();
 			} catch (final IOException e) {
 				Server.LOGGER.log(Level.SEVERE, "IOException during event pumping", e);
 			}
@@ -163,8 +180,6 @@ public final class Server {
 		this.incomingData.put(channel, ByteBuffer.allocate(Server.BUFFER_SIZE));
 		this.outgoingData.put(channel, ByteBuffer.allocate(Server.BUFFER_SIZE));
 
-		this.clients.add(channel);
-
 		this.onConnect(channel);
 	}
 
@@ -182,7 +197,7 @@ public final class Server {
 		this.incomingData.remove(channel);
 		this.outgoingData.remove(channel);
 
-		this.clients.remove(channel);
+		this.players.remove(channel);
 
 		channel.close();
 		key.cancel();
@@ -220,18 +235,25 @@ public final class Server {
 		Packet packet = null;
 
 		buffer.flip();
-		try {
-			packet = this.protocol.unpack(buffer);
-		} catch (final IOException e) {
-			Server.LOGGER.log(Level.SEVERE, "IOException during packet unpacking", e);
+
+		while (buffer.remaining() > 0) {
+			try {
+				packet = this.protocol.unpack(buffer);
+			} catch (final IOException e) {
+				Server.LOGGER.log(Level.SEVERE, "IOException during packet unpacking", e);
+			}
+
+			if (packet == null) {
+				break;
+			}
+
+			this.onPacket(channel, packet);
+
+			buffer.compact();
+			buffer.flip();
 		}
+
 		buffer.compact();
-
-		if (packet == null) {
-			return;
-		}
-
-		this.onPacket(channel, packet);
 	}
 
 	/**
@@ -259,9 +281,22 @@ public final class Server {
 	 * 
 	 * @param channel
 	 *            The socket channel connecting to the new peer.
+	 * @throws IOException
+	 *             if there was any io error.
 	 */
-	public void onConnect(final SocketChannel channel) {
+	public void onConnect(final SocketChannel channel) throws IOException {
 		System.out.println("Client connected from " + channel.socket().getRemoteSocketAddress().toString() + ".");
+
+		final long id = this.idManager.newId();
+		this.players.put(channel, new Player(id, null, channel));
+
+		final ClientOptionsPacket packet = new ClientOptionsPacket(id);
+		this.sendPacket(channel, packet);
+
+		for (final Apple apple : this.apples.values()) {
+			final AppleUpdatePacket applePacket = new AppleUpdatePacket(apple.getId(), apple.getLocation(), true);
+			this.sendPacket(channel, applePacket);
+		}
 	}
 
 	/**
@@ -277,16 +312,27 @@ public final class Server {
 	public void onPacket(final SocketChannel channel, final Packet packet) throws IOException {
 		System.out.println("Message from " + channel.socket().getRemoteSocketAddress().toString() + ":");
 
-		if (packet instanceof LoginPacket) {
-			final LoginPacket loginPacket = (LoginPacket) packet;
-			System.out.println(loginPacket.toString());
-		} else if (packet instanceof SayPacket) {
+		if (packet instanceof SayPacket) {
 			final SayPacket sayPacket = (SayPacket) packet;
 			System.out.println(sayPacket.toString());
 		} else if (packet instanceof LocationUpdatePacket) {
 			final LocationUpdatePacket locUpdate = (LocationUpdatePacket) packet;
+			locUpdate.setClientId(this.players.get(channel).getId());
+			this.players.get(channel).setLocation(locUpdate.getLocation());
 			System.out.println(locUpdate.toString());
+
 			this.broadcastPacket(locUpdate);
+			System.out.println("Location update broadcasted.");
+
+			// XXX(xairy): temporary.
+			final Random generator = new Random();
+			final double longitude = locUpdate.getLocation().getLongitude() + (generator.nextDouble() - 0.5) * 0.01;
+			final double latitude = locUpdate.getLocation().getLatitude() + (generator.nextDouble() - 0.5) * 0.01;
+			final Location appleLocation = new Location(longitude, latitude, 0.0);
+			System.out.println("Distance: " + locUpdate.getLocation().distanceTo(appleLocation) + ".");
+			this.addApple(appleLocation);
+		} else {
+			LOGGER.info("Unknown packet type.");
 		}
 	}
 
@@ -336,8 +382,66 @@ public final class Server {
 	 *             If there was a error writing to any of the output buffers (e.g not enough space).
 	 */
 	private void broadcastPacket(final Packet packet) throws IOException {
-		for (final SocketChannel client : this.clients) {
-			this.sendPacket(client, packet);
+		for (final Player player : this.players.values()) {
+			this.sendPacket(player.getChannel(), packet);
+		}
+	}
+
+	/**
+	 * Adds a new apple with a specified location.
+	 * 
+	 * @param location
+	 *            Location of the apple added.
+	 * @throws IOException
+	 *             if there was any problem broadcasting apple update.
+	 */
+	private void addApple(final Location location) throws IOException {
+		final long id = this.idManager.newId();
+		final Apple apple = new Apple(id, location);
+		this.apples.put(id, apple);
+		final AppleUpdatePacket packet = new AppleUpdatePacket(id, location, true);
+		System.out.println("Added " + apple + ".");
+
+		this.broadcastPacket(packet);
+		System.out.println("Apple update broadcasted.");
+	}
+
+	/**
+	 * Removes the apple with the specified id.
+	 * 
+	 * @param id
+	 *            The id of the apple being removed.
+	 * @throws IOException
+	 *             if there was any problem broadcasting apple update.
+	 */
+	private void removeApple(final long id) throws IOException {
+		final Location location = this.apples.get(id).getLocation();
+		final AppleUpdatePacket packet = new AppleUpdatePacket(id, location, false);
+
+		this.broadcastPacket(packet);
+		System.out.println("Apple update broadcasted.");
+
+		this.apples.remove(id);
+		System.out.println("Removed Apple " + id + ".");
+	}
+
+	/**
+	 * Processes all apples and checks if they are being picked up by any player.
+	 * 
+	 * @throws IOException
+	 *             if there was any problem broadcasting apple update.
+	 */
+	private void pickupApples() throws IOException {
+		for (Player player : this.players.values()) {
+			if (player.getLocation() != null) {
+				for (Apple apple : this.apples.values()) {
+					if (player.getLocation().distanceTo(apple.getLocation()) <= INTERACTION_DISTANCE) {
+						System.out.println("Player " + player.getId() + " picked up Apple " + apple.getId() + ".");
+						this.removeApple(apple.getId());
+						return;
+					}
+				}
+			}
 		}
 	}
 

@@ -6,9 +6,13 @@
 
 package ru.pinkponies.protocol;
 
+import org.msgpack.annotation.Index;
+import org.msgpack.annotation.Message;
+
 /**
  * Location class.
  */
+@Message
 public final class Location {
 	/**
 	 * The average radius of the Earth in meters.
@@ -20,14 +24,17 @@ public final class Location {
 	/**
 	 * The longitude, measured in radians.
 	 */
+	@Index(0)
 	private double longitude;
 	/**
 	 * The latitude, measured in radians.
 	 */
+	@Index(1)
 	private double latitude;
 	/**
 	 * The altitude, measured in meters.
 	 */
+	@Index(2)
 	private double altitude;
 
 	/**
@@ -49,9 +56,9 @@ public final class Location {
 	 */
 	public Location(final double longitude, final double latitude, final double altitude) {
 		super();
-		this.longitude = longitude;
-		this.latitude = latitude;
-		this.altitude = altitude;
+		this.setLongitude(longitude);
+		this.setLatitude(latitude);
+		this.setAltitude(altitude);
 	}
 
 	/**

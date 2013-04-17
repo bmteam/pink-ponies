@@ -8,7 +8,6 @@ package ru.pinkponies.app;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 import org.osmdroid.ResourceProxy;
 import org.osmdroid.api.IMapView;
@@ -27,11 +26,6 @@ import android.graphics.drawable.Drawable;
  */
 public final class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
 	/**
-	 * The class wide logger.
-	 */
-	private static final Logger LOGGER = Logger.getLogger(MyItemizedOverlay.class.getName());
-
-	/**
 	 * The image list.
 	 */
 	private final List<OverlayItem> overlayItemList = new ArrayList<OverlayItem>();
@@ -39,8 +33,10 @@ public final class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
 	/**
 	 * Creates a new itemized overlay.
 	 * 
-	 * @param pDefaultMarker the default item marker.
-	 * @param pResourceProxy the 
+	 * @param pDefaultMarker
+	 *            the default item marker
+	 * @param pResourceProxy
+	 *            the
 	 */
 	public MyItemizedOverlay(final Drawable pDefaultMarker, final ResourceProxy pResourceProxy) {
 		super(pDefaultMarker, pResourceProxy);
@@ -49,20 +45,18 @@ public final class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
 	/**
 	 * Adds a new item to the image list.
 	 * 
-	 * @param position
-	 *            the position of the new image.
+	 * @param point
+	 *            the position of the new image
 	 * @param title
-	 *            the image title/id.
+	 *            the image title/id
 	 */
-	public synchronized void addItem(final GeoPoint position, final String title) {
+	public synchronized void addItem(final GeoPoint point, final String title) {
 		for (OverlayItem i : this.overlayItemList) {
 			if (i.mTitle.equals(title)) {
-				LOGGER.info("Item named " + title + " already exists.");
+				throw new IllegalArgumentException("Item named " + title + " already exists.");
 			}
-
-			throw new IllegalArgumentException("Item named " + title + " already exists.");
 		}
-		final OverlayItem newItem = new OverlayItem(title, title, position);
+		final OverlayItem newItem = new OverlayItem(title, title, point);
 		this.overlayItemList.add(newItem);
 		this.populate();
 	}
@@ -71,42 +65,46 @@ public final class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
 	 * Removes an item with the given title/id.
 	 * 
 	 * @param title
-	 *            the item title/id.
+	 *            the item title/id
 	 */
 	public synchronized void removeItem(final String title) {
 		for (OverlayItem i : this.overlayItemList) {
 			if (i.mTitle.equals(title)) {
 				this.overlayItemList.remove(i);
+				break;
 			}
 		}
+		this.populate();
 	}
 
 	/**
 	 * Resets image marker for the given title/id.
 	 * 
 	 * @param title
-	 *            the item title/id.
+	 *            the item title/id
 	 * @param newMarker
 	 *            the new image
 	 */
 	public synchronized void resetItemMarker(final String title, final Drawable newMarker) {
-		for (OverlayItem i : this.overlayItemList) {
-			if (i.mTitle.equals(title)) {
-				i.setMarker(newMarker);
+		for (OverlayItem item : this.overlayItemList) {
+			if (item.mTitle.equals(title)) {
+				item.setMarker(newMarker);
+				break;
 			}
 		}
+		this.populate();
 	}
 
 	@Override
-	public boolean onSnapToItem(final int arg0, final int arg1, final Point arg2, final IMapView arg3) {
+	public boolean onSnapToItem(final int x, final int y, final Point snapPoint, final IMapView mapView) {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	protected OverlayItem createItem(final int arg0) {
+	protected OverlayItem createItem(final int i) {
 		// TODO Auto-generated method stub
-		return this.overlayItemList.get(arg0);
+		return this.overlayItemList.get(i);
 	}
 
 	@Override

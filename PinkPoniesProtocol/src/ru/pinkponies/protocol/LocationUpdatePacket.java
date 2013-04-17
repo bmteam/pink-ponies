@@ -20,123 +20,70 @@ public final class LocationUpdatePacket extends Packet {
 	 * The id of the client whose location is being updated.
 	 */
 	@Index(0)
-	private String clientID;
+	private long clientId;
 
 	/**
-	 * The altitude of the player.
+	 * The client location.
 	 */
 	@Index(1)
-	private double altitude;
+	private Location location;
 
 	/**
-	 * The latitude of the player.
-	 */
-	@Index(2)
-	private double latitude;
-
-	/**
-	 * The longitude of the player.
-	 */
-	@Index(3)
-	private double longitude;
-
-	/**
-	 * Creates a new empty location update packet with clientID set to empty string, longitude,
-	 * latitude and altitude set to zero.
+	 * Creates a new empty location update packet with client id set to -1, longitude, latitude and
+	 * altitude set to zero.
 	 */
 	public LocationUpdatePacket() {
 		super();
-		this.clientID = "";
-		this.longitude = 0;
-		this.latitude = 0;
-		this.altitude = 0;
+		this.clientId = -1;
+		this.setLocation(new Location());
 	}
 
 	/**
-	 * Creates a new location update packet with the given clientID, longitude, latitude and
-	 * altitude.
+	 * Creates a new location update packet with the given client id and location.
 	 * 
-	 * @param clientID
+	 * @param clientId
 	 *            the client id
-	 * @param longitude
-	 *            the longitude
-	 * @param latitude
-	 *            the latitude
-	 * @param altitude
-	 *            the altitude
+	 * @param location
+	 *            the location of the client
 	 */
-	public LocationUpdatePacket(final String clientID, final double longitude, final double latitude,
-			final double altitude) {
+	public LocationUpdatePacket(final long clientId, final Location location) {
 		super();
-		this.clientID = clientID;
-		this.longitude = longitude;
-		this.latitude = latitude;
-		this.altitude = altitude;
+		this.clientId = clientId;
+		this.setLocation(location);
 	}
 
 	/**
-	 * @return the clientID
+	 * @return the client id
 	 */
-	public String getClientID() {
-		return this.clientID;
+	public long getClientId() {
+		return this.clientId;
 	}
 
 	/**
-	 * @param clientID
-	 *            the clientID to set
+	 * @param clientId
+	 *            the client id to set
 	 */
-	public void setClientID(final String clientID) {
-		this.clientID = clientID;
-	}
-
-	/**
-	 * @return the altitude
-	 */
-	public double getAltitude() {
-		return this.altitude;
-	}
-
-	/**
-	 * @param altitude
-	 *            the altitude to set
-	 */
-	public void setAltitude(final double altitude) {
-		this.altitude = altitude;
-	}
-
-	/**
-	 * @return the latitude
-	 */
-	public double getLatitude() {
-		return this.latitude;
-	}
-
-	/**
-	 * @param latitude
-	 *            the latitude to set
-	 */
-	public void setLatitude(final double latitude) {
-		this.latitude = latitude;
-	}
-
-	/**
-	 * @return the longitude
-	 */
-	public double getLongitude() {
-		return this.longitude;
-	}
-
-	/**
-	 * @param longitude
-	 *            the longitude to set
-	 */
-	public void setLongitude(final double longitude) {
-		this.longitude = longitude;
+	public void setClientId(final long clientId) {
+		this.clientId = clientId;
 	}
 
 	@Override
 	public String toString() {
-		return "LocationUpdate [clientID=" + this.clientID + ", longitude=" + this.longitude + ", latitude="
-				+ this.latitude + ", altitude=" + this.altitude + "]";
+		return "LocationUpdate [clientID=" + this.clientId + ", " + this.getLocation() + "]";
+	}
+
+	/**
+	 * @return the location
+	 */
+	public Location getLocation() {
+		return this.location;
+	}
+
+	/**
+	 * @param location
+	 *            the location to set
+	 */
+	public void setLocation(final Location location) {
+		this.location = location;
 	}
 }
