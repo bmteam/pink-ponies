@@ -102,7 +102,7 @@ public class NetworkingThread extends Thread {
 	/**
 	 * The weak reference to the main activity.
 	 */
-	private final WeakReference<MainActivity> mainActivity;
+	private final WeakReference<NetworkingService> networkingSevice;
 
 	/**
 	 * The socket channel.
@@ -131,8 +131,8 @@ public class NetworkingThread extends Thread {
 	 * @param activity
 	 *            The activity to which updates will be sent.
 	 */
-	NetworkingThread(final MainActivity activity) {
-		this.mainActivity = new WeakReference<MainActivity>(activity);
+	NetworkingThread(final NetworkingService networkingSevice) {
+		this.networkingSevice = new WeakReference<NetworkingService>(networkingSevice);
 		this.protocol = new Protocol();
 	}
 
@@ -389,11 +389,12 @@ public class NetworkingThread extends Thread {
 	 * @param message
 	 *            The message.
 	 */
+	// TODO: change name
 	private void sendMessageToUIThread(final Object message) {
 		try {
-			Message msg = this.mainActivity.get().getMessageHandler().obtainMessage();
+			Message msg = this.networkingSevice.get().getMessageHandler().obtainMessage();
 			msg.obj = message;
-			this.mainActivity.get().getMessageHandler().sendMessage(msg);
+			this.networkingSevice.get().getMessageHandler().sendMessage(msg);
 		} catch (Exception e) {
 			LOGGER.log(Level.SEVERE, "Exception", e);
 		}

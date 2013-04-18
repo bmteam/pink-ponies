@@ -90,7 +90,7 @@ public final class MainActivity extends Activity implements LocationListener {
 		 */
 		@Override
 		public void handleMessage(final Message msg) {
-			this.activity.get().onMessageFromNetworkingThread(msg.obj);
+			this.activity.get().onMessageFromNetworkingService(msg.obj);
 		}
 	}
 
@@ -102,7 +102,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	/**
 	 * The networking thread which provides this activity with an asynchronous access to network IO.
 	 */
-	private NetworkingThread networkingThread;
+	private NetworkingService networkingService;
 
 	/**
 	 * The location service manager.
@@ -201,8 +201,9 @@ public final class MainActivity extends Activity implements LocationListener {
 
 		this.setContentView(R.layout.activity_main);
 
-		this.networkingThread = new NetworkingThread(this);
-		this.networkingThread.start();
+		this.networkingService = new NetworkingService();
+		// TODO: start service from LoginActivity
+		this.startService(new Intent(this, MainActivity.class));
 
 		this.locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 		this.locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, LOCATION_UPDATE_MIN_DELAY,
@@ -336,18 +337,18 @@ public final class MainActivity extends Activity implements LocationListener {
 	 * @param message
 	 *            The message which was received.
 	 */
-	private void onMessageFromNetworkingThread(final Object message) {
-		MainActivity.LOGGER.info("NT: " + message.toString());
+	private void onMessageFromNetworkingService(final Object message) {
+		MainActivity.LOGGER.info("NS(<-NT): " + message.toString());
 
 		if (message.equals("initialized")) {
-			this.sendMessageToNetworkingThread("connect");
-			this.sendMessageToNetworkingThread("service");
+			this.sendMessageToNetworkingService("connect");
+			this.sendMessageToNetworkingService("service");
 		} else if (message.equals("connected")) {
-			this.sendMessageToNetworkingThread("login");
+			this.sendMessageToNetworkingService("login");
 			new Timer().scheduleAtFixedRate(new TimerTask() {
 				@Override
 				public void run() {
-					MainActivity.this.sendMessageToNetworkingThread("service");
+					MainActivity.this.sendMessageToNetworkingService("service");
 				}
 			}, 0, MainActivity.SERVICE_DELAY);
 		} else if (message.equals("failed")) {
@@ -385,10 +386,10 @@ public final class MainActivity extends Activity implements LocationListener {
 	 * @param message
 	 *            The message to send.
 	 */
-	private void sendMessageToNetworkingThread(final Object message) {
-		Message msg = this.networkingThread.getMessageHandler().obtainMessage();
+	private void sendMessageToNetworkingService(final Object message) {
+		Message msg = this.networkingService.getMessageHandler().obtainMessage();
 		msg.obj = message;
-		this.networkingThread.getMessageHandler().sendMessage(msg);
+		this.networkingService.getMessageHandler().sendMessage(msg);
 	}
 
 	/**
@@ -417,7 +418,7 @@ public final class MainActivity extends Activity implements LocationListener {
 
 		ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude, latitude, altitude);
 		LocationUpdatePacket packet = new LocationUpdatePacket(this.myId, loc);
-		this.sendMessageToNetworkingThread(packet);
+		this.sendMessageToNetworkingService(packet);
 
 		MainActivity.LOGGER.info("Location updated.");
 	}
