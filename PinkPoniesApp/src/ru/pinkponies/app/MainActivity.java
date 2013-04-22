@@ -341,14 +341,14 @@ public final class MainActivity extends Activity implements LocationListener {
 		MainActivity.LOGGER.info("NS(<-NT): " + message.toString());
 
 		if (message.equals("initialized")) {
-			this.sendMessageToNetworkingService("connect");
-			this.sendMessageToNetworkingService("service");
+			this.sendMessageToNetwork("connect");
+			this.sendMessageToNetwork("service");
 		} else if (message.equals("connected")) {
 			this.sendMessageToNetworkingService("login");
 			new Timer().scheduleAtFixedRate(new TimerTask() {
 				@Override
 				public void run() {
-					MainActivity.this.sendMessageToNetworkingService("service");
+					MainActivity.this.sendMessageToNetwork("service");
 				}
 			}, 0, MainActivity.SERVICE_DELAY);
 		} else if (message.equals("failed")) {
@@ -380,12 +380,18 @@ public final class MainActivity extends Activity implements LocationListener {
 		}
 	}
 
+	private void sendMessageToNetwork(final Object message) {
+		this.sendMessageToNetworkingService(new AppMessage(AppMessage.node.MAIN_ACTIVITY,
+				AppMessage.node.NETWORKING_THREAD, message));
+	}
+
 	/**
 	 * Asynchronously sends the given message to the networking thread.
 	 * 
 	 * @param message
 	 *            The message to send.
 	 */
+
 	private void sendMessageToNetworkingService(final Object message) {
 		Message msg = this.networkingService.getMessageHandler().obtainMessage();
 		msg.obj = message;
@@ -418,7 +424,7 @@ public final class MainActivity extends Activity implements LocationListener {
 
 		ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude, latitude, altitude);
 		LocationUpdatePacket packet = new LocationUpdatePacket(this.myId, loc);
-		this.sendMessageToNetworkingService(packet);
+		this.sendMessageToNetwork(packet);
 
 		MainActivity.LOGGER.info("Location updated.");
 	}
