@@ -15,6 +15,7 @@ public class NetworkingService extends Service {
 
 	private NetworkingThread networkingThread;
 	private WeakReference<MainActivity> mainActivity;
+	private WeakReference<LoginActivity> loginActivity;
 
 	public static final class MessageHandler extends Handler {
 		private final WeakReference<NetworkingService> service;
@@ -32,7 +33,7 @@ public class NetworkingService extends Service {
 	private final Handler messageHandler = new MessageHandler(this);
 
 	public void setMainActivity(final MainActivity activity) {
-
+		this.mainActivity = new WeakReference<MainActivity>(activity);
 	}
 
 	@Override

@@ -202,6 +202,8 @@ public final class MainActivity extends Activity implements LocationListener {
 		this.setContentView(R.layout.activity_main);
 
 		this.networkingService = new NetworkingService();
+		this.networkingService.setMainActivity(this);
+
 		// TODO: start service from LoginActivity
 		this.startService(new Intent(this, MainActivity.class));
 
