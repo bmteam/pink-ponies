@@ -6,6 +6,7 @@
 
 package ru.pinkponies.protocol;
 
+import org.msgpack.annotation.Beans;
 import org.msgpack.annotation.Index;
 import org.msgpack.annotation.Message;
 
@@ -13,18 +14,19 @@ import org.msgpack.annotation.Message;
  * The apple update packet class.
  */
 @Message
+@Beans
 public class AppleUpdatePacket extends Packet {
 	/**
 	 * The id of the apple.
 	 */
 	@Index(0)
-	private final long appleId;
+	private long appleId;
 
 	/**
 	 * The location of the apple.
 	 */
 	@Index(1)
-	private final Location location;
+	private Location location;
 
 	/**
 	 * The status of the apple. True means apple still exists, false means the apple disappeared.
@@ -83,10 +85,26 @@ public class AppleUpdatePacket extends Packet {
 	}
 
 	/**
+	 * @param appleId
+	 *            the appleId to set
+	 */
+	public void setAppleId(final long appleId) {
+		this.appleId = appleId;
+	}
+
+	/**
 	 * @return the location
 	 */
 	public Location getLocation() {
 		return this.location;
+	}
+
+	/**
+	 * @param location
+	 *            the location to set
+	 */
+	public void setLocation(final Location location) {
+		this.location = location;
 	}
 
 	@Override

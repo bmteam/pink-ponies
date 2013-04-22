@@ -132,7 +132,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	/**
 	 * Creates a new itemized overlay. This overlay will render image markers with the given
 	 * resource id.
-	 *
+	 * 
 	 * @param resourceId
 	 *            Resource id.
 	 * @return Created itemized overlay.
@@ -150,7 +150,7 @@ public final class MainActivity extends Activity implements LocationListener {
 
 	/**
 	 * Returns the message handler associated with this activity.
-	 *
+	 * 
 	 * @return the message handler
 	 */
 	public Handler getMessageHandler() {
@@ -159,7 +159,7 @@ public final class MainActivity extends Activity implements LocationListener {
 
 	/**
 	 * Called when the activity is first created. Initializes GUI, networking, creates overlays.
-	 *
+	 * 
 	 * @param savedInstanceState
 	 *            If the activity is being re-initialized after previously being shut down then this
 	 *            Bundle contains the data it most recently supplied in onSaveInstanceState(Bundle).
@@ -178,6 +178,7 @@ public final class MainActivity extends Activity implements LocationListener {
 
 		this.setContentView(R.layout.activity_main);
 
+		LOGGER.info("MA::onCreate Thread id: " + Thread.currentThread().getId());
 		this.networkingThread = new NetworkingThread(this);
 		this.networkingThread.start();
 
@@ -258,7 +259,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	/**
 	 * This method is called before an activity may be killed so that when it comes back some time
 	 * in the future it can restore its state.
-	 *
+	 * 
 	 * @param outState
 	 *            Bundle in which this activity state is placed.
 	 */
@@ -271,7 +272,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	/**
 	 * This method is called after onStart() when the activity is being re-initialized from a
 	 * previously saved state, given here in savedInstanceState.
-	 *
+	 * 
 	 * @param outState
 	 *            The data most recently supplied in onSaveInstanceState(Bundle).
 	 */
@@ -285,7 +286,7 @@ public final class MainActivity extends Activity implements LocationListener {
 
 	/**
 	 * Called once, the first time the options menu is displayed.
-	 *
+	 * 
 	 * @param menu
 	 *            The options menu.
 	 * @return True.
@@ -298,7 +299,7 @@ public final class MainActivity extends Activity implements LocationListener {
 
 	/**
 	 * Called when the logout button is pressed.
-	 *
+	 * 
 	 * @param view
 	 *            The button widget.
 	 */
@@ -309,7 +310,7 @@ public final class MainActivity extends Activity implements LocationListener {
 
 	/**
 	 * Called when there is a new message from the networking thread.
-	 *
+	 * 
 	 * @param message
 	 *            The message which was received.
 	 */
@@ -364,11 +365,12 @@ public final class MainActivity extends Activity implements LocationListener {
 
 	/**
 	 * Asynchronously sends the given message to the networking thread.
-	 *
+	 * 
 	 * @param message
 	 *            The message to send.
 	 */
 	private void sendMessageToNetworkingThread(final Object message) {
+		LOGGER.info("->NT, Thread id: " + Thread.currentThread().getId());
 		final Message msg = this.networkingThread.getMessageHandler().obtainMessage();
 		msg.obj = message;
 		this.networkingThread.getMessageHandler().sendMessage(msg);
@@ -385,7 +387,7 @@ public final class MainActivity extends Activity implements LocationListener {
 
 	/**
 	 * Called when the player's location is changed.
-	 *
+	 * 
 	 * @param location
 	 *            The new location, as a Location object.
 	 */
@@ -407,7 +409,7 @@ public final class MainActivity extends Activity implements LocationListener {
 
 	/**
 	 * Called when the location provider is disabled by the user.
-	 *
+	 * 
 	 * @param provider
 	 *            The name of the location provider associated with this update.
 	 */
@@ -417,7 +419,7 @@ public final class MainActivity extends Activity implements LocationListener {
 
 	/**
 	 * Called when the location provider is enabled by the user.
-	 *
+	 * 
 	 * @param provider
 	 *            The name of the location provider associated with this update.
 	 */
@@ -429,7 +431,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	 * Called when the provider status changes. This method is called when a provider is unable to
 	 * fetch a location or if the provider has recently become available after a period of
 	 * unavailability.
-	 *
+	 * 
 	 * @param provider
 	 *            The name of the location provider associated with this update.
 	 * @param status
@@ -443,7 +445,7 @@ public final class MainActivity extends Activity implements LocationListener {
 
 	/**
 	 * Shows a message box with the specified title and message.
-	 *
+	 * 
 	 * @param title
 	 *            The title of the message box.
 	 * @param message
@@ -473,7 +475,7 @@ public final class MainActivity extends Activity implements LocationListener {
 
 		/**
 		 * Creates a new message handler which handles messages sent to the activity.
-		 *
+		 * 
 		 * @param mainActivity
 		 *            The activity.
 		 */
@@ -483,7 +485,7 @@ public final class MainActivity extends Activity implements LocationListener {
 
 		/**
 		 * Handles incoming messages and sends them to the activity.
-		 *
+		 * 
 		 * @param msg
 		 *            The incoming message.
 		 */

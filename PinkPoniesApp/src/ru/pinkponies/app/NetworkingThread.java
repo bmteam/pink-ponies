@@ -116,6 +116,7 @@ public class NetworkingThread extends Thread {
 	 */
 	@Override
 	public final void run() {
+		LOGGER.info("NT::run Thread id: " + Thread.currentThread().getId());
 		Looper.prepare();
 		this.sendMessageToUIThread("initialized");
 		Looper.loop();
@@ -332,6 +333,7 @@ public class NetworkingThread extends Thread {
 	 */
 	private void onMessageFromUIThread(final Object message) {
 		try {
+			LOGGER.info("NT, Thread id: " + Thread.currentThread().getId());
 			// LOGGER.info("MA: " + message.toString());
 
 			if (message.equals("connect")) {
