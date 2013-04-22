@@ -71,7 +71,7 @@ public class NetworkingThread extends Thread {
 		 */
 		@Override
 		public void handleMessage(final Message msg) {
-			this.thread.get().onMessageFromUIThread(msg.obj);
+			this.thread.get().onMessage(msg);
 		}
 	};
 
@@ -303,13 +303,17 @@ public class NetworkingThread extends Thread {
 	 */
 	private void onPacket(final Packet packet) {
 		if (packet instanceof ClientOptionsPacket) {
-			this.sendMessageToUIThread(packet);
+			this.sendMessageToUIThread(new AppMessage(AppMessage.node.NETWORKING_THREAD, AppMessage.node.MAIN_ACTIVITY,
+					packet));
 		} else if (packet instanceof SayPacket) {
-			this.sendMessageToUIThread(packet);
+			this.sendMessageToUIThread(new AppMessage(AppMessage.node.NETWORKING_THREAD, AppMessage.node.MAIN_ACTIVITY,
+					packet));
 		} else if (packet instanceof LocationUpdatePacket) {
-			this.sendMessageToUIThread(packet);
+			this.sendMessageToUIThread(new AppMessage(AppMessage.node.NETWORKING_THREAD, AppMessage.node.MAIN_ACTIVITY,
+					packet));
 		} else if (packet instanceof AppleUpdatePacket) {
-			this.sendMessageToUIThread(packet);
+			this.sendMessageToUIThread(new AppMessage(AppMessage.node.NETWORKING_THREAD, AppMessage.node.MAIN_ACTIVITY,
+					packet));
 		} else {
 			LOGGER.severe("Unknown packet type.");
 		}
@@ -360,7 +364,42 @@ public class NetworkingThread extends Thread {
 	 * @param message
 	 *            The message.
 	 */
-	private void onMessageFromUIThread(final Object message) {
+
+	private void sendMessageToUIThread(final String message) {
+		this.sendMessageToUIThread(new AppMessage(AppMessage.node.MAIN_ACTIVITY, AppMessage.node.NETWORKING_THREAD,
+				message));
+	}
+
+	private void sendMessageToUIThread(final AppMessage message) {
+		try {
+			Message msg = this.networkingSevice.get().getMessageHandler().obtainMessage();
+			msg.obj = new AppMessage(AppMessage.node.MAIN_ACTIVITY, AppMessage.node.NETWORKING_THREAD, message);
+			this.networkingSevice.get().getMessageHandler().sendMessage(msg);
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "Exception", e);
+		}
+	}
+
+	void onMessage(final Message message) {
+		AppMessage appMessage = (AppMessage) message.obj;
+
+		if (appMessage.getSender() == AppMessage.node.LOGIN_ACTIVITY) {
+			this.onMessageFromLoginActivity(appMessage);
+			return;
+		}
+
+		if (appMessage.getSender() == AppMessage.node.MAIN_ACTIVITY) {
+			this.onMessageFromUIThread(appMessage);
+			return;
+		}
+
+	}
+
+	private void onMessageFromLoginActivity(final AppMessage appMessage) {
+	}
+
+	private void onMessageFromUIThread(final AppMessage appMessage) {
+		Object message = appMessage.getMessage();
 		try {
 			// LOGGER.info("MA: " + message.toString());
 
@@ -383,20 +422,4 @@ public class NetworkingThread extends Thread {
 		}
 	}
 
-	/**
-	 * Sends message to the activity.
-	 * 
-	 * @param message
-	 *            The message.
-	 */
-	// TODO: change name
-	private void sendMessageToUIThread(final Object message) {
-		try {
-			Message msg = this.networkingSevice.get().getMessageHandler().obtainMessage();
-			msg.obj = message;
-			this.networkingSevice.get().getMessageHandler().sendMessage(msg);
-		} catch (Exception e) {
-			LOGGER.log(Level.SEVERE, "Exception", e);
-		}
-	}
 }
