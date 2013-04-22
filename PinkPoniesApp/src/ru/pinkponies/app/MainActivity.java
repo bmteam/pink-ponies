@@ -178,7 +178,6 @@ public final class MainActivity extends Activity implements LocationListener {
 
 		this.setContentView(R.layout.activity_main);
 
-		LOGGER.info("MA::onCreate Thread id: " + Thread.currentThread().getId());
 		this.networkingThread = new NetworkingThread(this);
 		this.networkingThread.start();
 
@@ -370,7 +369,6 @@ public final class MainActivity extends Activity implements LocationListener {
 	 *            The message to send.
 	 */
 	private void sendMessageToNetworkingThread(final Object message) {
-		LOGGER.info("->NT, Thread id: " + Thread.currentThread().getId());
 		final Message msg = this.networkingThread.getMessageHandler().obtainMessage();
 		msg.obj = message;
 		this.networkingThread.getMessageHandler().sendMessage(msg);

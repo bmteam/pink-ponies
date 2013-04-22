@@ -63,7 +63,7 @@ public class NetworkingThread extends Thread {
 	/**
 	 * The message handler which receives messages for this networking thread.
 	 */
-	private final MessageHandler messageHandler = new MessageHandler(this);
+	private MessageHandler messageHandler;
 
 	/**
 	 * The weak reference to the main activity.
@@ -116,8 +116,8 @@ public class NetworkingThread extends Thread {
 	 */
 	@Override
 	public final void run() {
-		LOGGER.info("NT::run Thread id: " + Thread.currentThread().getId());
 		Looper.prepare();
+		this.messageHandler = new MessageHandler(this);
 		this.sendMessageToUIThread("initialized");
 		Looper.loop();
 	}
@@ -333,7 +333,6 @@ public class NetworkingThread extends Thread {
 	 */
 	private void onMessageFromUIThread(final Object message) {
 		try {
-			LOGGER.info("NT, Thread id: " + Thread.currentThread().getId());
 			// LOGGER.info("MA: " + message.toString());
 
 			if (message.equals("connect")) {
