@@ -134,6 +134,12 @@ public class NetworkingThread extends Thread {
 	NetworkingThread(final NetworkingService networkingSevice) {
 		this.networkingSevice = new WeakReference<NetworkingService>(networkingSevice);
 		this.protocol = new Protocol();
+		LOGGER.info("Thread::Initialized.");
+		try {
+			sleep(1000);
+		} catch (Exception e) {
+
+		}
 	}
 
 	/**
@@ -365,19 +371,10 @@ public class NetworkingThread extends Thread {
 	 *            The message.
 	 */
 
-	private void sendMessageToUIThread(final String message) {
-		this.sendMessageToUIThread(new AppMessage(AppMessage.node.MAIN_ACTIVITY, AppMessage.node.NETWORKING_THREAD,
-				message));
-	}
-
-	private void sendMessageToUIThread(final AppMessage message) {
-		try {
-			Message msg = this.networkingSevice.get().getMessageHandler().obtainMessage();
-			msg.obj = new AppMessage(AppMessage.node.MAIN_ACTIVITY, AppMessage.node.NETWORKING_THREAD, message);
-			this.networkingSevice.get().getMessageHandler().sendMessage(msg);
-		} catch (Exception e) {
-			LOGGER.log(Level.SEVERE, "Exception", e);
-		}
+	private void sendMessageToUIThread(final Object message) {
+		Message msg = this.networkingSevice.get().getMessageHandler().obtainMessage();
+		msg.obj = new AppMessage(AppMessage.node.NETWORKING_THREAD, AppMessage.node.MAIN_ACTIVITY, message);
+		this.networkingSevice.get().getMessageHandler().sendMessage(msg);
 	}
 
 	void onMessage(final Message message) {

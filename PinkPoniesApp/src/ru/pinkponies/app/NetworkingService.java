@@ -11,9 +11,9 @@ import android.os.Message;
 
 public class NetworkingService extends Service {
 
-	private static final Logger LOGGER = Logger.getLogger(MainActivity.class.getName());
+	private static final Logger LOGGER = Logger.getLogger(NetworkingService.class.getName());
 
-	private NetworkingThread networkingThread;
+	private final NetworkingThread networkingThread = new NetworkingThread(this);
 	private WeakReference<MainActivity> mainActivity;
 	private WeakReference<LoginActivity> loginActivity;
 
@@ -39,15 +39,12 @@ public class NetworkingService extends Service {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		LOGGER.info("NetworkingService::Initializing.");
-		this.networkingThread = new NetworkingThread(this);
+		LOGGER.info("Service::Initializing.");
 		this.networkingThread.start();
 	}
 
 	@Override
 	public int onStartCommand(final Intent intent, final int flags, final int startId) {
-		// TODO: get mainActivity from intent;
-		// this.mainActivity = ;
 		return super.onStartCommand(intent, flags, startId);
 	}
 
@@ -69,49 +66,38 @@ public class NetworkingService extends Service {
 	void onMessage(final Message message) {
 		AppMessage appMessage = (AppMessage) message.obj;
 		if (appMessage.getReceiver() == AppMessage.node.NETWORKING_THREAD) {
-			this.onMessageFromNetworkingThread(appMessage);
+			this.sendMessageToNetworkingThread(appMessage);
 			return;
 		}
 
 		if (appMessage.getReceiver() == AppMessage.node.LOGIN_ACTIVITY) {
-			this.onMessageFromLoginActivity(appMessage);
+			this.sendMessageToLoginActivity(appMessage);
 			return;
 		}
 
-		if (appMessage.getReceiver() == AppMessage.node.LOGIN_ACTIVITY) {
-			this.onMessageFromUIThread(appMessage);
+		if (appMessage.getReceiver() == AppMessage.node.MAIN_ACTIVITY) {
+			this.sendMessageToUIThread(appMessage);
 			return;
 		}
 
 	}
 
-	void onMessageFromLoginActivity(final AppMessage appMessage) {
+	void sendMessageToLoginActivity(final AppMessage message) {
 	}
 
-	void sendMessageToLoginActivity(final Object message) {
-	}
-
-	private void onMessageFromNetworkingThread(final Object message) {
-		if (message instanceof String) {
-			NetworkingService.LOGGER.info("NS::(NT->MA):: " + message.toString());
+	private void sendMessageToNetworkingThread(final AppMessage message) {
+		if (this.networkingThread == null) {
+			NetworkingService.LOGGER.info("NT : NULL");
 		}
-		this.sendMessageToUIThread(message);
-	}
-
-	private void sendMessageToNetworkingThread(final Object message) {
 		Message msg = this.networkingThread.getMessageHandler().obtainMessage();
 		msg.obj = message;
 		this.networkingThread.getMessageHandler().sendMessage(msg);
 	}
 
-	private void onMessageFromUIThread(final Object message) {
-		if (message instanceof String) {
-			NetworkingService.LOGGER.info("NS::(MA->NT):: " + message.toString());
-		}
-		this.sendMessageToNetworkingThread(message);
-	}
-
 	private void sendMessageToUIThread(final Object message) {
+		if (this.mainActivity == null) {
+			NetworkingService.LOGGER.info("MA : NULL");
+		}
 		Message msg = this.mainActivity.get().getMessageHandler().obtainMessage();
 		msg.obj = message;
 		this.mainActivity.get().getMessageHandler().sendMessage(msg);

@@ -90,7 +90,7 @@ public final class MainActivity extends Activity implements LocationListener {
 		 */
 		@Override
 		public void handleMessage(final Message msg) {
-			this.activity.get().onMessageFromNetworkingService(msg.obj);
+			this.activity.get().onMessage(msg.obj);
 		}
 	}
 
@@ -192,8 +192,6 @@ public final class MainActivity extends Activity implements LocationListener {
 	protected void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		LOGGER.info("Initializing.");
-
 		// Intent intent = getIntent();
 		// Bundle extras = intent.getExtras();
 		// login = extras.getString("login");
@@ -201,11 +199,13 @@ public final class MainActivity extends Activity implements LocationListener {
 
 		this.setContentView(R.layout.activity_main);
 
-		this.networkingService = new NetworkingService();
+		// this.networkingService = new NetworkingService();
+		this.startService(new Intent(this, NetworkingService.class));
 		this.networkingService.setMainActivity(this);
 
+		this.sendMessageToNetwork("Checking...");
+
 		// TODO: start service from LoginActivity
-		this.startService(new Intent(this, MainActivity.class));
 
 		this.locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 		this.locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, LOCATION_UPDATE_MIN_DELAY,
@@ -250,7 +250,7 @@ public final class MainActivity extends Activity implements LocationListener {
 		// GeoPoint myPoint = new GeoPoint(55929563, 37523862);
 		// this.myAppleOverlay.addItem(myPoint, "Apple");
 
-		LOGGER.info("Initialized.");
+		LOGGER.info("MainActivity::Initialized.");
 	}
 
 	/**
@@ -333,6 +333,12 @@ public final class MainActivity extends Activity implements LocationListener {
 		this.finish();
 	}
 
+	public void onMessage(final Object message) {
+		if (((AppMessage) message).getSender() == AppMessage.node.NETWORKING_THREAD) {
+			this.onMessageFromNetworkingService(((AppMessage) message).getMessage());
+		}
+	}
+
 	/**
 	 * Called when there is a new message from the networking thread.
 	 * 
@@ -340,13 +346,14 @@ public final class MainActivity extends Activity implements LocationListener {
 	 *            The message which was received.
 	 */
 	private void onMessageFromNetworkingService(final Object message) {
-		MainActivity.LOGGER.info("NS(<-NT): " + message.toString());
-
+		if (message instanceof String) {
+			MainActivity.LOGGER.info("NS(<-NT): " + message);
+		}
 		if (message.equals("initialized")) {
 			this.sendMessageToNetwork("connect");
 			this.sendMessageToNetwork("service");
 		} else if (message.equals("connected")) {
-			this.sendMessageToNetworkingService("login");
+			this.sendMessageToNetwork("login");
 			new Timer().scheduleAtFixedRate(new TimerTask() {
 				@Override
 				public void run() {
@@ -382,11 +389,6 @@ public final class MainActivity extends Activity implements LocationListener {
 		}
 	}
 
-	private void sendMessageToNetwork(final Object message) {
-		this.sendMessageToNetworkingService(new AppMessage(AppMessage.node.MAIN_ACTIVITY,
-				AppMessage.node.NETWORKING_THREAD, message));
-	}
-
 	/**
 	 * Asynchronously sends the given message to the networking thread.
 	 * 
@@ -394,9 +396,9 @@ public final class MainActivity extends Activity implements LocationListener {
 	 *            The message to send.
 	 */
 
-	private void sendMessageToNetworkingService(final Object message) {
+	private void sendMessageToNetwork(final Object message) {
 		Message msg = this.networkingService.getMessageHandler().obtainMessage();
-		msg.obj = message;
+		msg.obj = new AppMessage(AppMessage.node.MAIN_ACTIVITY, AppMessage.node.NETWORKING_THREAD, message);
 		this.networkingService.getMessageHandler().sendMessage(msg);
 	}
 
