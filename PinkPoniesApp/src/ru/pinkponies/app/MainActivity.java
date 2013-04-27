@@ -39,7 +39,7 @@ import android.view.View;
 
 import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.ClientOptionsPacket;
-import ru.pinkponies.protocol.LocationUpdatePacket;
+import ru.pinkponies.protocol.PlayerUpdatePacket;
 import ru.pinkponies.protocol.QuestUpdatePacket;
 import ru.pinkponies.protocol.SayPacket;
 
@@ -351,8 +351,8 @@ public final class MainActivity extends Activity implements LocationListener {
 		} else if (message instanceof SayPacket) {
 			final SayPacket packet = (SayPacket) message;
 			LOGGER.info(packet.toString());
-		} else if (message instanceof LocationUpdatePacket) {
-			final LocationUpdatePacket packet = (LocationUpdatePacket) message;
+		} else if (message instanceof PlayerUpdatePacket) {
+			final PlayerUpdatePacket packet = (PlayerUpdatePacket) message;
 			if (this.myId != BAD_ID && packet.getClientId() != this.myId) {
 				final GeoPoint point = new GeoPoint(packet.getLocation().getLatitude(), packet.getLocation()
 						.getLongitude());
@@ -423,7 +423,7 @@ public final class MainActivity extends Activity implements LocationListener {
 		this.pathOverlay.addPoint(point);
 
 		final ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude, latitude, altitude);
-		final LocationUpdatePacket packet = new LocationUpdatePacket(this.myId, loc);
+		final PlayerUpdatePacket packet = new PlayerUpdatePacket(this.myId, loc);
 		this.sendMessageToNetworkingThread(packet);
 
 		MainActivity.LOGGER.info("Location updated.");

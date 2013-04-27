@@ -26,7 +26,7 @@ import android.os.Message;
 
 import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.ClientOptionsPacket;
-import ru.pinkponies.protocol.LocationUpdatePacket;
+import ru.pinkponies.protocol.PlayerUpdatePacket;
 import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.Protocol;
 import ru.pinkponies.protocol.QuestUpdatePacket;
@@ -278,7 +278,7 @@ public class NetworkingThread extends Thread {
 			this.sendMessageToUIThread(packet);
 		} else if (packet instanceof SayPacket) {
 			this.sendMessageToUIThread(packet);
-		} else if (packet instanceof LocationUpdatePacket) {
+		} else if (packet instanceof PlayerUpdatePacket) {
 			this.sendMessageToUIThread(packet);
 		} else if (packet instanceof AppleUpdatePacket) {
 			this.sendMessageToUIThread(packet);
