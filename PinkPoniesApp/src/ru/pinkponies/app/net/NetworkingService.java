@@ -40,8 +40,20 @@ public class NetworkingService extends Service {
 	 */
 	private static final int SERVICE_DELAY = 1000;
 
+	/**
+	 * A enum representing networking service state.
+	 */
 	public enum State {
-		None, Connected,
+		/**
+		 * Disconnected state, when no connection is established.
+		 */
+		DISCONNECTED,
+
+		/**
+		 * Connected state, when there is a connection established between this service and the
+		 * server.
+		 */
+		CONNECTED,
 	}
 
 	/**
@@ -65,9 +77,15 @@ public class NetworkingService extends Service {
 	 */
 	private final List<NetworkListener> listeners = new ArrayList<NetworkListener>();
 
+	/**
+	 * The update timer. Used to send update commands to the networking thread regularly.
+	 */
 	private final Timer updateTimer = new Timer();
 
-	private State state = State.None;
+	/**
+	 * The networking service state.
+	 */
+	private State state = State.DISCONNECTED;
 
 	/**
 	 * Adds a new listener.
@@ -89,15 +107,29 @@ public class NetworkingService extends Service {
 		this.listeners.remove(listener);
 	}
 
+	/**
+	 * Returns the current state of the networking service.
+	 * 
+	 * @return the current state of the networking service.
+	 */
 	public State getState() {
 		return this.state;
 	}
 
+	/**
+	 * Asynchronously connects to the server.
+	 */
 	public void connect() {
 		this.sendMessageToNetworkingThread("connect");
 		this.sendMessageToNetworkingThread("service");
 	}
 
+	/**
+	 * Asynchronously sends packet to the server.
+	 * 
+	 * @param packet
+	 *            the packet
+	 */
 	public void sendPacket(final Packet packet) {
 		this.sendMessageToNetworkingThread(packet);
 	}
@@ -109,6 +141,46 @@ public class NetworkingService extends Service {
 	 */
 	public Handler getMessageHandler() {
 		return this.messageHandler;
+	}
+
+	/**
+	 * Called when there is a message from the networking thread.
+	 * 
+	 * @param message
+	 *            the message
+	 */
+	private void onMessageFromNetworkingThread(final Object message) {
+		if (message.equals("connected")) {
+			this.state = State.CONNECTED;
+
+			this.updateTimer.scheduleAtFixedRate(new TimerTask() {
+
+				@Override
+				public void run() {
+					NetworkingService.this.sendMessageToNetworkingThread("service");
+				}
+
+			}, 0, SERVICE_DELAY);
+		} else if (message.equals("failed")) {
+			this.state = State.DISCONNECTED;
+			this.updateTimer.cancel();
+		}
+
+		for (final NetworkListener listener : this.listeners) {
+			listener.onMessage(message);
+		}
+	}
+
+	/**
+	 * Sends message to the networking thread.
+	 * 
+	 * @param message
+	 *            the message
+	 */
+	private void sendMessageToNetworkingThread(final Object message) {
+		final Message msg = this.networkingThread.getMessageHandler().obtainMessage();
+		msg.obj = message;
+		this.networkingThread.getMessageHandler().sendMessage(msg);
 	}
 
 	@Override
@@ -125,41 +197,13 @@ public class NetworkingService extends Service {
 	@Override
 	public void onDestroy() {
 		this.updateTimer.cancel();
-
+		this.networkingThread.interrupt();
 		super.onDestroy();
 	}
 
 	@Override
 	public IBinder onBind(final Intent intent) {
 		return this.binder;
-	}
-
-	private void onMessageFromNetworkingThread(final Object message) {
-		if (message.equals("connected")) {
-			this.state = State.Connected;
-
-			this.updateTimer.scheduleAtFixedRate(new TimerTask() {
-
-				@Override
-				public void run() {
-					NetworkingService.this.sendMessageToNetworkingThread("service");
-				}
-
-			}, 0, SERVICE_DELAY);
-		} else if (message.equals("failed")) {
-			this.state = State.None;
-			this.updateTimer.cancel();
-		}
-
-		for (final NetworkListener listener : this.listeners) {
-			listener.onMessage(message);
-		}
-	}
-
-	private void sendMessageToNetworkingThread(final Object message) {
-		Message msg = this.networkingThread.getMessageHandler().obtainMessage();
-		msg.obj = message;
-		this.networkingThread.getMessageHandler().sendMessage(msg);
 	}
 
 	/**

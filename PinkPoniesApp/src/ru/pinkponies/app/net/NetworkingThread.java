@@ -67,7 +67,7 @@ public class NetworkingThread extends Thread {
 	private MessageHandler messageHandler;
 
 	/**
-	 * The weak reference to the main activity.
+	 * The weak reference to the networking service.
 	 */
 	private final WeakReference<NetworkingService> networkingSevice;
 
@@ -92,11 +92,10 @@ public class NetworkingThread extends Thread {
 	private final ByteBuffer outgoingData = ByteBuffer.allocate(BUFFER_SIZE);
 
 	/**
-	 * Creates a new networking thread which will communicate and send updates to the given
-	 * activity.
+	 * Creates a new networking thread which will communicate and send updates to the given service.
 	 * 
-	 * @param activity
-	 *            The activity to which updates will be sent.
+	 * @param networkingSevice
+	 *            The networking service to which updates will be sent.
 	 */
 	NetworkingThread(final NetworkingService networkingSevice) {
 		this.networkingSevice = new WeakReference<NetworkingService>(networkingSevice);
@@ -319,23 +318,17 @@ public class NetworkingThread extends Thread {
 	}
 
 	/**
-	 * Called when a new message was received from the activity.
+	 * Called when a new message was received from the service.
 	 * 
 	 * @param message
-	 *            The message.
+	 *            the message
 	 */
-	void onMessage(final Message message) {
-		this.onMessageFromService(message);
-	}
-
 	private void onMessageFromService(final Object message) {
 		try {
 			if (message.equals("connect")) {
 				this.connect();
 			} else if (message.equals("service")) {
 				this.service();
-			} else if (message.equals("login")) {
-				// this.login();
 			} else if (message instanceof Packet) {
 				this.sendPacket((Packet) message);
 			} else if (message instanceof String) {

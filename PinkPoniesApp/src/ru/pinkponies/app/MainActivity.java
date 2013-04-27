@@ -82,6 +82,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	 */
 	private NetworkingService networkingService;
 
+	/**
+	 * The connection between main activity and networking service.
+	 */
 	private final ServiceConnection networkingServiceConnection = new ServiceConnection() {
 		@Override
 		public void onServiceConnected(final ComponentName className, final IBinder binder) {
@@ -159,12 +162,13 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	 * @return Created itemized overlay.
 	 */
 	private MyItemizedOverlay createItemizedOverlay(final int resourceId) {
-		Drawable marker = this.getResources().getDrawable(resourceId);
-		Bitmap bitmap = ((BitmapDrawable) marker).getBitmap();
-		marker = new BitmapDrawable(this.getResources(), Bitmap.createScaledBitmap(bitmap, ICON_SIZE, ICON_SIZE, true));
+		final Drawable marker = this.getResources().getDrawable(resourceId);
+		final Bitmap bitmap = ((BitmapDrawable) marker).getBitmap();
+		final Drawable bitmapMarker = new BitmapDrawable(this.getResources(), Bitmap.createScaledBitmap(bitmap,
+				ICON_SIZE, ICON_SIZE, true));
 
 		final ResourceProxy resourceProxy = new DefaultResourceProxyImpl(this.getApplicationContext());
-		return new MyItemizedOverlay(marker, resourceProxy);
+		return new MyItemizedOverlay(bitmapMarker, resourceProxy);
 	}
 
 	/**
@@ -340,6 +344,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		this.finish();
 	}
 
+	/**
+	 * Called when the networking service is for some reason disconnected from the main activity.
+	 */
 	protected void onNetworkingServiceDisconnected() {
 		if (this.networkingService != null) {
 			this.networkingService.removeListener(this);
@@ -347,10 +354,13 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		}
 	}
 
+	/**
+	 * Called when the networking service is connected to the main activity.
+	 */
 	protected void onNetworkingServiceConnected() {
 		this.networkingService.addListener(this);
 
-		if (this.networkingService.getState() != NetworkingService.State.Connected) {
+		if (this.networkingService.getState() != NetworkingService.State.CONNECTED) {
 			this.networkingService.connect();
 		}
 	}
@@ -365,9 +375,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	public void onMessage(final Object message) {
 		LOGGER.info(message.toString());
 
-		if (message.equals("connected")) {
-
-		} else if (message.equals("failed")) {
+		if (message.equals("failed")) {
 			this.showMessageBox("Socket exception.", null);
 		} else if (message instanceof ClientOptionsPacket) {
 			final ClientOptionsPacket packet = (ClientOptionsPacket) message;
