@@ -19,11 +19,38 @@ PYLINT_ERROR_FMT = re.compile(r"""
 (?P<msg>.*)                       # finally, the error message
 """, re.IGNORECASE|re.VERBOSE)
 
-def get_hg_status():
+def hg_get_status():
   """ Runs the hg status command and parses its output. Returns a list of
   changed files. """
-  output = str(subprocess.check_output(["hg", "st", "-man"]))
-  return [line for line in output.split("\n") if line != '']
+  files = str(subprocess.check_output(["hg", "st", "-man"]))
+  return [line for line in files.splitlines() if line != '']
+
+def hg_get_push_changes():
+  """ Returns a list of all the changed files which are to be pushed
+  to the remote repository. """
+
+  commits = ""
+  try:
+    commits = str(subprocess.check_output(["hg", "outgoing", "-q"]))
+  except subprocess.CalledProcessError:
+    pass
+
+  commits = [line for line in commits.splitlines() if line != '']
+  commits = [line.partition(':')[2] for line in commits]
+
+  all_files = set()
+  for commit in commits:
+    files = str(subprocess.check_output(["hg", "st", "-man", "--change",
+                                         commit]))
+    files = [line for line in files.splitlines() if line != '']
+    for file_name in files:
+      all_files.add(file_name)
+  return list(all_files)
+
+def hg_get_all_files():
+  """ Returns a list of all the files in the repository. """
+  files = str(subprocess.check_output(["hg", "st", "-man", "--all"]))
+  return [line for line in files.splitlines() if line != '']
 
 def run_checkstyle(file_name):
   """ Runs the checkstyle command on the given file and returns
@@ -122,14 +149,43 @@ def check_python_files(all_files):
 
   return error_count
 
-def main(_):
+def main(files):
   """ Main checkstyle method. """
-  files = get_hg_status()
   error_count = 0
   error_count += check_java_files(files)
   error_count += check_python_files(files)
 
   sys.exit(error_count)
 
+def parse_args():
+  """ Parses arguments and runs main. """
+  import argparse
+
+  parser = argparse.ArgumentParser("checkstyle")
+  parser.add_argument('files', type=str, nargs='*',
+                      help="files to process")
+  parser.add_argument('-a', '--all', action='store_true',
+                      help='all the files in the repository')
+  parser.add_argument('-c', '--commit', action='store_true',
+                      help='files in the last commit')
+  parser.add_argument('-p', '--push', action='store_true',
+                      help='files which are to be pushed')
+
+  args = parser.parse_args()
+  files = args.files
+
+  if args.all:
+    files += hg_get_all_files()
+
+  if args.commit:
+    files += hg_get_status()
+
+  if args.push:
+    files += hg_get_push_changes()
+
+  files = list(set(files))
+
+  main(files)
+
 if __name__ == "__main__":
-  main(sys.argv)
+  parse_args()
