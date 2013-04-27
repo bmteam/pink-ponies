@@ -53,7 +53,7 @@ public final class Server {
 	/**
 	 * The distance at which players pick up apples.
 	 */
-	private static final double INTERACTION_DISTANCE = 100.0;
+	private static final double INTERACTION_DISTANCE = 50.0;
 
 	/**
 	 * The number of apples that will be created when a quest is accepted.
@@ -63,7 +63,7 @@ public final class Server {
 	/**
 	 * The maximum distance to the quest at which apples can appear.
 	 */
-	private static final double QUEST_TO_APPLES_DISTANCE = 5.0;
+	private static final double QUEST_TO_APPLES_DISTANCE = 1.0;
 
 	/**
 	 * The main socket channel on which the server listens for incoming connections.
@@ -339,7 +339,7 @@ public final class Server {
 
 			// XXX(xairy): temporary.
 			for (int i = 0; i < 5; i++) {
-				this.addRandomQuest(locUpdate.getLocation(), 10.0);
+				this.addRandomQuest(locUpdate.getLocation(), 3.0);
 			}
 		} else {
 			LOGGER.info("Unknown packet type.");

@@ -70,7 +70,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	/**
 	 * The initial map view zoom level.
 	 */
-	private static final int MAP_VIEW_INITIAL_ZOOM_LEVEL = 15;
+	private static final int MAP_VIEW_INITIAL_ZOOM_LEVEL = 18;
 
 	/**
 	 * This value is used when the identifier is not yet defined.
