@@ -79,7 +79,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	/**
 	 * The size of the objects on the map.
 	 */
-	private static final int ICON_SIZE = 32;
+	private static final int ICON_SIZE = 48;
 
 	/**
 	 * The message handler which receives messages for this activity.
@@ -213,8 +213,7 @@ public final class MainActivity extends Activity implements LocationListener {
 		this.locationOverlay.runOnFirstFix(new Runnable() {
 			@Override
 			public void run() {
-				MainActivity.this.mapView.getController()
-						.animateTo(MainActivity.this.locationOverlay.getMyLocation());
+				MainActivity.this.mapView.getController().animateTo(MainActivity.this.locationOverlay.getMyLocation());
 			}
 		});
 
@@ -225,7 +224,7 @@ public final class MainActivity extends Activity implements LocationListener {
 		// textOverlay.setText("Hello, world!");
 		// mapView.getOverlays().add(textOverlay);
 
-		this.personOverlay = this.createItemizedOverlay(R.drawable.person);
+		this.personOverlay = this.createItemizedOverlay(R.drawable.player);
 		this.mapView.getOverlays().add(this.personOverlay);
 
 		this.appleOverlay = this.createItemizedOverlay(R.drawable.apple);
