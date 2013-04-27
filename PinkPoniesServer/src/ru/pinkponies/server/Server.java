@@ -25,8 +25,8 @@ import java.util.logging.Logger;
 import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.ClientOptionsPacket;
 import ru.pinkponies.protocol.Location;
-import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponies.protocol.Packet;
+import ru.pinkponies.protocol.PlayerUpdatePacket;
 import ru.pinkponies.protocol.Protocol;
 import ru.pinkponies.protocol.QuestUpdatePacket;
 import ru.pinkponies.protocol.SayPacket;
@@ -328,8 +328,8 @@ public final class Server {
 		if (packet instanceof SayPacket) {
 			final SayPacket sayPacket = (SayPacket) packet;
 			System.out.println(sayPacket.toString());
-		} else if (packet instanceof LocationUpdatePacket) {
-			final LocationUpdatePacket locUpdate = (LocationUpdatePacket) packet;
+		} else if (packet instanceof PlayerUpdatePacket) {
+			final PlayerUpdatePacket locUpdate = (PlayerUpdatePacket) packet;
 			locUpdate.setClientId(this.players.get(channel).getId());
 			this.players.get(channel).setLocation(locUpdate.getLocation());
 			System.out.println(locUpdate.toString());

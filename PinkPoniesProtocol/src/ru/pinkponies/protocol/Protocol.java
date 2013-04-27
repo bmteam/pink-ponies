@@ -58,7 +58,7 @@ public final class Protocol {
 		this.messagePack.register(LoginPacket.class);
 		this.messagePack.register(ClientOptionsPacket.class);
 		this.messagePack.register(SayPacket.class);
-		this.messagePack.register(LocationUpdatePacket.class);
+		this.messagePack.register(PlayerUpdatePacket.class);
 		this.messagePack.register(AppleUpdatePacket.class);
 		this.messagePack.register(QuestUpdatePacket.class);
 	}
@@ -88,7 +88,7 @@ public final class Protocol {
 		} else if (packet instanceof SayPacket) {
 			packer.write(SAY_PACKET);
 			packer.write(packet);
-		} else if (packet instanceof LocationUpdatePacket) {
+		} else if (packet instanceof PlayerUpdatePacket) {
 			packer.write(LOCATION_UPDATE_PACKET);
 			packer.write(packet);
 		} else if (packet instanceof AppleUpdatePacket) {
@@ -132,7 +132,7 @@ public final class Protocol {
 		} else if (packet instanceof SayPacket) {
 			packer.write(SAY_PACKET);
 			packer.write(packet);
-		} else if (packet instanceof LocationUpdatePacket) {
+		} else if (packet instanceof PlayerUpdatePacket) {
 			packer.write(LOCATION_UPDATE_PACKET);
 			packer.write(packet);
 		} else if (packet instanceof AppleUpdatePacket) {
@@ -169,7 +169,7 @@ public final class Protocol {
 		} else if (type == SAY_PACKET) {
 			return unpacker.read(SayPacket.class);
 		} else if (type == LOCATION_UPDATE_PACKET) {
-			return unpacker.read(LocationUpdatePacket.class);
+			return unpacker.read(PlayerUpdatePacket.class);
 		} else if (type == APPLE_UPDATE_PACKET) {
 			return unpacker.read(AppleUpdatePacket.class);
 		} else if (type == QUEST_UPDATE_PACKET) {
@@ -204,7 +204,7 @@ public final class Protocol {
 		} else if (type == SAY_PACKET) {
 			result = unpacker.read(SayPacket.class);
 		} else if (type == LOCATION_UPDATE_PACKET) {
-			result = unpacker.read(LocationUpdatePacket.class);
+			result = unpacker.read(PlayerUpdatePacket.class);
 		} else if (type == APPLE_UPDATE_PACKET) {
 			result = unpacker.read(AppleUpdatePacket.class);
 		} else if (type == QUEST_UPDATE_PACKET) {

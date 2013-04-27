@@ -15,7 +15,7 @@ import org.msgpack.annotation.Message;
  */
 @Message
 @Beans
-public final class LocationUpdatePacket extends Packet {
+public final class PlayerUpdatePacket extends Packet {
 	/**
 	 * The id of the client whose location is being updated.
 	 */
@@ -32,7 +32,7 @@ public final class LocationUpdatePacket extends Packet {
 	 * Creates a new empty location update packet with client id set to -1, longitude, latitude and
 	 * altitude set to zero.
 	 */
-	public LocationUpdatePacket() {
+	public PlayerUpdatePacket() {
 		super();
 		this.clientId = -1;
 		this.setLocation(new Location());
@@ -46,7 +46,7 @@ public final class LocationUpdatePacket extends Packet {
 	 * @param location
 	 *            the location of the client
 	 */
-	public LocationUpdatePacket(final long clientId, final Location location) {
+	public PlayerUpdatePacket(final long clientId, final Location location) {
 		super();
 		this.clientId = clientId;
 		this.setLocation(location);
