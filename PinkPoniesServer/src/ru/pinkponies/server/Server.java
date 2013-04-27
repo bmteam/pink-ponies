@@ -402,12 +402,14 @@ public final class Server {
 	 * 
 	 * @param location
 	 *            Location of the apple added.
+	 * @param questId
+	 *            The id of the quest to which apple relates.
 	 * @throws IOException
 	 *             if there was any problem broadcasting apple update.
 	 */
-	private void addApple(final Location location) throws IOException {
+	private void addApple(final Location location, final long questId) throws IOException {
 		final long id = this.idManager.newId();
-		final Apple apple = new Apple(id, location);
+		final Apple apple = new Apple(id, location, questId);
 		this.apples.put(id, apple);
 		final AppleUpdatePacket packet = new AppleUpdatePacket(id, location, true);
 		System.out.println("Added " + apple + ".");
@@ -423,11 +425,13 @@ public final class Server {
 	 *            Near this location an apple will be added.
 	 * @param distance
 	 *            The maximum distance to an apple. Approximately 100 meters per 1.0.
+	 * @param questId
+	 *            The id of the quest to which apple relates.
 	 * @throws IOException
 	 *             if there was any problem broadcasting apple update.
 	 */
-	private void addRandomApple(final Location location, final double distance) throws IOException {
-		this.addApple(this.generateRandomLocation(location, distance));
+	private void addRandomApple(final Location location, final double distance, final long questId) throws IOException {
+		this.addApple(this.generateRandomLocation(location, distance), questId);
 	}
 
 	/**
@@ -535,7 +539,7 @@ public final class Server {
 						System.out.println("Player " + player.getId() + " accepted Quest " + quest.getId() + ".");
 						this.removeQuest(quest.getId());
 						for (int i = 0; i < APPLES_PER_QUEST; i++) {
-							this.addRandomApple(quest.getLocation(), QUEST_TO_APPLES_DISTANCE);
+							this.addRandomApple(quest.getLocation(), QUEST_TO_APPLES_DISTANCE, quest.getId());
 						}
 						return;
 					}
