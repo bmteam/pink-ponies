@@ -28,6 +28,7 @@ import ru.pinkponies.protocol.Location;
 import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.Protocol;
+import ru.pinkponies.protocol.QuestUpdatePacket;
 import ru.pinkponies.protocol.SayPacket;
 
 /**
@@ -53,6 +54,16 @@ public final class Server {
 	 * The distance at which players pick up apples.
 	 */
 	private static final double INTERACTION_DISTANCE = 100.0;
+
+	/**
+	 * The number of apples that will be created when a quest is accepted.
+	 */
+	private static final int APPLES_PER_QUEST = 5;
+
+	/**
+	 * The maximum distance to the quest at which apples can appear.
+	 */
+	private static final double QUEST_TO_APPLES_DISTANCE = 5.0;
 
 	/**
 	 * The main socket channel on which the server listens for incoming connections.
@@ -90,9 +101,19 @@ public final class Server {
 	private final Map<Long, Apple> apples = new HashMap<Long, Apple>();
 
 	/**
+	 * The map of all existing quests.
+	 */
+	private final Map<Long, Quest> quests = new HashMap<Long, Quest>();
+
+	/**
 	 * ID manager for generating new identifiers.
 	 */
 	private final IdManager idManager = new IdManager();
+
+	/**
+	 * Random numbers generator.
+	 */
+	private final Random random = new Random();
 
 	/**
 	 * Initializes this server.
@@ -120,13 +141,14 @@ public final class Server {
 	 * Starts this server.
 	 */
 	private void start() {
-		while (true) {
-			try {
+		try {
+			while (true) {
 				this.pumpEvents();
-				this.pickupApples();
-			} catch (final IOException e) {
-				Server.LOGGER.log(Level.SEVERE, "IOException during event pumping", e);
+				this.processApples();
+				this.processQuests();
 			}
+		} catch (final IOException e) {
+			Server.LOGGER.log(Level.SEVERE, "IOException during event pumping", e);
 		}
 	}
 
@@ -159,7 +181,8 @@ public final class Server {
 				}
 			} catch (final IOException e) {
 				this.close(key);
-				Server.LOGGER.log(Level.SEVERE, "Exception", e);
+				Server.LOGGER.log(Level.SEVERE, "IOException while handling client", e);
+				Server.LOGGER.info("Client has been forcefully disconnected.");
 			}
 		}
 	}
@@ -217,19 +240,9 @@ public final class Server {
 
 		buffer.limit(buffer.capacity());
 
-		int numRead = -1;
-		try {
-			numRead = channel.read(buffer);
-		} catch (final IOException e) {
-			this.close(key);
-			Server.LOGGER.log(Level.SEVERE, "Exception", e);
-			return;
-		}
-
+		int numRead = channel.read(buffer);
 		if (numRead == -1) {
-			this.close(key);
-			Server.LOGGER.severe("Read failed.");
-			return;
+			throw new IOException("Error while reading packet.");
 		}
 
 		Packet packet = null;
@@ -237,12 +250,7 @@ public final class Server {
 		buffer.flip();
 
 		while (buffer.remaining() > 0) {
-			try {
-				packet = this.protocol.unpack(buffer);
-			} catch (final IOException e) {
-				Server.LOGGER.log(Level.SEVERE, "IOException during packet unpacking", e);
-			}
-
+			packet = this.protocol.unpack(buffer);
 			if (packet == null) {
 				break;
 			}
@@ -297,6 +305,11 @@ public final class Server {
 			final AppleUpdatePacket applePacket = new AppleUpdatePacket(apple.getId(), apple.getLocation(), true);
 			this.sendPacket(channel, applePacket);
 		}
+
+		for (final Quest quest : this.quests.values()) {
+			final QuestUpdatePacket questPacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(), true);
+			this.sendPacket(channel, questPacket);
+		}
 	}
 
 	/**
@@ -325,12 +338,9 @@ public final class Server {
 			System.out.println("Location update broadcasted.");
 
 			// XXX(xairy): temporary.
-			final Random generator = new Random();
-			final double longitude = locUpdate.getLocation().getLongitude() + (generator.nextDouble() - 0.5) * 0.01;
-			final double latitude = locUpdate.getLocation().getLatitude() + (generator.nextDouble() - 0.5) * 0.01;
-			final Location appleLocation = new Location(longitude, latitude, 0.0);
-			System.out.println("Distance: " + locUpdate.getLocation().distanceTo(appleLocation) + ".");
-			this.addApple(appleLocation);
+			for (int i = 0; i < 5; i++) {
+				this.addRandomQuest(locUpdate.getLocation(), 10.0);
+			}
 		} else {
 			LOGGER.info("Unknown packet type.");
 		}
@@ -407,6 +417,20 @@ public final class Server {
 	}
 
 	/**
+	 * Adds a new apple somewhere near the specified location.
+	 * 
+	 * @param location
+	 *            Near this location an apple will be added.
+	 * @param distance
+	 *            The maximum distance to an apple. Approximately 100 meters per 1.0.
+	 * @throws IOException
+	 *             if there was any problem broadcasting apple update.
+	 */
+	private void addRandomApple(final Location location, final double distance) throws IOException {
+		this.addApple(this.generateRandomLocation(location, distance));
+	}
+
+	/**
 	 * Removes the apple with the specified id.
 	 * 
 	 * @param id
@@ -426,12 +450,64 @@ public final class Server {
 	}
 
 	/**
+	 * Adds a new quest with a specified location.
+	 * 
+	 * @param location
+	 *            Location of the quest added.
+	 * @throws IOException
+	 *             if there was any problem broadcasting quest update.
+	 */
+	private void addQuest(final Location location) throws IOException {
+		final long id = this.idManager.newId();
+		final Quest quest = new Quest(id, location);
+		this.quests.put(id, quest);
+		final QuestUpdatePacket packet = new QuestUpdatePacket(id, location, true);
+		System.out.println("Added " + quest + ".");
+
+		this.broadcastPacket(packet);
+		System.out.println("Quest update broadcasted.");
+	}
+
+	/**
+	 * Adds a new quest somewhere near the specified location.
+	 * 
+	 * @param location
+	 *            Near this location a quest will be added.
+	 * @param distance
+	 *            The maximum distance to a quest. Approximately 100 meters per 1.0.
+	 * @throws IOException
+	 *             if there was any problem broadcasting quest update.
+	 */
+	private void addRandomQuest(final Location location, final double distance) throws IOException {
+		this.addQuest(this.generateRandomLocation(location, distance));
+	}
+
+	/**
+	 * Removes the quest with the specified id.
+	 * 
+	 * @param id
+	 *            The id of the quest being removed.
+	 * @throws IOException
+	 *             if there was any problem broadcasting quest update.
+	 */
+	private void removeQuest(final long id) throws IOException {
+		final Location location = this.quests.get(id).getLocation();
+		final QuestUpdatePacket packet = new QuestUpdatePacket(id, location, false);
+
+		this.broadcastPacket(packet);
+		System.out.println("Quest update broadcasted.");
+
+		this.quests.remove(id);
+		System.out.println("Removed Quest " + id + ".");
+	}
+
+	/**
 	 * Processes all apples and checks if they are being picked up by any player.
 	 * 
 	 * @throws IOException
 	 *             if there was any problem broadcasting apple update.
 	 */
-	private void pickupApples() throws IOException {
+	private void processApples() throws IOException {
 		for (Player player : this.players.values()) {
 			if (player.getLocation() != null) {
 				for (Apple apple : this.apples.values()) {
@@ -443,6 +519,46 @@ public final class Server {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Processes all quests and checks if they are being accepted up by any player.
+	 * 
+	 * @throws IOException
+	 *             if there was any problem broadcasting quest update.
+	 */
+	private void processQuests() throws IOException {
+		for (Player player : this.players.values()) {
+			if (player.getLocation() != null) {
+				for (Quest quest : this.quests.values()) {
+					if (player.getLocation().distanceTo(quest.getLocation()) <= INTERACTION_DISTANCE) {
+						System.out.println("Player " + player.getId() + " accepted Quest " + quest.getId() + ".");
+						this.removeQuest(quest.getId());
+						for (int i = 0; i < APPLES_PER_QUEST; i++) {
+							this.addRandomApple(quest.getLocation(), QUEST_TO_APPLES_DISTANCE);
+						}
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Generates a random location near the specified location.
+	 * 
+	 * @param location
+	 *            Near this location a new location will be generated.
+	 * 
+	 * @param distance
+	 *            The maximum distance to a new location. Approximately 100 meters per 1.0.
+	 */
+	private Location generateRandomLocation(final Location location, final double distance) {
+		final double longitude = location.getLongitude() + (this.random.nextDouble() - 0.5) * 0.0017904931 * distance;
+		final double latitude = location.getLatitude() + (this.random.nextDouble() - 0.5) * 0.0017904931 * distance;
+		Location randomLocation = new Location(longitude, latitude, 0.0);
+		System.out.println("Distance: " + location.distanceTo(randomLocation) + ".");
+		return randomLocation;
 	}
 
 	/**

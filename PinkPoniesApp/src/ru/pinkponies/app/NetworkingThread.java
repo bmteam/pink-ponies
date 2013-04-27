@@ -29,6 +29,7 @@ import ru.pinkponies.protocol.ClientOptionsPacket;
 import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.Protocol;
+import ru.pinkponies.protocol.QuestUpdatePacket;
 import ru.pinkponies.protocol.SayPacket;
 
 /**
@@ -43,7 +44,7 @@ public class NetworkingThread extends Thread {
 	/**
 	 * The default server ip.
 	 */
-	private static final String SERVER_IP = "192.168.0.199";
+	private static final String SERVER_IP = "192.168.1.15";
 
 	/**
 	 * The default server port.
@@ -280,6 +281,8 @@ public class NetworkingThread extends Thread {
 		} else if (packet instanceof LocationUpdatePacket) {
 			this.sendMessageToUIThread(packet);
 		} else if (packet instanceof AppleUpdatePacket) {
+			this.sendMessageToUIThread(packet);
+		} else if (packet instanceof QuestUpdatePacket) {
 			this.sendMessageToUIThread(packet);
 		} else {
 			LOGGER.severe("Unknown packet type.");

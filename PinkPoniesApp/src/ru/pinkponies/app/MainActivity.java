@@ -24,7 +24,9 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationListener;
@@ -38,6 +40,7 @@ import android.view.View;
 import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.ClientOptionsPacket;
 import ru.pinkponies.protocol.LocationUpdatePacket;
+import ru.pinkponies.protocol.QuestUpdatePacket;
 import ru.pinkponies.protocol.SayPacket;
 
 /**
@@ -75,6 +78,11 @@ public final class MainActivity extends Activity implements LocationListener {
 	private static final long BAD_ID = -1;
 
 	/**
+	 * The size of the objects on the map.
+	 */
+	private static final int ICON_SIZE = 48;
+
+	/**
 	 * The message handler which receives messages for this activity.
 	 */
 	private final Handler messageHandler = new MessageHandler(this);
@@ -102,22 +110,27 @@ public final class MainActivity extends Activity implements LocationListener {
 	/**
 	 * The overlay displaying player's location.
 	 */
-	private MyLocationOverlay myLocationOverlay;
+	private MyLocationOverlay locationOverlay;
 
 	/**
 	 * The overlay displaying other people locations.
 	 */
-	private MyItemizedOverlay myPersonOverlay;
+	private MyItemizedOverlay personOverlay;
 
 	/**
 	 * The overlay displaying apple locations.
 	 */
-	private MyItemizedOverlay myAppleOverlay;
+	private MyItemizedOverlay appleOverlay;
+
+	/**
+	 * The overlay displaying quest locations.
+	 */
+	private MyItemizedOverlay questOverlay;
 
 	/**
 	 * The overlay which displays the path of the player.
 	 */
-	private PathOverlay myPath;
+	private PathOverlay pathOverlay;
 
 	/**
 	 * The identifier of the player.
@@ -138,11 +151,9 @@ public final class MainActivity extends Activity implements LocationListener {
 	 * @return Created itemized overlay.
 	 */
 	private MyItemizedOverlay createItemizedOverlay(final int resourceId) {
-		final Drawable marker = this.getResources().getDrawable(resourceId);
-
-		final int markerWidth = marker.getIntrinsicWidth();
-		final int markerHeight = marker.getIntrinsicHeight();
-		marker.setBounds(0, markerHeight, markerWidth, 0);
+		Drawable marker = this.getResources().getDrawable(resourceId);
+		Bitmap bitmap = ((BitmapDrawable) marker).getBitmap();
+		marker = new BitmapDrawable(this.getResources(), Bitmap.createScaledBitmap(bitmap, ICON_SIZE, ICON_SIZE, true));
 
 		final ResourceProxy resourceProxy = new DefaultResourceProxyImpl(this.getApplicationContext());
 		return new MyItemizedOverlay(marker, resourceProxy);
@@ -194,17 +205,16 @@ public final class MainActivity extends Activity implements LocationListener {
 		this.mapController = this.mapView.getController();
 		this.mapController.setZoom(MAP_VIEW_INITIAL_ZOOM_LEVEL);
 
-		this.myLocationOverlay = new MyLocationOverlay(this, this.mapView);
-		this.mapView.getOverlays().add(this.myLocationOverlay);
+		this.locationOverlay = new MyLocationOverlay(this, this.mapView);
+		this.mapView.getOverlays().add(this.locationOverlay);
 
-		this.myPath = new PathOverlay(Color.GREEN, this);
-		this.mapView.getOverlays().add(this.myPath);
+		this.pathOverlay = new PathOverlay(Color.GREEN, this);
+		this.mapView.getOverlays().add(this.pathOverlay);
 
-		this.myLocationOverlay.runOnFirstFix(new Runnable() {
+		this.locationOverlay.runOnFirstFix(new Runnable() {
 			@Override
 			public void run() {
-				MainActivity.this.mapView.getController()
-						.animateTo(MainActivity.this.myLocationOverlay.getMyLocation());
+				MainActivity.this.mapView.getController().animateTo(MainActivity.this.locationOverlay.getMyLocation());
 			}
 		});
 
@@ -215,11 +225,14 @@ public final class MainActivity extends Activity implements LocationListener {
 		// textOverlay.setText("Hello, world!");
 		// mapView.getOverlays().add(textOverlay);
 
-		this.myPersonOverlay = this.createItemizedOverlay(R.drawable.person);
-		this.mapView.getOverlays().add(this.myPersonOverlay);
+		this.personOverlay = this.createItemizedOverlay(R.drawable.player);
+		this.mapView.getOverlays().add(this.personOverlay);
 
-		this.myAppleOverlay = this.createItemizedOverlay(R.drawable.apple);
-		this.mapView.getOverlays().add(this.myAppleOverlay);
+		this.appleOverlay = this.createItemizedOverlay(R.drawable.apple);
+		this.mapView.getOverlays().add(this.appleOverlay);
+
+		this.questOverlay = this.createItemizedOverlay(R.drawable.question);
+		this.mapView.getOverlays().add(this.questOverlay);
 
 		// GeoPoint myPoint = new GeoPoint(55929563, 37523862);
 		// this.myAppleOverlay.addItem(myPoint, "Apple");
@@ -233,8 +246,8 @@ public final class MainActivity extends Activity implements LocationListener {
 	@Override
 	protected void onResume() {
 		super.onResume();
-		this.myLocationOverlay.enableMyLocation();
-		this.myLocationOverlay.enableFollowLocation();
+		this.locationOverlay.enableMyLocation();
+		this.locationOverlay.enableFollowLocation();
 	}
 
 	/**
@@ -243,8 +256,8 @@ public final class MainActivity extends Activity implements LocationListener {
 	@Override
 	protected void onPause() {
 		super.onPause();
-		this.myLocationOverlay.disableMyLocation();
-		this.myLocationOverlay.disableFollowLocation();
+		this.locationOverlay.disableMyLocation();
+		this.locationOverlay.disableFollowLocation();
 	}
 
 	/**
@@ -345,8 +358,8 @@ public final class MainActivity extends Activity implements LocationListener {
 						.getLongitude());
 				final String title = "Player" + String.valueOf(packet.getClientId());
 
-				this.myPersonOverlay.removeItem(title);
-				this.myPersonOverlay.addItem(point, title);
+				this.personOverlay.removeItem(title);
+				this.personOverlay.addItem(point, title);
 			}
 		} else if (message instanceof AppleUpdatePacket) {
 			final AppleUpdatePacket packet = (AppleUpdatePacket) message;
@@ -354,11 +367,22 @@ public final class MainActivity extends Activity implements LocationListener {
 			if (packet.getStatus()) {
 				final GeoPoint point = new GeoPoint(packet.getLocation().getLatitude(), packet.getLocation()
 						.getLongitude());
-				this.myAppleOverlay.addItem(point, title);
+				this.appleOverlay.addItem(point, title);
 			} else {
-				this.myAppleOverlay.removeItem(title);
+				this.appleOverlay.removeItem(title);
 			}
 			LOGGER.info("Apple " + String.valueOf(packet.getAppleId()) + " updated.");
+		} else if (message instanceof QuestUpdatePacket) {
+			final QuestUpdatePacket packet = (QuestUpdatePacket) message;
+			final String title = "Quest" + String.valueOf(packet.getQuestId());
+			if (packet.getStatus()) {
+				final GeoPoint point = new GeoPoint(packet.getLocation().getLatitude(), packet.getLocation()
+						.getLongitude());
+				this.questOverlay.addItem(point, title);
+			} else {
+				this.questOverlay.removeItem(title);
+			}
+			LOGGER.info("Quest " + String.valueOf(packet.getQuestId()) + " updated.");
 		}
 	}
 
@@ -396,7 +420,7 @@ public final class MainActivity extends Activity implements LocationListener {
 		final double altitude = location.getAltitude();
 
 		final GeoPoint point = new GeoPoint(latitude, longitude);
-		this.myPath.addPoint(point);
+		this.pathOverlay.addPoint(point);
 
 		final ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude, latitude, altitude);
 		final LocationUpdatePacket packet = new LocationUpdatePacket(this.myId, loc);

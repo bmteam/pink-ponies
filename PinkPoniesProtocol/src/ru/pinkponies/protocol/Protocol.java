@@ -39,6 +39,10 @@ public final class Protocol {
 	 * AppleUpdatePacket id.
 	 */
 	private static final byte APPLE_UPDATE_PACKET = 4;
+	/**
+	 * AppleUpdatePacket id.
+	 */
+	private static final byte QUEST_UPDATE_PACKET = 5;
 
 	/**
 	 * The underlying serialization and deserialization API.
@@ -56,6 +60,7 @@ public final class Protocol {
 		this.messagePack.register(SayPacket.class);
 		this.messagePack.register(LocationUpdatePacket.class);
 		this.messagePack.register(AppleUpdatePacket.class);
+		this.messagePack.register(QuestUpdatePacket.class);
 	}
 
 	/**
@@ -88,6 +93,9 @@ public final class Protocol {
 			packer.write(packet);
 		} else if (packet instanceof AppleUpdatePacket) {
 			packer.write(APPLE_UPDATE_PACKET);
+			packer.write(packet);
+		} else if (packet instanceof QuestUpdatePacket) {
+			packer.write(QUEST_UPDATE_PACKET);
 			packer.write(packet);
 		} else {
 			throw new InvalidClassException("Unknown packet type.");
@@ -130,6 +138,9 @@ public final class Protocol {
 		} else if (packet instanceof AppleUpdatePacket) {
 			packer.write(APPLE_UPDATE_PACKET);
 			packer.write(packet);
+		} else if (packet instanceof QuestUpdatePacket) {
+			packer.write(QUEST_UPDATE_PACKET);
+			packer.write(packet);
 		} else {
 			throw new InvalidClassException("Unknown packet type.");
 		}
@@ -161,6 +172,8 @@ public final class Protocol {
 			return unpacker.read(LocationUpdatePacket.class);
 		} else if (type == APPLE_UPDATE_PACKET) {
 			return unpacker.read(AppleUpdatePacket.class);
+		} else if (type == QUEST_UPDATE_PACKET) {
+			return unpacker.read(QuestUpdatePacket.class);
 		} else {
 			// FIXME(alexknvl): check if its the right type of exception
 			throw new InvalidClassException("Unknown packet type.");
@@ -194,6 +207,8 @@ public final class Protocol {
 			result = unpacker.read(LocationUpdatePacket.class);
 		} else if (type == APPLE_UPDATE_PACKET) {
 			result = unpacker.read(AppleUpdatePacket.class);
+		} else if (type == QUEST_UPDATE_PACKET) {
+			result = unpacker.read(QuestUpdatePacket.class);
 		} else {
 			// FIXME(alexknvl): check if its the right type of exception
 			throw new InvalidClassException("Unknown packet type.");
