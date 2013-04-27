@@ -9,6 +9,8 @@ package ru.pinkponies.app.net;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Logger;
 
 import android.app.Service;
@@ -18,13 +20,27 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 
+import ru.pinkponies.protocol.Packet;
+
 public class NetworkingService extends Service {
 	private static final Logger LOGGER = Logger.getLogger(NetworkingService.class.getName());
+
+	/**
+	 * The delay between consecutive network IO updates.
+	 */
+	private static final int SERVICE_DELAY = 1000;
+
+	public enum State {
+		None, Connected,
+	}
 
 	private final NetworkingThread networkingThread = new NetworkingThread(this);
 	private final Handler messageHandler = new MessageHandler(this);
 	private final LocalBinder binder = new LocalBinder(this);
 	private final List<NetworkListener> listeners = new ArrayList<NetworkListener>();
+	private final Timer updateTimer = new Timer();
+
+	private State state = State.None;
 
 	public void addListener(final NetworkListener listener) {
 		this.listeners.add(listener);
@@ -32,6 +48,19 @@ public class NetworkingService extends Service {
 
 	public void removeListener(final NetworkListener listener) {
 		this.listeners.remove(listener);
+	}
+
+	public State getState() {
+		return this.state;
+	}
+
+	public void connect() {
+		this.sendMessageToNetworkingThread("connect");
+		this.sendMessageToNetworkingThread("service");
+	}
+
+	public void sendPacket(final Packet packet) {
+		this.sendMessageToNetworkingThread(packet);
 	}
 
 	@Override
@@ -47,7 +76,8 @@ public class NetworkingService extends Service {
 
 	@Override
 	public void onDestroy() {
-		// TODO Auto-generated method stub
+		this.updateTimer.cancel();
+
 		super.onDestroy();
 	}
 
@@ -61,12 +91,28 @@ public class NetworkingService extends Service {
 	}
 
 	private void onMessageFromNetworkingThread(final Object message) {
+		if (message.equals("connected")) {
+			this.state = State.Connected;
+
+			this.updateTimer.scheduleAtFixedRate(new TimerTask() {
+
+				@Override
+				public void run() {
+					NetworkingService.this.sendMessageToNetworkingThread("service");
+				}
+
+			}, 0, SERVICE_DELAY);
+		} else if (message.equals("failed")) {
+			this.state = State.None;
+			this.updateTimer.cancel();
+		}
+
 		for (final NetworkListener listener : this.listeners) {
 			listener.onMessage(message);
 		}
 	}
 
-	public void sendMessage(final Object message) {
+	private void sendMessageToNetworkingThread(final Object message) {
 		Message msg = this.networkingThread.getMessageHandler().obtainMessage();
 		msg.obj = message;
 		this.networkingThread.getMessageHandler().sendMessage(msg);

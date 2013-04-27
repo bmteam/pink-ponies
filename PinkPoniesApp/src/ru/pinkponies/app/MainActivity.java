@@ -6,8 +6,6 @@
 
 package ru.pinkponies.app;
 
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.logging.Logger;
 
 import org.osmdroid.DefaultResourceProxyImpl;
@@ -53,11 +51,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	 * The class wide logger.
 	 */
 	private static final Logger LOGGER = Logger.getLogger(MainActivity.class.getName());
-
-	/**
-	 * The delay between consecutive network IO updates.
-	 */
-	private static final int SERVICE_DELAY = 1000;
 
 	/**
 	 * The minimum time interval between location updates, in milliseconds.
@@ -106,8 +99,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		}
 
 	};
-
-	private final Timer updateTimer = new Timer();
 
 	/**
 	 * The location service manager.
@@ -289,8 +280,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 			this.networkingService = null;
 		}
 
-		this.updateTimer.cancel();
-
 		this.locationManager.removeUpdates(this);
 		super.onDestroy();
 	}
@@ -360,8 +349,10 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 	protected void onNetworkingServiceConnected() {
 		this.networkingService.addListener(this);
-		this.sendMessageToNetwork("connect");
-		this.sendMessageToNetwork("service");
+
+		if (this.networkingService.getState() != NetworkingService.State.Connected) {
+			this.networkingService.connect();
+		}
 	}
 
 	/**
@@ -375,15 +366,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		LOGGER.info(message.toString());
 
 		if (message.equals("connected")) {
-			this.sendMessageToNetwork("login");
-			this.updateTimer.scheduleAtFixedRate(new TimerTask() {
 
-				@Override
-				public void run() {
-					MainActivity.this.sendMessageToNetwork("service");
-				}
-
-			}, 0, MainActivity.SERVICE_DELAY);
 		} else if (message.equals("failed")) {
 			this.showMessageBox("Socket exception.", null);
 		} else if (message instanceof ClientOptionsPacket) {
@@ -428,17 +411,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	}
 
 	/**
-	 * Asynchronously sends the given message to the networking thread.
-	 * 
-	 * @param message
-	 *            The message to send.
-	 */
-
-	private void sendMessageToNetwork(final Object message) {
-		this.networkingService.sendMessage(message);
-	}
-
-	/**
 	 * Switches current activity to login activity.
 	 */
 	public void goToLoginActivity() {
@@ -464,7 +436,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 		final ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude, latitude, altitude);
 		final PlayerUpdatePacket packet = new PlayerUpdatePacket(this.myId, loc);
-		this.sendMessageToNetwork(packet);
+		this.networkingService.sendPacket(packet);
 
 		MainActivity.LOGGER.info("Location updated.");
 	}
