@@ -28,6 +28,7 @@ import ru.pinkponies.protocol.Location;
 import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.Protocol;
+import ru.pinkponies.protocol.QuestUpdatePacket;
 import ru.pinkponies.protocol.SayPacket;
 
 /**
@@ -90,6 +91,11 @@ public final class Server {
 	private final Map<Long, Apple> apples = new HashMap<Long, Apple>();
 
 	/**
+	 * The map of all existing quests.
+	 */
+	private final Map<Long, Quest> quests = new HashMap<Long, Quest>();
+
+	/**
 	 * ID manager for generating new identifiers.
 	 */
 	private final IdManager idManager = new IdManager();
@@ -120,13 +126,14 @@ public final class Server {
 	 * Starts this server.
 	 */
 	private void start() {
-		while (true) {
-			try {
+		try {
+			while (true) {
 				this.pumpEvents();
-				this.pickupApples();
-			} catch (final IOException e) {
-				Server.LOGGER.log(Level.SEVERE, "IOException during event pumping", e);
+				this.processApples();
+				this.processQuests();
 			}
+		} catch (final IOException e) {
+			Server.LOGGER.log(Level.SEVERE, "IOException during event pumping", e);
 		}
 	}
 
@@ -159,7 +166,8 @@ public final class Server {
 				}
 			} catch (final IOException e) {
 				this.close(key);
-				Server.LOGGER.log(Level.SEVERE, "Exception", e);
+				Server.LOGGER.log(Level.SEVERE, "IOException while handling client", e);
+				Server.LOGGER.info("Client has been forcefully disconnected.");
 			}
 		}
 	}
@@ -426,18 +434,77 @@ public final class Server {
 	}
 
 	/**
+	 * Adds a new quest with a specified location.
+	 * 
+	 * @param location
+	 *            Location of the quest added.
+	 * @throws IOException
+	 *             if there was any problem broadcasting quest update.
+	 */
+	private void addQuest(final Location location) throws IOException {
+		final long id = this.idManager.newId();
+		final Quest quest = new Quest(id, location);
+		this.quests.put(id, quest);
+		final QuestUpdatePacket packet = new QuestUpdatePacket(id, location, true);
+		System.out.println("Added " + quest + ".");
+
+		this.broadcastPacket(packet);
+		System.out.println("Quest update broadcasted.");
+	}
+
+	/**
+	 * Removes the quest with the specified id.
+	 * 
+	 * @param id
+	 *            The id of the quest being removed.
+	 * @throws IOException
+	 *             if there was any problem broadcasting quest update.
+	 */
+	private void removeQuest(final long id) throws IOException {
+		final Location location = this.apples.get(id).getLocation();
+		final QuestUpdatePacket packet = new QuestUpdatePacket(id, location, false);
+
+		this.broadcastPacket(packet);
+		System.out.println("Quest update broadcasted.");
+
+		this.apples.remove(id);
+		System.out.println("Removed Quest " + id + ".");
+	}
+
+	/**
 	 * Processes all apples and checks if they are being picked up by any player.
 	 * 
 	 * @throws IOException
 	 *             if there was any problem broadcasting apple update.
 	 */
-	private void pickupApples() throws IOException {
+	private void processApples() throws IOException {
 		for (Player player : this.players.values()) {
 			if (player.getLocation() != null) {
 				for (Apple apple : this.apples.values()) {
 					if (player.getLocation().distanceTo(apple.getLocation()) <= INTERACTION_DISTANCE) {
 						System.out.println("Player " + player.getId() + " picked up Apple " + apple.getId() + ".");
 						this.removeApple(apple.getId());
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Processes all quests and checks if they are being accepted up by any player.
+	 * 
+	 * @throws IOException
+	 *             if there was any problem broadcasting quest update.
+	 */
+	private void processQuests() throws IOException {
+		for (Player player : this.players.values()) {
+			if (player.getLocation() != null) {
+				for (Quest quest : this.quests.values()) {
+					if (player.getLocation().distanceTo(quest.getLocation()) <= INTERACTION_DISTANCE) {
+						System.out.println("Player " + player.getId() + " accepted Quest " + quest.getId() + ".");
+						this.removeQuest(quest.getId());
+						// TODO: generate apples.
 						return;
 					}
 				}
