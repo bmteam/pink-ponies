@@ -225,19 +225,9 @@ public final class Server {
 
 		buffer.limit(buffer.capacity());
 
-		int numRead = -1;
-		try {
-			numRead = channel.read(buffer);
-		} catch (final IOException e) {
-			this.close(key);
-			Server.LOGGER.log(Level.SEVERE, "Exception", e);
-			return;
-		}
-
+		int numRead = channel.read(buffer);
 		if (numRead == -1) {
-			this.close(key);
-			Server.LOGGER.severe("Read failed.");
-			return;
+			throw new IOException("Error while reading packet.");
 		}
 
 		Packet packet = null;
@@ -245,12 +235,7 @@ public final class Server {
 		buffer.flip();
 
 		while (buffer.remaining() > 0) {
-			try {
-				packet = this.protocol.unpack(buffer);
-			} catch (final IOException e) {
-				Server.LOGGER.log(Level.SEVERE, "IOException during packet unpacking", e);
-			}
-
+			packet = this.protocol.unpack(buffer);
 			if (packet == null) {
 				break;
 			}
@@ -305,6 +290,11 @@ public final class Server {
 			final AppleUpdatePacket applePacket = new AppleUpdatePacket(apple.getId(), apple.getLocation(), true);
 			this.sendPacket(channel, applePacket);
 		}
+
+		for (final Quest quest : this.quests.values()) {
+			final QuestUpdatePacket questPacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(), true);
+			this.sendPacket(channel, questPacket);
+		}
 	}
 
 	/**
@@ -338,7 +328,7 @@ public final class Server {
 			final double latitude = locUpdate.getLocation().getLatitude() + (generator.nextDouble() - 0.5) * 0.01;
 			final Location appleLocation = new Location(longitude, latitude, 0.0);
 			System.out.println("Distance: " + locUpdate.getLocation().distanceTo(appleLocation) + ".");
-			this.addApple(appleLocation);
+			this.addQuest(appleLocation);
 		} else {
 			LOGGER.info("Unknown packet type.");
 		}
@@ -461,13 +451,13 @@ public final class Server {
 	 *             if there was any problem broadcasting quest update.
 	 */
 	private void removeQuest(final long id) throws IOException {
-		final Location location = this.apples.get(id).getLocation();
+		final Location location = this.quests.get(id).getLocation();
 		final QuestUpdatePacket packet = new QuestUpdatePacket(id, location, false);
 
 		this.broadcastPacket(packet);
 		System.out.println("Quest update broadcasted.");
 
-		this.apples.remove(id);
+		this.quests.remove(id);
 		System.out.println("Removed Quest " + id + ".");
 	}
 

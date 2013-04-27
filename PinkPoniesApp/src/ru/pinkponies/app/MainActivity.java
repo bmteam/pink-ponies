@@ -40,6 +40,7 @@ import android.view.View;
 import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.ClientOptionsPacket;
 import ru.pinkponies.protocol.LocationUpdatePacket;
+import ru.pinkponies.protocol.QuestUpdatePacket;
 import ru.pinkponies.protocol.SayPacket;
 
 /**
@@ -371,6 +372,17 @@ public final class MainActivity extends Activity implements LocationListener {
 				this.appleOverlay.removeItem(title);
 			}
 			LOGGER.info("Apple " + String.valueOf(packet.getAppleId()) + " updated.");
+		} else if (message instanceof QuestUpdatePacket) {
+			final QuestUpdatePacket packet = (QuestUpdatePacket) message;
+			final String title = "Quest" + String.valueOf(packet.getQuestId());
+			if (packet.getStatus()) {
+				final GeoPoint point = new GeoPoint(packet.getLocation().getLatitude(), packet.getLocation()
+						.getLongitude());
+				this.questOverlay.addItem(point, title);
+			} else {
+				this.questOverlay.removeItem(title);
+			}
+			LOGGER.info("Quest " + String.valueOf(packet.getQuestId()) + " updated.");
 		}
 	}
 

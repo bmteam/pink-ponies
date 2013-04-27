@@ -29,6 +29,7 @@ import ru.pinkponies.protocol.ClientOptionsPacket;
 import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.Protocol;
+import ru.pinkponies.protocol.QuestUpdatePacket;
 import ru.pinkponies.protocol.SayPacket;
 
 /**
@@ -273,6 +274,7 @@ public class NetworkingThread extends Thread {
 	 *            The packet to be parsed.
 	 */
 	private void onPacket(final Packet packet) {
+		LOGGER.info("!!! " + packet.toString());
 		if (packet instanceof ClientOptionsPacket) {
 			this.sendMessageToUIThread(packet);
 		} else if (packet instanceof SayPacket) {
@@ -280,6 +282,8 @@ public class NetworkingThread extends Thread {
 		} else if (packet instanceof LocationUpdatePacket) {
 			this.sendMessageToUIThread(packet);
 		} else if (packet instanceof AppleUpdatePacket) {
+			this.sendMessageToUIThread(packet);
+		} else if (packet instanceof QuestUpdatePacket) {
 			this.sendMessageToUIThread(packet);
 		} else {
 			LOGGER.severe("Unknown packet type.");

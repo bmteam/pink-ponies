@@ -42,7 +42,7 @@ public final class Protocol {
 	/**
 	 * AppleUpdatePacket id.
 	 */
-	private static final byte QUEST_UPDATE_PACKET = 4;
+	private static final byte QUEST_UPDATE_PACKET = 5;
 
 	/**
 	 * The underlying serialization and deserialization API.
