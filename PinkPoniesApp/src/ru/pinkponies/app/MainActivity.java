@@ -187,10 +187,8 @@ public final class MainActivity extends Activity implements LocationListener {
 
 		this.setContentView(R.layout.activity_main);
 
-		// if (savedInstanceState == null) {
 		this.networkingThread = new NetworkingThread(this);
-		this.startService(new Intent(this, NetworkingThread.class));
-		// }
+		this.networkingThread.start();
 
 		this.locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 		this.locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, LOCATION_UPDATE_MIN_DELAY,
