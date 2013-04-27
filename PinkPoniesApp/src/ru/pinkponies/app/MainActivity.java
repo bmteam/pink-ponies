@@ -6,7 +6,6 @@
 
 package ru.pinkponies.app;
 
-import java.lang.ref.WeakReference;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Logger;
@@ -21,9 +20,11 @@ import org.osmdroid.views.overlay.PathOverlay;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
@@ -32,11 +33,12 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
+import android.os.IBinder;
 import android.view.Menu;
 import android.view.View;
 
+import ru.pinkponies.app.net.NetworkListener;
+import ru.pinkponies.app.net.NetworkingService;
 import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.ClientOptionsPacket;
 import ru.pinkponies.protocol.PlayerUpdatePacket;
@@ -46,7 +48,7 @@ import ru.pinkponies.protocol.SayPacket;
 /**
  * The main activity class.
  */
-public final class MainActivity extends Activity implements LocationListener {
+public final class MainActivity extends Activity implements LocationListener, NetworkListener {
 	/**
 	 * The class wide logger.
 	 */
@@ -83,14 +85,29 @@ public final class MainActivity extends Activity implements LocationListener {
 	private static final int ICON_SIZE = 48;
 
 	/**
-	 * The message handler which receives messages for this activity.
+	 * The networking service.
 	 */
-	private final Handler messageHandler = new MessageHandler(this);
+	private NetworkingService networkingService;
 
-	/**
-	 * The networking thread which provides this activity with an asynchronous access to network IO.
-	 */
-	private NetworkingThread networkingThread;
+	private final ServiceConnection networkingServiceConnection = new ServiceConnection() {
+		@Override
+		public void onServiceConnected(final ComponentName className, final IBinder binder) {
+			MainActivity.this.networkingService = ((NetworkingService.LocalBinder) binder).getService();
+			MainActivity.this.onNetworkingServiceConnected();
+			LOGGER.info("Service connected");
+		}
+
+		@Override
+		public void onServiceDisconnected(final ComponentName className) {
+			MainActivity.this.onNetworkingServiceDisconnected();
+			MainActivity.this.networkingService = null;
+
+			LOGGER.info("Service disconnected");
+		}
+
+	};
+
+	private final Timer updateTimer = new Timer();
 
 	/**
 	 * The location service manager.
@@ -160,15 +177,6 @@ public final class MainActivity extends Activity implements LocationListener {
 	}
 
 	/**
-	 * Returns the message handler associated with this activity.
-	 * 
-	 * @return the message handler
-	 */
-	public Handler getMessageHandler() {
-		return this.messageHandler;
-	}
-
-	/**
 	 * Called when the activity is first created. Initializes GUI, networking, creates overlays.
 	 * 
 	 * @param savedInstanceState
@@ -180,7 +188,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	protected void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		LOGGER.info("Initializing.");
+		LOGGER.info("onCreate " + this.hashCode());
 
 		// Intent intent = getIntent();
 		// Bundle extras = intent.getExtras();
@@ -188,9 +196,6 @@ public final class MainActivity extends Activity implements LocationListener {
 		// password = extras.getString("password");
 
 		this.setContentView(R.layout.activity_main);
-
-		this.networkingThread = new NetworkingThread(this);
-		this.networkingThread.start();
 
 		this.locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 		this.locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, LOCATION_UPDATE_MIN_DELAY,
@@ -237,6 +242,11 @@ public final class MainActivity extends Activity implements LocationListener {
 		// GeoPoint myPoint = new GeoPoint(55929563, 37523862);
 		// this.myAppleOverlay.addItem(myPoint, "Apple");
 
+		LOGGER.info("Starting service");
+		this.startService(new Intent(this, NetworkingService.class));
+		this.bindService(new Intent(this, NetworkingService.class), this.networkingServiceConnection,
+				Context.BIND_AUTO_CREATE);
+
 		LOGGER.info("Initialized.");
 	}
 
@@ -246,6 +256,9 @@ public final class MainActivity extends Activity implements LocationListener {
 	@Override
 	protected void onResume() {
 		super.onResume();
+
+		LOGGER.info("onResume " + this.hashCode());
+
 		this.locationOverlay.enableMyLocation();
 		this.locationOverlay.enableFollowLocation();
 	}
@@ -256,6 +269,9 @@ public final class MainActivity extends Activity implements LocationListener {
 	@Override
 	protected void onPause() {
 		super.onPause();
+
+		LOGGER.info("onPause");
+
 		this.locationOverlay.disableMyLocation();
 		this.locationOverlay.disableFollowLocation();
 	}
@@ -265,6 +281,17 @@ public final class MainActivity extends Activity implements LocationListener {
 	 */
 	@Override
 	protected void onDestroy() {
+		LOGGER.info("onDestroy " + this.hashCode());
+
+		if (this.networkingService != null) {
+			this.unbindService(this.networkingServiceConnection);
+			this.networkingService.removeListener(this);
+			this.networkingService = null;
+		}
+
+		this.updateTimer.cancel();
+
+		this.locationManager.removeUpdates(this);
 		super.onDestroy();
 	}
 
@@ -278,6 +305,8 @@ public final class MainActivity extends Activity implements LocationListener {
 	@Override
 	protected void onSaveInstanceState(final Bundle outState) {
 		super.onSaveInstanceState(outState);
+		LOGGER.info("onSaveInstanceState " + this.hashCode());
+
 		outState.putInt("zoomLevel", this.mapView.getZoomLevel());
 	}
 
@@ -290,6 +319,8 @@ public final class MainActivity extends Activity implements LocationListener {
 	 */
 	@Override
 	protected void onRestoreInstanceState(final Bundle outState) {
+		LOGGER.info("onRestoreInstanceState " + this.hashCode());
+
 		MainActivity.LOGGER.info("MainActivity:onSaveInstanceState");
 		super.onRestoreInstanceState(outState);
 		outState.getInt("zoomLevel");
@@ -320,26 +351,36 @@ public final class MainActivity extends Activity implements LocationListener {
 		this.finish();
 	}
 
+	protected void onNetworkingServiceDisconnected() {
+		if (this.networkingService != null) {
+			this.networkingService.removeListener(this);
+			this.networkingService = null;
+		}
+	}
+
+	protected void onNetworkingServiceConnected() {
+		this.networkingService.addListener(this);
+		this.sendMessageToNetwork("connect");
+		this.sendMessageToNetwork("service");
+	}
+
 	/**
-	 * Called when there is a new message from the networking thread.
+	 * Called when there is a new message from the networking service.
 	 * 
 	 * @param message
 	 *            The message which was received.
 	 */
-	private void onMessageFromNetworkingThread(final Object message) {
-		MainActivity.LOGGER.info("NT: " + message.toString());
+	@Override
+	public void onMessage(final Object message) {
+		LOGGER.info(message.toString());
 
-		if (message.equals("initialized")) {
-			this.sendMessageToNetworkingThread("connect");
-			this.sendMessageToNetworkingThread("service");
-		} else if (message.equals("connected")) {
-			this.sendMessageToNetworkingThread("login");
-
-			new Timer().scheduleAtFixedRate(new TimerTask() {
+		if (message.equals("connected")) {
+			this.sendMessageToNetwork("login");
+			this.updateTimer.scheduleAtFixedRate(new TimerTask() {
 
 				@Override
 				public void run() {
-					MainActivity.this.sendMessageToNetworkingThread("service");
+					MainActivity.this.sendMessageToNetwork("service");
 				}
 
 			}, 0, MainActivity.SERVICE_DELAY);
@@ -392,10 +433,9 @@ public final class MainActivity extends Activity implements LocationListener {
 	 * @param message
 	 *            The message to send.
 	 */
-	private void sendMessageToNetworkingThread(final Object message) {
-		final Message msg = this.networkingThread.getMessageHandler().obtainMessage();
-		msg.obj = message;
-		this.networkingThread.getMessageHandler().sendMessage(msg);
+
+	private void sendMessageToNetwork(final Object message) {
+		this.networkingService.sendMessage(message);
 	}
 
 	/**
@@ -424,7 +464,7 @@ public final class MainActivity extends Activity implements LocationListener {
 
 		final ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude, latitude, altitude);
 		final PlayerUpdatePacket packet = new PlayerUpdatePacket(this.myId, loc);
-		this.sendMessageToNetworkingThread(packet);
+		this.sendMessageToNetwork(packet);
 
 		MainActivity.LOGGER.info("Location updated.");
 	}
@@ -484,36 +524,5 @@ public final class MainActivity extends Activity implements LocationListener {
 				});
 		final AlertDialog alertDialog = alertDialogBuilder.create();
 		alertDialog.show();
-	}
-
-	/**
-	 * A message handler class for this activity.
-	 */
-	public static final class MessageHandler extends Handler {
-		/**
-		 * The weak reference to the activity.
-		 */
-		private final WeakReference<MainActivity> activity;
-
-		/**
-		 * Creates a new message handler which handles messages sent to the activity.
-		 * 
-		 * @param mainActivity
-		 *            The activity.
-		 */
-		MessageHandler(final MainActivity mainActivity) {
-			this.activity = new WeakReference<MainActivity>(mainActivity);
-		}
-
-		/**
-		 * Handles incoming messages and sends them to the activity.
-		 * 
-		 * @param msg
-		 *            The incoming message.
-		 */
-		@Override
-		public void handleMessage(final Message msg) {
-			this.activity.get().onMessageFromNetworkingThread(msg.obj);
-		}
 	}
 }

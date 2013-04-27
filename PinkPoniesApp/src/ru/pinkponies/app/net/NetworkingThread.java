@@ -4,7 +4,7 @@
  * the LICENSE file.
  */
 
-package ru.pinkponies.app;
+package ru.pinkponies.app.net;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -26,8 +26,8 @@ import android.os.Message;
 
 import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.ClientOptionsPacket;
-import ru.pinkponies.protocol.PlayerUpdatePacket;
 import ru.pinkponies.protocol.Packet;
+import ru.pinkponies.protocol.PlayerUpdatePacket;
 import ru.pinkponies.protocol.Protocol;
 import ru.pinkponies.protocol.QuestUpdatePacket;
 import ru.pinkponies.protocol.SayPacket;
@@ -69,7 +69,7 @@ public class NetworkingThread extends Thread {
 	/**
 	 * The weak reference to the main activity.
 	 */
-	private final WeakReference<MainActivity> mainActivity;
+	private final WeakReference<NetworkingService> networkingSevice;
 
 	/**
 	 * The socket channel.
@@ -98,8 +98,8 @@ public class NetworkingThread extends Thread {
 	 * @param activity
 	 *            The activity to which updates will be sent.
 	 */
-	NetworkingThread(final MainActivity activity) {
-		this.mainActivity = new WeakReference<MainActivity>(activity);
+	NetworkingThread(final NetworkingService networkingSevice) {
+		this.networkingSevice = new WeakReference<NetworkingService>(networkingSevice);
 		this.protocol = new Protocol();
 	}
 
@@ -119,7 +119,7 @@ public class NetworkingThread extends Thread {
 	public final void run() {
 		Looper.prepare();
 		this.messageHandler = new MessageHandler(this);
-		this.sendMessageToUIThread("initialized");
+		this.sendMessageToService("initialized");
 		Looper.loop();
 	}
 
@@ -184,7 +184,7 @@ public class NetworkingThread extends Thread {
 			this.socket.finishConnect();
 			this.socket.register(this.selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
 
-			this.sendMessageToUIThread("connected");
+			this.sendMessageToService("connected");
 		}
 	}
 
@@ -275,15 +275,15 @@ public class NetworkingThread extends Thread {
 	 */
 	private void onPacket(final Packet packet) {
 		if (packet instanceof ClientOptionsPacket) {
-			this.sendMessageToUIThread(packet);
+			this.sendMessageToService(packet);
 		} else if (packet instanceof SayPacket) {
-			this.sendMessageToUIThread(packet);
+			this.sendMessageToService(packet);
 		} else if (packet instanceof PlayerUpdatePacket) {
-			this.sendMessageToUIThread(packet);
-		} else if (packet instanceof AppleUpdatePacket) {
-			this.sendMessageToUIThread(packet);
+			this.sendMessageToService(packet);
 		} else if (packet instanceof QuestUpdatePacket) {
-			this.sendMessageToUIThread(packet);
+			this.sendMessageToService(packet);
+		} else if (packet instanceof AppleUpdatePacket) {
+			this.sendMessageToService(packet);
 		} else {
 			LOGGER.severe("Unknown packet type.");
 		}
@@ -306,16 +306,6 @@ public class NetworkingThread extends Thread {
 	}
 
 	/**
-	 * Writes a login packet to the output buffer.
-	 * 
-	 * @throws IOException
-	 *             If there was a error writing to the output buffer (e.g not enough space).
-	 */
-	private void login() throws IOException {
-		// TODO(xairy): login.
-	}
-
-	/**
 	 * Writes a say packet to the output buffer.
 	 * 
 	 * @param message
@@ -334,16 +324,18 @@ public class NetworkingThread extends Thread {
 	 * @param message
 	 *            The message.
 	 */
-	private void onMessageFromUIThread(final Object message) {
-		try {
-			// LOGGER.info("MA: " + message.toString());
+	void onMessage(final Message message) {
+		this.onMessageFromService(message);
+	}
 
+	private void onMessageFromService(final Object message) {
+		try {
 			if (message.equals("connect")) {
 				this.connect();
 			} else if (message.equals("service")) {
 				this.service();
 			} else if (message.equals("login")) {
-				this.login();
+				// this.login();
 			} else if (message instanceof Packet) {
 				this.sendPacket((Packet) message);
 			} else if (message instanceof String) {
@@ -352,7 +344,7 @@ public class NetworkingThread extends Thread {
 				throw new InvalidParameterException("Unknown message type.");
 			}
 		} catch (final IOException e) {
-			this.sendMessageToUIThread("failed");
+			this.sendMessageToService("failed");
 			LOGGER.log(Level.SEVERE, "Exception", e);
 		}
 	}
@@ -363,10 +355,10 @@ public class NetworkingThread extends Thread {
 	 * @param message
 	 *            The message.
 	 */
-	private void sendMessageToUIThread(final Object message) {
-		final Message msg = this.mainActivity.get().getMessageHandler().obtainMessage();
+	private void sendMessageToService(final Object message) {
+		final Message msg = this.networkingSevice.get().getMessageHandler().obtainMessage();
 		msg.obj = message;
-		this.mainActivity.get().getMessageHandler().sendMessage(msg);
+		this.networkingSevice.get().getMessageHandler().sendMessage(msg);
 	}
 
 	/**
@@ -396,7 +388,7 @@ public class NetworkingThread extends Thread {
 		 */
 		@Override
 		public void handleMessage(final Message msg) {
-			this.thread.get().onMessageFromUIThread(msg.obj);
+			this.thread.get().onMessageFromService(msg.obj);
 		}
 	}
 }

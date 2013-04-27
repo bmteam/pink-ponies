@@ -1,8 +1,13 @@
+/**
+ * Copyright (c) 2013 Alexander Konovalov, Andrey Konovalov, Sergey Voronov, Vitaly Malyshev. All
+ * rights reserved. Use of this source code is governed by a BSD-style license that can be found in
+ * the LICENSE file.
+ */
+
 package ru.pinkponies.app;
 
 import java.util.logging.Logger;
 
-import ru.pinkponies.app.R;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -11,27 +16,69 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 
+/**
+ * An activity with login form.
+ * 
+ */
 public class LoginActivity extends Activity {
-	private final static Logger logger = Logger.getLogger(LoginActivity.class
-			.getName());
+	/**
+	 * The class wide logger.
+	 */
+	private static final Logger LOGGER = Logger.getLogger(LoginActivity.class.getName());
 
-	private EditText loginEditBox, passwordEditBox;
+	/**
+	 * The login edit box.
+	 */
+	private EditText loginEditBox;
 
-	private String login = "default";
-	private String password = "default";
+	/**
+	 * The password edit box.
+	 */
+	private EditText passwordEditBox;
 
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		logger.info("MainActivity:Initializing...");
+	protected void onCreate(final Bundle savedInstanceState) {
+		LOGGER.info("LoginActivity::Initializing...");
 
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_login);
+		this.setContentView(R.layout.activity_login);
 
-		loginEditBox = (EditText) findViewById(R.id.login);
-		passwordEditBox = (EditText) findViewById(R.id.password);
+		this.loginEditBox = (EditText) this.findViewById(R.id.login);
+		this.passwordEditBox = (EditText) this.findViewById(R.id.password);
 
-		logger.info("MainActivity:Initialized!");
+		LOGGER.info("LoginActivity::Initialized!");
 	}
+
+	/**
+	 * Called when login button is clicked.
+	 * 
+	 * @param view
+	 *            the view that was clicked.
+	 */
+	public void onLoginClick(final View view) {
+		final String login = this.loginEditBox.getText().toString();
+		final String password = this.passwordEditBox.getText().toString();
+
+		this.goToMainActivity(login, password);
+	}
+
+	/**
+	 * Opens up a new main activity, passing it login and password.
+	 * 
+	 * @param login
+	 *            the login
+	 * @param password
+	 *            the password
+	 */
+	public void goToMainActivity(final String login, final String password) {
+		final Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+
+		intent.putExtra("login", login);
+		intent.putExtra("password", password);
+
+		this.startActivity(intent);
+		LoginActivity.this.finish();
+	};
 
 	@Override
 	protected void onResume() {
@@ -49,7 +96,7 @@ public class LoginActivity extends Activity {
 	}
 
 	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
+	public boolean onOptionsItemSelected(final MenuItem item) {
 		switch (item.getItemId()) {
 		case 0:
 			// do whatever
@@ -60,26 +107,8 @@ public class LoginActivity extends Activity {
 	}
 
 	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		getMenuInflater().inflate(R.menu.main, menu);
+	public boolean onCreateOptionsMenu(final Menu menu) {
+		this.getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
-
-	public void onLoginClick(View view) {
-		login = loginEditBox.getText().toString();
-		password = passwordEditBox.getText().toString();
-
-		goToMainActivity();
-	}
-
-	public void goToMainActivity() {
-		Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-
-		intent.putExtra("login", login);
-		intent.putExtra("password", password);
-
-		startActivity(intent);
-		LoginActivity.this.finish();
-	};
-
 }
