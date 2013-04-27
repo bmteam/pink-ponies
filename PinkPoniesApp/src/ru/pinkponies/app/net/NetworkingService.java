@@ -7,11 +7,10 @@ import java.util.logging.Logger;
 
 import android.app.Service;
 import android.content.Intent;
+import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
-import android.os.Messenger;
-import android.os.RemoteException;
 
 public class NetworkingService extends Service {
 	private static final Logger LOGGER = Logger.getLogger(NetworkingService.class.getName());
@@ -28,9 +27,9 @@ public class NetworkingService extends Service {
 	public final static int PACKET = 9;
 
 	private final NetworkingThread networkingThread = new NetworkingThread(this);
-
 	private final Handler messageHandler = new MessageHandler(this);
-	private final List<Messenger> clients = new ArrayList<Messenger>();
+	private final LocalBinder binder = new LocalBinder(this);
+	private final List<NetworkListener> listeners = new ArrayList<NetworkListener>();
 
 	@Override
 	public void onCreate() {
@@ -42,19 +41,20 @@ public class NetworkingService extends Service {
 
 	@Override
 	public int onStartCommand(final Intent intent, final int flags, final int startId) {
+		LOGGER.info("Service started");
+		// TODO Auto-generated method stub
 		return super.onStartCommand(intent, flags, startId);
 	}
 
 	@Override
 	public void onDestroy() {
-		this.networkingThread.interrupt();
+		// TODO Auto-generated method stub
 		super.onDestroy();
 	}
 
 	@Override
-	public IBinder onBind(final Intent arg0) {
-		// TODO Auto-generated method stub
-		return null;
+	public IBinder onBind(final Intent intent) {
+		return this.binder;
 	}
 
 	public Handler getMessageHandler() {
@@ -62,19 +62,13 @@ public class NetworkingService extends Service {
 	}
 
 	private void onMessageFromNetworkingThread(final Object message) {
-		for (final Messenger client : this.clients) {
-			Message msg = this.networkingThread.getMessageHandler().obtainMessage();
-			msg.obj = message;
-			try {
-				client.send(msg);
-			} catch (RemoteException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+		LOGGER.info("Broadcasting message : " + message.toString());
+		for (final NetworkListener listener : this.listeners) {
+			listener.onMessage(message);
 		}
 	}
 
-	private void sendMessageToNetworkingThread(final Object message) {
+	public void sendMessage(final Object message) {
 		Message msg = this.networkingThread.getMessageHandler().obtainMessage();
 		msg.obj = message;
 		this.networkingThread.getMessageHandler().sendMessage(msg);
@@ -93,9 +87,25 @@ public class NetworkingService extends Service {
 		}
 	}
 
-	public void sendMessage(final Object message) {
-		Message msg = this.getMessageHandler().obtainMessage();
-		msg.obj = message;
-		this.getMessageHandler().sendMessage(msg);
+	public static final class LocalBinder extends Binder {
+		private final WeakReference<NetworkingService> service;
+
+		LocalBinder(final NetworkingService networkingService) {
+			this.service = new WeakReference<NetworkingService>(networkingService);
+		}
+
+		public NetworkingService getService() {
+			return this.service.get();
+		}
+	}
+
+	public void addListener(final NetworkListener listener) {
+		LOGGER.info("Added listener");
+		this.listeners.add(listener);
+	}
+
+	public void removeListener(final NetworkListener listener) {
+		this.listeners.remove(listener);
+		LOGGER.info("Removed listener");
 	}
 }

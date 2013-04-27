@@ -33,7 +33,7 @@
             android:name="ru.pinkponies.app.MainActivity"
             android:label="@string/app_name" >
         </activity>
-        <service android:name="NetworkingService"></service>
+        <service android:name="ru.pinkponies.app.net.NetworkingService"></service>
     </application>
 
 </manifest>

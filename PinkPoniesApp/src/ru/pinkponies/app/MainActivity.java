@@ -6,7 +6,6 @@
 
 package ru.pinkponies.app;
 
-import java.lang.ref.WeakReference;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Logger;
@@ -21,21 +20,22 @@ import org.osmdroid.views.overlay.PathOverlay;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
-import android.os.Messenger;
+import android.os.IBinder;
 import android.view.Menu;
 import android.view.View;
 
+import ru.pinkponies.app.net.NetworkListener;
 import ru.pinkponies.app.net.NetworkingService;
 import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.ClientOptionsPacket;
@@ -45,7 +45,7 @@ import ru.pinkponies.protocol.SayPacket;
 /**
  * The main activity class.
  */
-public final class MainActivity extends Activity implements LocationListener {
+public final class MainActivity extends Activity implements LocationListener, NetworkListener {
 	/**
 	 * The class wide logger.
 	 */
@@ -81,6 +81,27 @@ public final class MainActivity extends Activity implements LocationListener {
 	 * IO.
 	 */
 	private NetworkingService networkingService;
+
+	private final ServiceConnection networkingServiceConnection = new ServiceConnection() {
+		@Override
+		public void onServiceConnected(final ComponentName className, final IBinder binder) {
+			MainActivity.this.networkingService = ((NetworkingService.LocalBinder) binder).getService();
+			MainActivity.this.onNetworkingServiceConnected();
+			LOGGER.info("Service connected");
+		}
+
+		/**
+		 * Connection dropped.
+		 */
+		@Override
+		public void onServiceDisconnected(final ComponentName className) {
+			MainActivity.this.onNetworkingServiceDisconnected();
+			MainActivity.this.networkingService = null;
+
+			LOGGER.info("Service disconnected");
+		}
+
+	};
 
 	/**
 	 * The location service manager.
@@ -122,8 +143,6 @@ public final class MainActivity extends Activity implements LocationListener {
 	 */
 	private long myId = BAD_ID;
 
-	private final MessageHandler messageHandler = new MessageHandler(this);
-
 	/**
 	 * Creates a new itemized overlay. This overlay will render image markers with the given
 	 * resource id.
@@ -141,12 +160,6 @@ public final class MainActivity extends Activity implements LocationListener {
 
 		final ResourceProxy resourceProxy = new DefaultResourceProxyImpl(this.getApplicationContext());
 		return new MyItemizedOverlay(marker, resourceProxy);
-	}
-
-	public void startNetworkingService() {
-		Intent intent = new Intent(this, NetworkingService.class);
-		intent.putExtra("messenger", new Messenger(this.messageHandler));
-		this.startService(intent);
 	}
 
 	/**
@@ -213,7 +226,10 @@ public final class MainActivity extends Activity implements LocationListener {
 		// GeoPoint myPoint = new GeoPoint(55929563, 37523862);
 		// this.myAppleOverlay.addItem(myPoint, "Apple");
 
-		this.startNetworkingService();
+		LOGGER.info("Starting service");
+		this.startService(new Intent(this, NetworkingService.class));
+		this.bindService(new Intent(this, NetworkingService.class), this.networkingServiceConnection,
+				Context.BIND_AUTO_CREATE);
 
 		LOGGER.info("Initialized.");
 	}
@@ -243,6 +259,9 @@ public final class MainActivity extends Activity implements LocationListener {
 	 */
 	@Override
 	protected void onDestroy() {
+		if (this.networkingService != null) {
+			this.unbindService(this.networkingServiceConnection);
+		}
 		super.onDestroy();
 	}
 
@@ -298,21 +317,27 @@ public final class MainActivity extends Activity implements LocationListener {
 		this.finish();
 	}
 
+	protected void onNetworkingServiceDisconnected() {
+		this.networkingService.removeListener(this);
+	}
+
+	protected void onNetworkingServiceConnected() {
+		this.networkingService.addListener(this);
+		this.sendMessageToNetwork("connect");
+		this.sendMessageToNetwork("service");
+	}
+
 	/**
 	 * Called when there is a new message from the networking service.
 	 * 
 	 * @param message
 	 *            The message which was received.
 	 */
+	@Override
 	public void onMessage(final Object message) {
-		if (message instanceof NetworkingService) {
-			this.networkingService = (NetworkingService) message;
-		}
+		LOGGER.info(message.toString());
 
-		if (message.equals("initialized")) {
-			this.sendMessageToNetwork("connect");
-			this.sendMessageToNetwork("service");
-		} else if (message.equals("connected")) {
+		if (message.equals("connected")) {
 			this.sendMessageToNetwork("login");
 			new Timer().scheduleAtFixedRate(new TimerTask() {
 
@@ -362,9 +387,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	 */
 
 	private void sendMessageToNetwork(final Object message) {
-		final Message msg = this.networkingService.getMessageHandler().obtainMessage();
-		msg.obj = message;
-		this.networkingService.getMessageHandler().sendMessage(msg);
+		this.networkingService.sendMessage(message);
 	}
 
 	/**
@@ -393,6 +416,7 @@ public final class MainActivity extends Activity implements LocationListener {
 
 		final ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude, latitude, altitude);
 		final LocationUpdatePacket packet = new LocationUpdatePacket(this.myId, loc);
+
 		if (this.networkingService != null) {
 			this.networkingService.sendMessage(packet);
 		}
@@ -455,18 +479,5 @@ public final class MainActivity extends Activity implements LocationListener {
 				});
 		final AlertDialog alertDialog = alertDialogBuilder.create();
 		alertDialog.show();
-	}
-
-	private static final class MessageHandler extends Handler {
-		private final WeakReference<MainActivity> listener;
-
-		public MessageHandler(final MainActivity listener) {
-			this.listener = new WeakReference<MainActivity>(listener);
-		}
-
-		@Override
-		public void handleMessage(final Message msg) {
-			this.listener.get().onMessage(msg.obj);
-		}
 	}
 }
