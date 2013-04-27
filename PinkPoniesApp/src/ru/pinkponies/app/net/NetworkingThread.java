@@ -44,7 +44,7 @@ public class NetworkingThread extends Thread {
 	/**
 	 * The default server ip.
 	 */
-	private static final String SERVER_IP = "192.168.1.15";
+	private static final String SERVER_IP = "77.232.25.36";
 
 	/**
 	 * The default server port.

@@ -22,7 +22,17 @@ import android.os.Message;
 
 import ru.pinkponies.protocol.Packet;
 
+/**
+ * A service providing an asynchronous network interface with automatic packet packing / unpacking.
+ * 
+ * @author alex
+ * 
+ */
 public class NetworkingService extends Service {
+	/**
+	 * The class wide logger.
+	 */
+	@SuppressWarnings("unused")
 	private static final Logger LOGGER = Logger.getLogger(NetworkingService.class.getName());
 
 	/**
@@ -34,18 +44,47 @@ public class NetworkingService extends Service {
 		None, Connected,
 	}
 
+	/**
+	 * The networking thread in which most of the IO operations are performed. They are done in a
+	 * separate thread since on Android you can not perform IO operations in the UI thread.
+	 */
 	private final NetworkingThread networkingThread = new NetworkingThread(this);
+
+	/**
+	 * The message handler for this service. It is used to receive messages from networking thread.
+	 */
 	private final Handler messageHandler = new MessageHandler(this);
+
+	/**
+	 * The binder which allows binding activity to get a reference to the networking service.
+	 */
 	private final LocalBinder binder = new LocalBinder(this);
+
+	/**
+	 * The array of network listeners.
+	 */
 	private final List<NetworkListener> listeners = new ArrayList<NetworkListener>();
+
 	private final Timer updateTimer = new Timer();
 
 	private State state = State.None;
 
+	/**
+	 * Adds a new listener.
+	 * 
+	 * @param listener
+	 *            the listener
+	 */
 	public void addListener(final NetworkListener listener) {
 		this.listeners.add(listener);
 	}
 
+	/**
+	 * Removes the listener.
+	 * 
+	 * @param listener
+	 *            the listener
+	 */
 	public void removeListener(final NetworkListener listener) {
 		this.listeners.remove(listener);
 	}
@@ -61,6 +100,15 @@ public class NetworkingService extends Service {
 
 	public void sendPacket(final Packet packet) {
 		this.sendMessageToNetworkingThread(packet);
+	}
+
+	/**
+	 * Returns the message handler for this networking thread.
+	 * 
+	 * @return the message handler for this networking thread
+	 */
+	public Handler getMessageHandler() {
+		return this.messageHandler;
 	}
 
 	@Override
@@ -84,10 +132,6 @@ public class NetworkingService extends Service {
 	@Override
 	public IBinder onBind(final Intent intent) {
 		return this.binder;
-	}
-
-	public Handler getMessageHandler() {
-		return this.messageHandler;
 	}
 
 	private void onMessageFromNetworkingThread(final Object message) {
@@ -127,6 +171,12 @@ public class NetworkingService extends Service {
 		 */
 		private final WeakReference<NetworkingService> service;
 
+		/**
+		 * Creates a new message handler.
+		 * 
+		 * @param networkingService
+		 *            the networking service
+		 */
 		MessageHandler(final NetworkingService networkingService) {
 			this.service = new WeakReference<NetworkingService>(networkingService);
 		}
@@ -137,13 +187,34 @@ public class NetworkingService extends Service {
 		}
 	}
 
+	/**
+	 * This binder provides the activity which binds this service with access to the service itself
+	 * via reference.
+	 * 
+	 * @author alex
+	 * 
+	 */
 	public static final class LocalBinder extends Binder {
+		/**
+		 * The weak reference to the networking service.
+		 */
 		private final WeakReference<NetworkingService> service;
 
+		/**
+		 * Creates a new local binder.
+		 * 
+		 * @param networkingService
+		 *            the networking service
+		 */
 		LocalBinder(final NetworkingService networkingService) {
 			this.service = new WeakReference<NetworkingService>(networkingService);
 		}
 
+		/**
+		 * Returns the reference to the networking service.
+		 * 
+		 * @return the networking service
+		 */
 		public NetworkingService getService() {
 			return this.service.get();
 		}
