@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2013 Alexander Konovalov, Andrey Konovalov, Sergey Voronov, Vitaly Malyshev. All
+ * rights reserved. Use of this source code is governed by a BSD-style license that can be found in
+ * the LICENSE file.
+ */
+
 package ru.pinkponies.app;
 
 import java.util.ArrayList;
@@ -12,25 +18,55 @@ import org.osmdroid.views.overlay.OverlayItem;
 import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 
-public class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
+/**
+ * An overlay which displays arbitrary image markers on the map.
+ * 
+ * @author Vitaly Malyshev
+ * 
+ */
+public final class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
+	/**
+	 * The image list.
+	 */
 	private final List<OverlayItem> overlayItemList = new ArrayList<OverlayItem>();
 
-	public MyItemizedOverlay(final Drawable defaultMarker, final ResourceProxy resourceProxy) {
-		super(defaultMarker, resourceProxy);
-		// TODO Auto-generated constructor stub
+	/**
+	 * Creates a new itemized overlay.
+	 * 
+	 * @param pDefaultMarker
+	 *            the default item marker
+	 * @param pResourceProxy
+	 *            the
+	 */
+	public MyItemizedOverlay(final Drawable pDefaultMarker, final ResourceProxy pResourceProxy) {
+		super(pDefaultMarker, pResourceProxy);
 	}
 
+	/**
+	 * Adds a new item to the image list.
+	 * 
+	 * @param point
+	 *            the position of the new image
+	 * @param title
+	 *            the image title/id
+	 */
 	public synchronized void addItem(final GeoPoint point, final String title) {
 		for (OverlayItem i : this.overlayItemList) {
 			if (i.mTitle.equals(title)) {
 				throw new IllegalArgumentException("Item named " + title + " already exists.");
 			}
 		}
-		OverlayItem newItem = new OverlayItem(title, title, point);
+		final OverlayItem newItem = new OverlayItem(title, title, point);
 		this.overlayItemList.add(newItem);
 		this.populate();
 	}
 
+	/**
+	 * Removes an item with the given title/id.
+	 * 
+	 * @param title
+	 *            the item title/id
+	 */
 	public synchronized void removeItem(final String title) {
 		for (OverlayItem i : this.overlayItemList) {
 			if (i.mTitle.equals(title)) {
@@ -41,6 +77,14 @@ public class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
 		this.populate();
 	}
 
+	/**
+	 * Resets image marker for the given title/id.
+	 * 
+	 * @param title
+	 *            the item title/id
+	 * @param newMarker
+	 *            the new image
+	 */
 	public synchronized void resetItemMarker(final String title, final Drawable newMarker) {
 		for (OverlayItem item : this.overlayItemList) {
 			if (item.mTitle.equals(title)) {

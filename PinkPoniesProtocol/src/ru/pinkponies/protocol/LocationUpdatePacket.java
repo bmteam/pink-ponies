@@ -1,30 +1,89 @@
+/**
+ * Copyright (c) 2013 Alexander Konovalov, Andrey Konovalov, Sergey Voronov, Vitaly Malyshev. All
+ * rights reserved. Use of this source code is governed by a BSD-style license that can be found in
+ * the LICENSE file.
+ */
+
 package ru.pinkponies.protocol;
 
+import org.msgpack.annotation.Beans;
 import org.msgpack.annotation.Index;
 import org.msgpack.annotation.Message;
 
+/**
+ * The location update packet class.
+ */
 @Message
-public class LocationUpdatePacket extends Packet {
+@Beans
+public final class LocationUpdatePacket extends Packet {
+	/**
+	 * The id of the client whose location is being updated.
+	 */
 	@Index(0)
-	public long clientId;
+	private long clientId;
 
+	/**
+	 * The client location.
+	 */
 	@Index(1)
-	public Location location;
+	private Location location;
 
+	/**
+	 * Creates a new empty location update packet with client id set to -1, longitude, latitude and
+	 * altitude set to zero.
+	 */
 	public LocationUpdatePacket() {
 		super();
 		this.clientId = -1;
-		this.location = null;
+		this.setLocation(new Location());
 	}
 
+	/**
+	 * Creates a new location update packet with the given client id and location.
+	 * 
+	 * @param clientId
+	 *            the client id
+	 * @param location
+	 *            the location of the client
+	 */
 	public LocationUpdatePacket(final long clientId, final Location location) {
 		super();
 		this.clientId = clientId;
-		this.location = location;
+		this.setLocation(location);
+	}
+
+	/**
+	 * @return the client id
+	 */
+	public long getClientId() {
+		return this.clientId;
+	}
+
+	/**
+	 * @param clientId
+	 *            the client id to set
+	 */
+	public void setClientId(final long clientId) {
+		this.clientId = clientId;
 	}
 
 	@Override
 	public String toString() {
-		return "LocationUpdate [clientID=" + this.clientId + ", " + this.location + "]";
+		return "LocationUpdate [clientID=" + this.clientId + ", " + this.getLocation() + "]";
+	}
+
+	/**
+	 * @return the location
+	 */
+	public Location getLocation() {
+		return this.location;
+	}
+
+	/**
+	 * @param location
+	 *            the location to set
+	 */
+	public void setLocation(final Location location) {
+		this.location = location;
 	}
 }

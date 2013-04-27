@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2013 Alexander Konovalov, Andrey Konovalov, Sergey Voronov, Vitaly Malyshev. All
+ * rights reserved. Use of this source code is governed by a BSD-style license that can be found in
+ * the LICENSE file.
+ */
+
 package ru.pinkponies.server;
 
 import java.io.IOException;
@@ -44,7 +50,7 @@ public final class Server {
 	private static final int BUFFER_SIZE = 8192;
 
 	/**
-	 * The distance at which a player picks up an apple.
+	 * The distance at which players pick up apples.
 	 */
 	private static final double INTERACTION_DISTANCE = 100.0;
 
@@ -105,8 +111,8 @@ public final class Server {
 			Server.LOGGER.info("serverSocketChannel's registered key is " + key.channel().toString() + ".");
 
 			Server.LOGGER.info("Initialized.");
-		} catch (final Exception e) {
-			Server.LOGGER.log(Level.SEVERE, "Exception", e);
+		} catch (final IOException e) {
+			Server.LOGGER.log(Level.SEVERE, "IOException during initalization", e);
 		}
 	}
 
@@ -118,8 +124,8 @@ public final class Server {
 			try {
 				this.pumpEvents();
 				this.pickupApples();
-			} catch (final Exception e) {
-				Server.LOGGER.log(Level.SEVERE, "Exception", e);
+			} catch (final IOException e) {
+				Server.LOGGER.log(Level.SEVERE, "IOException during event pumping", e);
 			}
 		}
 	}
@@ -233,8 +239,8 @@ public final class Server {
 		while (buffer.remaining() > 0) {
 			try {
 				packet = this.protocol.unpack(buffer);
-			} catch (final Exception e) {
-				Server.LOGGER.log(Level.SEVERE, "Exception", e);
+			} catch (final IOException e) {
+				Server.LOGGER.log(Level.SEVERE, "IOException during packet unpacking", e);
 			}
 
 			if (packet == null) {
@@ -275,18 +281,20 @@ public final class Server {
 	 * 
 	 * @param channel
 	 *            The socket channel connecting to the new peer.
+	 * @throws IOException
+	 *             if there was any io error.
 	 */
 	public void onConnect(final SocketChannel channel) throws IOException {
 		System.out.println("Client connected from " + channel.socket().getRemoteSocketAddress().toString() + ".");
 
-		long id = this.idManager.newId();
+		final long id = this.idManager.newId();
 		this.players.put(channel, new Player(id, null, channel));
 
-		ClientOptionsPacket packet = new ClientOptionsPacket(id);
+		final ClientOptionsPacket packet = new ClientOptionsPacket(id);
 		this.sendPacket(channel, packet);
 
-		for (Apple apple : this.apples.values()) {
-			AppleUpdatePacket applePacket = new AppleUpdatePacket(apple.getId(), apple.getLocation(), true);
+		for (final Apple apple : this.apples.values()) {
+			final AppleUpdatePacket applePacket = new AppleUpdatePacket(apple.getId(), apple.getLocation(), true);
 			this.sendPacket(channel, applePacket);
 		}
 	}
@@ -309,19 +317,19 @@ public final class Server {
 			System.out.println(sayPacket.toString());
 		} else if (packet instanceof LocationUpdatePacket) {
 			final LocationUpdatePacket locUpdate = (LocationUpdatePacket) packet;
-			locUpdate.clientId = this.players.get(channel).getId();
-			this.players.get(channel).setLocation(locUpdate.location);
+			locUpdate.setClientId(this.players.get(channel).getId());
+			this.players.get(channel).setLocation(locUpdate.getLocation());
 			System.out.println(locUpdate.toString());
 
 			this.broadcastPacket(locUpdate);
 			System.out.println("Location update broadcasted.");
 
 			// XXX(xairy): temporary.
-			Random generator = new Random();
-			final double longitude = locUpdate.location.getLongitude() + (generator.nextDouble() - 0.5) * 0.01;
-			final double latitude = locUpdate.location.getLatitude() + (generator.nextDouble() - 0.5) * 0.01;
-			Location appleLocation = new Location(longitude, latitude, 0.0);
-			System.out.println("Distance: " + locUpdate.location.distanceTo(appleLocation) + ".");
+			final Random generator = new Random();
+			final double longitude = locUpdate.getLocation().getLongitude() + (generator.nextDouble() - 0.5) * 0.01;
+			final double latitude = locUpdate.getLocation().getLatitude() + (generator.nextDouble() - 0.5) * 0.01;
+			final Location appleLocation = new Location(longitude, latitude, 0.0);
+			System.out.println("Distance: " + locUpdate.getLocation().distanceTo(appleLocation) + ".");
 			this.addApple(appleLocation);
 		} else {
 			LOGGER.info("Unknown packet type.");
@@ -384,12 +392,14 @@ public final class Server {
 	 * 
 	 * @param location
 	 *            Location of the apple added.
+	 * @throws IOException
+	 *             if there was any problem broadcasting apple update.
 	 */
 	private void addApple(final Location location) throws IOException {
-		long id = this.idManager.newId();
-		Apple apple = new Apple(id, location);
+		final long id = this.idManager.newId();
+		final Apple apple = new Apple(id, location);
 		this.apples.put(id, apple);
-		AppleUpdatePacket packet = new AppleUpdatePacket(id, location, true);
+		final AppleUpdatePacket packet = new AppleUpdatePacket(id, location, true);
 		System.out.println("Added " + apple + ".");
 
 		this.broadcastPacket(packet);
@@ -401,10 +411,12 @@ public final class Server {
 	 * 
 	 * @param id
 	 *            The id of the apple being removed.
+	 * @throws IOException
+	 *             if there was any problem broadcasting apple update.
 	 */
 	private void removeApple(final long id) throws IOException {
-		Location location = this.apples.get(id).getLocation();
-		AppleUpdatePacket packet = new AppleUpdatePacket(id, location, false);
+		final Location location = this.apples.get(id).getLocation();
+		final AppleUpdatePacket packet = new AppleUpdatePacket(id, location, false);
 
 		this.broadcastPacket(packet);
 		System.out.println("Apple update broadcasted.");
@@ -413,6 +425,12 @@ public final class Server {
 		System.out.println("Removed Apple " + id + ".");
 	}
 
+	/**
+	 * Processes all apples and checks if they are being picked up by any player.
+	 * 
+	 * @throws IOException
+	 *             if there was any problem broadcasting apple update.
+	 */
 	private void pickupApples() throws IOException {
 		for (Player player : this.players.values()) {
 			if (player.getLocation() != null) {
