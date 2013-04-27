@@ -107,6 +107,8 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 	};
 
+	private final Timer updateTimer = new Timer();
+
 	/**
 	 * The location service manager.
 	 */
@@ -186,7 +188,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	protected void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		LOGGER.info("Initializing.");
+		LOGGER.info("onCreate " + this.hashCode());
 
 		// Intent intent = getIntent();
 		// Bundle extras = intent.getExtras();
@@ -254,6 +256,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	@Override
 	protected void onResume() {
 		super.onResume();
+
+		LOGGER.info("onResume " + this.hashCode());
+
 		this.locationOverlay.enableMyLocation();
 		this.locationOverlay.enableFollowLocation();
 	}
@@ -264,6 +269,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	@Override
 	protected void onPause() {
 		super.onPause();
+
+		LOGGER.info("onPause");
+
 		this.locationOverlay.disableMyLocation();
 		this.locationOverlay.disableFollowLocation();
 	}
@@ -273,9 +281,17 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	 */
 	@Override
 	protected void onDestroy() {
+		LOGGER.info("onDestroy " + this.hashCode());
+
 		if (this.networkingService != null) {
 			this.unbindService(this.networkingServiceConnection);
+			this.networkingService.removeListener(this);
+			this.networkingService = null;
 		}
+
+		this.updateTimer.cancel();
+
+		this.locationManager.removeUpdates(this);
 		super.onDestroy();
 	}
 
@@ -289,6 +305,8 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	@Override
 	protected void onSaveInstanceState(final Bundle outState) {
 		super.onSaveInstanceState(outState);
+		LOGGER.info("onSaveInstanceState " + this.hashCode());
+
 		outState.putInt("zoomLevel", this.mapView.getZoomLevel());
 	}
 
@@ -301,6 +319,8 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	 */
 	@Override
 	protected void onRestoreInstanceState(final Bundle outState) {
+		LOGGER.info("onRestoreInstanceState " + this.hashCode());
+
 		MainActivity.LOGGER.info("MainActivity:onSaveInstanceState");
 		super.onRestoreInstanceState(outState);
 		outState.getInt("zoomLevel");
@@ -332,7 +352,10 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	}
 
 	protected void onNetworkingServiceDisconnected() {
-		this.networkingService.removeListener(this);
+		if (this.networkingService != null) {
+			this.networkingService.removeListener(this);
+			this.networkingService = null;
+		}
 	}
 
 	protected void onNetworkingServiceConnected() {
@@ -353,7 +376,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 		if (message.equals("connected")) {
 			this.sendMessageToNetwork("login");
-			new Timer().scheduleAtFixedRate(new TimerTask() {
+			this.updateTimer.scheduleAtFixedRate(new TimerTask() {
 
 				@Override
 				public void run() {
