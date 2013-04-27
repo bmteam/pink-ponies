@@ -26,9 +26,10 @@ import android.os.Message;
 
 import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.ClientOptionsPacket;
-import ru.pinkponies.protocol.LocationUpdatePacket;
 import ru.pinkponies.protocol.Packet;
+import ru.pinkponies.protocol.PlayerUpdatePacket;
 import ru.pinkponies.protocol.Protocol;
+import ru.pinkponies.protocol.QuestUpdatePacket;
 import ru.pinkponies.protocol.SayPacket;
 
 /**
@@ -118,7 +119,7 @@ public class NetworkingThread extends Thread {
 	public final void run() {
 		Looper.prepare();
 		this.messageHandler = new MessageHandler(this);
-		this.sendMessageToUIThread("initialized");
+		this.sendMessageToService("initialized");
 		Looper.loop();
 	}
 
@@ -183,7 +184,7 @@ public class NetworkingThread extends Thread {
 			this.socket.finishConnect();
 			this.socket.register(this.selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
 
-			this.sendMessageToUIThread("connected");
+			this.sendMessageToService("connected");
 		}
 	}
 
@@ -274,13 +275,15 @@ public class NetworkingThread extends Thread {
 	 */
 	private void onPacket(final Packet packet) {
 		if (packet instanceof ClientOptionsPacket) {
-			this.sendMessageToUIThread(packet);
+			this.sendMessageToService(packet);
 		} else if (packet instanceof SayPacket) {
-			this.sendMessageToUIThread(packet);
-		} else if (packet instanceof LocationUpdatePacket) {
-			this.sendMessageToUIThread(packet);
+			this.sendMessageToService(packet);
+		} else if (packet instanceof PlayerUpdatePacket) {
+			this.sendMessageToService(packet);
+		} else if (packet instanceof QuestUpdatePacket) {
+			this.sendMessageToService(packet);
 		} else if (packet instanceof AppleUpdatePacket) {
-			this.sendMessageToUIThread(packet);
+			this.sendMessageToService(packet);
 		} else {
 			LOGGER.severe("Unknown packet type.");
 		}
@@ -322,13 +325,11 @@ public class NetworkingThread extends Thread {
 	 *            The message.
 	 */
 	void onMessage(final Message message) {
-		this.onMessageFromUIThread(message);
+		this.onMessageFromService(message);
 	}
 
-	private void onMessageFromUIThread(final Object message) {
+	private void onMessageFromService(final Object message) {
 		try {
-			LOGGER.info("MA: " + message.toString());
-
 			if (message.equals("connect")) {
 				this.connect();
 			} else if (message.equals("service")) {
@@ -343,7 +344,7 @@ public class NetworkingThread extends Thread {
 				throw new InvalidParameterException("Unknown message type.");
 			}
 		} catch (final IOException e) {
-			this.sendMessageToUIThread("failed");
+			this.sendMessageToService("failed");
 			LOGGER.log(Level.SEVERE, "Exception", e);
 		}
 	}
@@ -354,7 +355,7 @@ public class NetworkingThread extends Thread {
 	 * @param message
 	 *            The message.
 	 */
-	private void sendMessageToUIThread(final Object message) {
+	private void sendMessageToService(final Object message) {
 		final Message msg = this.networkingSevice.get().getMessageHandler().obtainMessage();
 		msg.obj = message;
 		this.networkingSevice.get().getMessageHandler().sendMessage(msg);
@@ -387,7 +388,7 @@ public class NetworkingThread extends Thread {
 		 */
 		@Override
 		public void handleMessage(final Message msg) {
-			this.thread.get().onMessageFromUIThread(msg.obj);
+			this.thread.get().onMessageFromService(msg.obj);
 		}
 	}
 }

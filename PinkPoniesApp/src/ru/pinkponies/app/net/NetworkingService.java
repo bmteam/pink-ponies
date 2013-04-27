@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2013 Alexander Konovalov, Andrey Konovalov, Sergey Voronov, Vitaly Malyshev. All
+ * rights reserved. Use of this source code is governed by a BSD-style license that can be found in
+ * the LICENSE file.
+ */
+
 package ru.pinkponies.app.net;
 
 import java.lang.ref.WeakReference;
@@ -15,34 +21,27 @@ import android.os.Message;
 public class NetworkingService extends Service {
 	private static final Logger LOGGER = Logger.getLogger(NetworkingService.class.getName());
 
-	public final static int REGISTER_CLIENT = 1;
-	public final static int UNREGISTER_CLIENT = 2;
-	public final static int CONNECT = 3;
-	public final static int DISCONNECT = 4;
-	public final static int SEND = 5;
-
-	public final static int CONNECTED = 6;
-	public final static int DISCONNECTED = 7;
-	public final static int IO_ERROR = 8;
-	public final static int PACKET = 9;
-
 	private final NetworkingThread networkingThread = new NetworkingThread(this);
 	private final Handler messageHandler = new MessageHandler(this);
 	private final LocalBinder binder = new LocalBinder(this);
 	private final List<NetworkListener> listeners = new ArrayList<NetworkListener>();
 
+	public void addListener(final NetworkListener listener) {
+		this.listeners.add(listener);
+	}
+
+	public void removeListener(final NetworkListener listener) {
+		this.listeners.remove(listener);
+	}
+
 	@Override
 	public void onCreate() {
 		super.onCreate();
-
-		LOGGER.info("Initializing networking service.");
 		this.networkingThread.start();
 	}
 
 	@Override
 	public int onStartCommand(final Intent intent, final int flags, final int startId) {
-		LOGGER.info("Service started");
-		// TODO Auto-generated method stub
 		return super.onStartCommand(intent, flags, startId);
 	}
 
@@ -62,7 +61,6 @@ public class NetworkingService extends Service {
 	}
 
 	private void onMessageFromNetworkingThread(final Object message) {
-		LOGGER.info("Broadcasting message : " + message.toString());
 		for (final NetworkListener listener : this.listeners) {
 			listener.onMessage(message);
 		}
@@ -74,7 +72,13 @@ public class NetworkingService extends Service {
 		this.networkingThread.getMessageHandler().sendMessage(msg);
 	}
 
+	/**
+	 * A message handler class for the networking service.
+	 */
 	public static final class MessageHandler extends Handler {
+		/**
+		 * The weak reference to the networking service.
+		 */
 		private final WeakReference<NetworkingService> service;
 
 		MessageHandler(final NetworkingService networkingService) {
@@ -97,15 +101,5 @@ public class NetworkingService extends Service {
 		public NetworkingService getService() {
 			return this.service.get();
 		}
-	}
-
-	public void addListener(final NetworkListener listener) {
-		LOGGER.info("Added listener");
-		this.listeners.add(listener);
-	}
-
-	public void removeListener(final NetworkListener listener) {
-		this.listeners.remove(listener);
-		LOGGER.info("Removed listener");
 	}
 }

@@ -38,8 +38,8 @@ public final class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
 	 * @param pResourceProxy
 	 *            the
 	 */
-	public MyItemizedOverlay(final Drawable pDefaultMarker, final ResourceProxy pResourceProxy) {
-		super(pDefaultMarker, pResourceProxy);
+	public MyItemizedOverlay(final Drawable defaultMarker, final ResourceProxy resourceProxy) {
+		super(defaultMarker, resourceProxy);
 	}
 
 	/**
