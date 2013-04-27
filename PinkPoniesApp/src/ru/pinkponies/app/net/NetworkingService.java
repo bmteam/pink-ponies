@@ -18,6 +18,12 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 
+/**
+ * A service providing an asynchronous network interface with automatic packet packing / unpacking.
+ * 
+ * @author alex
+ * 
+ */
 public class NetworkingService extends Service {
 	/**
 	 * The class wide logger.
@@ -94,7 +100,7 @@ public class NetworkingService extends Service {
 	 *            the message
 	 */
 	public void sendMessage(final Object message) {
-		Message msg = this.networkingThread.getMessageHandler().obtainMessage();
+		final Message msg = this.networkingThread.getMessageHandler().obtainMessage();
 		msg.obj = message;
 		this.networkingThread.getMessageHandler().sendMessage(msg);
 	}
@@ -129,6 +135,12 @@ public class NetworkingService extends Service {
 		 */
 		private final WeakReference<NetworkingService> service;
 
+		/**
+		 * Creates a new message handler.
+		 * 
+		 * @param networkingService
+		 *            the networking service
+		 */
 		MessageHandler(final NetworkingService networkingService) {
 			this.service = new WeakReference<NetworkingService>(networkingService);
 		}
