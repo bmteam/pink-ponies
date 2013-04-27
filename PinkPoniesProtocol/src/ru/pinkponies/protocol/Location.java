@@ -1,8 +1,18 @@
+/**
+ * Copyright (c) 2013 Alexander Konovalov, Andrey Konovalov, Sergey Voronov, Vitaly Malyshev. All
+ * rights reserved. Use of this source code is governed by a BSD-style license that can be found in
+ * the LICENSE file.
+ */
+
 package ru.pinkponies.protocol;
+
+import org.msgpack.annotation.Index;
+import org.msgpack.annotation.Message;
 
 /**
  * Location class.
  */
+@Message
 public final class Location {
 	/**
 	 * The average radius of the Earth in meters.
@@ -14,14 +24,17 @@ public final class Location {
 	/**
 	 * The longitude, measured in radians.
 	 */
+	@Index(0)
 	private double longitude;
 	/**
 	 * The latitude, measured in radians.
 	 */
+	@Index(1)
 	private double latitude;
 	/**
 	 * The altitude, measured in meters.
 	 */
+	@Index(2)
 	private double altitude;
 
 	/**
@@ -43,9 +56,9 @@ public final class Location {
 	 */
 	public Location(final double longitude, final double latitude, final double altitude) {
 		super();
-		this.longitude = longitude;
-		this.latitude = latitude;
-		this.altitude = altitude;
+		this.setLongitude(longitude);
+		this.setLatitude(latitude);
+		this.setAltitude(altitude);
 	}
 
 	/**
@@ -57,14 +70,14 @@ public final class Location {
 	 * @return The distance between two points in meters.
 	 */
 	public double distanceTo(final Location other) {
-		double latitudeDifference = this.latitude - other.latitude;
-		double longitudeDifference = this.longitude - other.longitude;
+		final double latitudeDifference = this.latitude - other.latitude;
+		final double longitudeDifference = this.longitude - other.longitude;
 
-		double a = Math.sin(latitudeDifference / 2) * Math.sin(latitudeDifference / 2)
+		final double a = Math.sin(latitudeDifference / 2) * Math.sin(latitudeDifference / 2)
 				+ Math.sin(longitudeDifference / 2) * Math.sin(longitudeDifference / 2) * Math.cos(this.latitude)
 				* Math.cos(other.latitude);
-		double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-		double d = EARTH_AVERAGE_RADIUS * c;
+		final double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+		final double d = EARTH_AVERAGE_RADIUS * c;
 
 		return d;
 	}
@@ -90,10 +103,10 @@ public final class Location {
 	 * @return the initial bearing (forward azimuth) to another location point.
 	 */
 	public double forwardAzimuthAngle(final Location other) {
-		double longitudeDifference = this.longitude - other.longitude;
+		final double longitudeDifference = this.longitude - other.longitude;
 
-		double y = Math.sin(longitudeDifference) * Math.cos(other.latitude);
-		double x = Math.cos(this.latitude) * Math.sin(other.latitude) - Math.sin(this.latitude)
+		final double y = Math.sin(longitudeDifference) * Math.cos(other.latitude);
+		final double x = Math.cos(this.latitude) * Math.sin(other.latitude) - Math.sin(this.latitude)
 				* Math.cos(other.latitude) * Math.cos(longitudeDifference);
 		return Math.atan2(y, x);
 	}
@@ -201,7 +214,7 @@ public final class Location {
 		if (this.getClass() != obj.getClass()) {
 			return false;
 		}
-		Location other = (Location) obj;
+		final Location other = (Location) obj;
 		if (Double.doubleToLongBits(this.altitude) != Double.doubleToLongBits(other.altitude)) {
 			return false;
 		}

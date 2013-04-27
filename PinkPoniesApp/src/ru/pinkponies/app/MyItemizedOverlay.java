@@ -1,7 +1,13 @@
+/**
+ * Copyright (c) 2013 Alexander Konovalov, Andrey Konovalov, Sergey Voronov, Vitaly Malyshev. All
+ * rights reserved. Use of this source code is governed by a BSD-style license that can be found in
+ * the LICENSE file.
+ */
+
 package ru.pinkponies.app;
 
 import java.util.ArrayList;
-import java.util.logging.Logger;
+import java.util.List;
 
 import org.osmdroid.ResourceProxy;
 import org.osmdroid.api.IMapView;
@@ -12,59 +18,99 @@ import org.osmdroid.views.overlay.OverlayItem;
 import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 
-public class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
-	private final static Logger logger = Logger
-			.getLogger(MyItemizedOverlay.class.getName());
+/**
+ * An overlay which displays arbitrary image markers on the map.
+ * 
+ * @author Vitaly Malyshev
+ * 
+ */
+public final class MyItemizedOverlay extends ItemizedOverlay<OverlayItem> {
+	/**
+	 * The image list.
+	 */
+	private final List<OverlayItem> overlayItemList = new ArrayList<OverlayItem>();
 
-	private ArrayList<OverlayItem> overlayItemList = new ArrayList<OverlayItem>();
-
-	public MyItemizedOverlay(Drawable pDefaultMarker,
-			ResourceProxy pResourceProxy) {
-		super(pDefaultMarker, pResourceProxy);
-		// TODO Auto-generated constructor stub
+	/**
+	 * Creates a new itemized overlay.
+	 * 
+	 * @param pDefaultMarker
+	 *            the default item marker
+	 * @param pResourceProxy
+	 *            the
+	 */
+	public MyItemizedOverlay(final Drawable defaultMarker, final ResourceProxy resourceProxy) {
+		super(defaultMarker, resourceProxy);
 	}
 
-	public synchronized void addItem(GeoPoint p, String title) {
-		for (OverlayItem i : overlayItemList) {
-			if (i.mTitle.equals(title))
-				logger.info("Item named " + title + " already exists.");
-			throw new IllegalArgumentException();
+	/**
+	 * Adds a new item to the image list.
+	 * 
+	 * @param point
+	 *            the position of the new image
+	 * @param title
+	 *            the image title/id
+	 */
+	public synchronized void addItem(final GeoPoint point, final String title) {
+		for (OverlayItem i : this.overlayItemList) {
+			if (i.mTitle.equals(title)) {
+				throw new IllegalArgumentException("Item named " + title + " already exists.");
+			}
 		}
-		OverlayItem newItem = new OverlayItem(title, title, p);
-		overlayItemList.add(newItem);
-		populate();
+		final OverlayItem newItem = new OverlayItem(title, title, point);
+		this.overlayItemList.add(newItem);
+		this.populate();
 	}
 
-	public synchronized void removeItem(String title) {
-		for (OverlayItem i : overlayItemList) {
-			if (i.mTitle.equals(title))
-				overlayItemList.remove(i);
+	/**
+	 * Removes an item with the given title/id.
+	 * 
+	 * @param title
+	 *            the item title/id
+	 */
+	public synchronized void removeItem(final String title) {
+		for (OverlayItem i : this.overlayItemList) {
+			if (i.mTitle.equals(title)) {
+				this.overlayItemList.remove(i);
+				break;
+			}
 		}
+		this.populate();
 	}
 
-	public synchronized void resetItemMarker(String title, Drawable newMarker) {
-		for (OverlayItem i : overlayItemList) {
-			if (i.mTitle.equals(title))
-				i.setMarker(newMarker);
+	/**
+	 * Resets image marker for the given title/id.
+	 * 
+	 * @param title
+	 *            the item title/id
+	 * @param newMarker
+	 *            the new image
+	 */
+	public synchronized void resetItemMarker(final String title, final Drawable newMarker) {
+		for (OverlayItem item : this.overlayItemList) {
+			if (item.mTitle.equals(title)) {
+				item.setMarker(newMarker);
+				break;
+			}
 		}
+		this.populate();
 	}
 
 	@Override
-	public boolean onSnapToItem(int arg0, int arg1, Point arg2, IMapView arg3) {
+	public boolean onSnapToItem(final int x, final int y, final Point snapPoint, final IMapView mapView) {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	protected OverlayItem createItem(int arg0) {
+	protected OverlayItem createItem(final int i) {
 		// TODO Auto-generated method stub
-		return overlayItemList.get(arg0);
+		return this.overlayItemList.get(i);
 	}
 
 	@Override
 	public int size() {
 		// TODO Auto-generated method stub
-		return overlayItemList.size();
+		return this.overlayItemList.size();
 	}
 
 }

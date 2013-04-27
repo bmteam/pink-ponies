@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2013 Alexander Konovalov, Andrey Konovalov, Sergey Voronov, Vitaly Malyshev. All
+ * rights reserved. Use of this source code is governed by a BSD-style license that can be found in
+ * the LICENSE file.
+ */
+
 package ru.pinkponies.server;
 
 import java.io.IOException;
@@ -8,18 +14,21 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import ru.pinkponies.protocol.LocationUpdatePacket;
-import ru.pinkponies.protocol.LoginPacket;
+import ru.pinkponies.protocol.AppleUpdatePacket;
+import ru.pinkponies.protocol.ClientOptionsPacket;
+import ru.pinkponies.protocol.Location;
 import ru.pinkponies.protocol.Packet;
+import ru.pinkponies.protocol.PlayerUpdatePacket;
 import ru.pinkponies.protocol.Protocol;
+import ru.pinkponies.protocol.QuestUpdatePacket;
 import ru.pinkponies.protocol.SayPacket;
 
 /**
@@ -42,6 +51,21 @@ public final class Server {
 	private static final int BUFFER_SIZE = 8192;
 
 	/**
+	 * The distance at which players pick up apples.
+	 */
+	private static final double INTERACTION_DISTANCE = 50.0;
+
+	/**
+	 * The number of apples that will be created when a quest is accepted.
+	 */
+	private static final int APPLES_PER_QUEST = 5;
+
+	/**
+	 * The maximum distance to the quest at which apples can appear.
+	 */
+	private static final double QUEST_TO_APPLES_DISTANCE = 1.0;
+
+	/**
 	 * The main socket channel on which the server listens for incoming connections.
 	 */
 	private ServerSocketChannel serverSocketChannel;
@@ -62,14 +86,34 @@ public final class Server {
 	private final Map<SocketChannel, ByteBuffer> outgoingData = new HashMap<SocketChannel, ByteBuffer>();
 
 	/**
-	 * The list of all connected clients.
-	 */
-	private final ArrayList<SocketChannel> clients = new ArrayList<SocketChannel>();
-
-	/**
 	 * The protocol helper. Provides methods for serialization and deserialization of packets.
 	 */
 	private final Protocol protocol = new Protocol();
+
+	/**
+	 * The map of all connected clients.
+	 */
+	private final Map<SocketChannel, Player> players = new HashMap<SocketChannel, Player>();
+
+	/**
+	 * The map of all existing apples.
+	 */
+	private final Map<Long, Apple> apples = new HashMap<Long, Apple>();
+
+	/**
+	 * The map of all existing quests.
+	 */
+	private final Map<Long, Quest> quests = new HashMap<Long, Quest>();
+
+	/**
+	 * ID manager for generating new identifiers.
+	 */
+	private final IdManager idManager = new IdManager();
+
+	/**
+	 * Random numbers generator.
+	 */
+	private final Random random = new Random();
 
 	/**
 	 * Initializes this server.
@@ -88,8 +132,8 @@ public final class Server {
 			Server.LOGGER.info("serverSocketChannel's registered key is " + key.channel().toString() + ".");
 
 			Server.LOGGER.info("Initialized.");
-		} catch (final Exception e) {
-			Server.LOGGER.log(Level.SEVERE, "Exception", e);
+		} catch (final IOException e) {
+			Server.LOGGER.log(Level.SEVERE, "IOException during initalization", e);
 		}
 	}
 
@@ -97,12 +141,14 @@ public final class Server {
 	 * Starts this server.
 	 */
 	private void start() {
-		while (true) {
-			try {
+		try {
+			while (true) {
 				this.pumpEvents();
-			} catch (final Exception e) {
-				Server.LOGGER.log(Level.SEVERE, "Exception", e);
+				this.processApples();
+				this.processQuests();
 			}
+		} catch (final IOException e) {
+			Server.LOGGER.log(Level.SEVERE, "IOException during event pumping", e);
 		}
 	}
 
@@ -135,7 +181,8 @@ public final class Server {
 				}
 			} catch (final IOException e) {
 				this.close(key);
-				Server.LOGGER.log(Level.SEVERE, "Exception", e);
+				Server.LOGGER.log(Level.SEVERE, "IOException while handling client", e);
+				Server.LOGGER.info("Client has been forcefully disconnected.");
 			}
 		}
 	}
@@ -156,8 +203,6 @@ public final class Server {
 		this.incomingData.put(channel, ByteBuffer.allocate(Server.BUFFER_SIZE));
 		this.outgoingData.put(channel, ByteBuffer.allocate(Server.BUFFER_SIZE));
 
-		this.clients.add(channel);
-
 		this.onConnect(channel);
 	}
 
@@ -175,7 +220,7 @@ public final class Server {
 		this.incomingData.remove(channel);
 		this.outgoingData.remove(channel);
 
-		this.clients.remove(channel);
+		this.players.remove(channel);
 
 		channel.close();
 		key.cancel();
@@ -195,36 +240,28 @@ public final class Server {
 
 		buffer.limit(buffer.capacity());
 
-		int numRead = -1;
-		try {
-			numRead = channel.read(buffer);
-		} catch (final IOException e) {
-			this.close(key);
-			Server.LOGGER.log(Level.SEVERE, "Exception", e);
-			return;
-		}
-
+		int numRead = channel.read(buffer);
 		if (numRead == -1) {
-			this.close(key);
-			Server.LOGGER.severe("Read failed.");
-			return;
+			throw new IOException("Error while reading packet.");
 		}
 
 		Packet packet = null;
 
 		buffer.flip();
-		try {
+
+		while (buffer.remaining() > 0) {
 			packet = this.protocol.unpack(buffer);
-		} catch (final Exception e) {
-			Server.LOGGER.log(Level.SEVERE, "Exception", e);
+			if (packet == null) {
+				break;
+			}
+
+			this.onPacket(channel, packet);
+
+			buffer.compact();
+			buffer.flip();
 		}
+
 		buffer.compact();
-
-		if (packet == null) {
-			return;
-		}
-
-		this.onPacket(channel, packet);
 	}
 
 	/**
@@ -252,9 +289,27 @@ public final class Server {
 	 * 
 	 * @param channel
 	 *            The socket channel connecting to the new peer.
+	 * @throws IOException
+	 *             if there was any io error.
 	 */
-	public void onConnect(final SocketChannel channel) {
+	public void onConnect(final SocketChannel channel) throws IOException {
 		System.out.println("Client connected from " + channel.socket().getRemoteSocketAddress().toString() + ".");
+
+		final long id = this.idManager.newId();
+		this.players.put(channel, new Player(id, null, channel));
+
+		final ClientOptionsPacket packet = new ClientOptionsPacket(id);
+		this.sendPacket(channel, packet);
+
+		for (final Apple apple : this.apples.values()) {
+			final AppleUpdatePacket applePacket = new AppleUpdatePacket(apple.getId(), apple.getLocation(), true);
+			this.sendPacket(channel, applePacket);
+		}
+
+		for (final Quest quest : this.quests.values()) {
+			final QuestUpdatePacket questPacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(), true);
+			this.sendPacket(channel, questPacket);
+		}
 	}
 
 	/**
@@ -270,16 +325,24 @@ public final class Server {
 	public void onPacket(final SocketChannel channel, final Packet packet) throws IOException {
 		System.out.println("Message from " + channel.socket().getRemoteSocketAddress().toString() + ":");
 
-		if (packet instanceof LoginPacket) {
-			final LoginPacket loginPacket = (LoginPacket) packet;
-			System.out.println(loginPacket.toString());
-		} else if (packet instanceof SayPacket) {
+		if (packet instanceof SayPacket) {
 			final SayPacket sayPacket = (SayPacket) packet;
 			System.out.println(sayPacket.toString());
-		} else if (packet instanceof LocationUpdatePacket) {
-			final LocationUpdatePacket locUpdate = (LocationUpdatePacket) packet;
+		} else if (packet instanceof PlayerUpdatePacket) {
+			final PlayerUpdatePacket locUpdate = (PlayerUpdatePacket) packet;
+			locUpdate.setClientId(this.players.get(channel).getId());
+			this.players.get(channel).setLocation(locUpdate.getLocation());
 			System.out.println(locUpdate.toString());
+
 			this.broadcastPacket(locUpdate);
+			System.out.println("Location update broadcasted.");
+
+			// XXX(xairy): temporary.
+			for (int i = 0; i < 5; i++) {
+				this.addRandomQuest(locUpdate.getLocation(), 3.0);
+			}
+		} else {
+			LOGGER.info("Unknown packet type.");
 		}
 	}
 
@@ -329,9 +392,173 @@ public final class Server {
 	 *             If there was a error writing to any of the output buffers (e.g not enough space).
 	 */
 	private void broadcastPacket(final Packet packet) throws IOException {
-		for (final SocketChannel client : this.clients) {
-			this.sendPacket(client, packet);
+		for (final Player player : this.players.values()) {
+			this.sendPacket(player.getChannel(), packet);
 		}
+	}
+
+	/**
+	 * Adds a new apple with a specified location.
+	 * 
+	 * @param location
+	 *            Location of the apple added.
+	 * @throws IOException
+	 *             if there was any problem broadcasting apple update.
+	 */
+	private void addApple(final Location location) throws IOException {
+		final long id = this.idManager.newId();
+		final Apple apple = new Apple(id, location);
+		this.apples.put(id, apple);
+		final AppleUpdatePacket packet = new AppleUpdatePacket(id, location, true);
+		System.out.println("Added " + apple + ".");
+
+		this.broadcastPacket(packet);
+		System.out.println("Apple update broadcasted.");
+	}
+
+	/**
+	 * Adds a new apple somewhere near the specified location.
+	 * 
+	 * @param location
+	 *            Near this location an apple will be added.
+	 * @param distance
+	 *            The maximum distance to an apple. Approximately 100 meters per 1.0.
+	 * @throws IOException
+	 *             if there was any problem broadcasting apple update.
+	 */
+	private void addRandomApple(final Location location, final double distance) throws IOException {
+		this.addApple(this.generateRandomLocation(location, distance));
+	}
+
+	/**
+	 * Removes the apple with the specified id.
+	 * 
+	 * @param id
+	 *            The id of the apple being removed.
+	 * @throws IOException
+	 *             if there was any problem broadcasting apple update.
+	 */
+	private void removeApple(final long id) throws IOException {
+		final Location location = this.apples.get(id).getLocation();
+		final AppleUpdatePacket packet = new AppleUpdatePacket(id, location, false);
+
+		this.broadcastPacket(packet);
+		System.out.println("Apple update broadcasted.");
+
+		this.apples.remove(id);
+		System.out.println("Removed Apple " + id + ".");
+	}
+
+	/**
+	 * Adds a new quest with a specified location.
+	 * 
+	 * @param location
+	 *            Location of the quest added.
+	 * @throws IOException
+	 *             if there was any problem broadcasting quest update.
+	 */
+	private void addQuest(final Location location) throws IOException {
+		final long id = this.idManager.newId();
+		final Quest quest = new Quest(id, location);
+		this.quests.put(id, quest);
+		final QuestUpdatePacket packet = new QuestUpdatePacket(id, location, true);
+		System.out.println("Added " + quest + ".");
+
+		this.broadcastPacket(packet);
+		System.out.println("Quest update broadcasted.");
+	}
+
+	/**
+	 * Adds a new quest somewhere near the specified location.
+	 * 
+	 * @param location
+	 *            Near this location a quest will be added.
+	 * @param distance
+	 *            The maximum distance to a quest. Approximately 100 meters per 1.0.
+	 * @throws IOException
+	 *             if there was any problem broadcasting quest update.
+	 */
+	private void addRandomQuest(final Location location, final double distance) throws IOException {
+		this.addQuest(this.generateRandomLocation(location, distance));
+	}
+
+	/**
+	 * Removes the quest with the specified id.
+	 * 
+	 * @param id
+	 *            The id of the quest being removed.
+	 * @throws IOException
+	 *             if there was any problem broadcasting quest update.
+	 */
+	private void removeQuest(final long id) throws IOException {
+		final Location location = this.quests.get(id).getLocation();
+		final QuestUpdatePacket packet = new QuestUpdatePacket(id, location, false);
+
+		this.broadcastPacket(packet);
+		System.out.println("Quest update broadcasted.");
+
+		this.quests.remove(id);
+		System.out.println("Removed Quest " + id + ".");
+	}
+
+	/**
+	 * Processes all apples and checks if they are being picked up by any player.
+	 * 
+	 * @throws IOException
+	 *             if there was any problem broadcasting apple update.
+	 */
+	private void processApples() throws IOException {
+		for (Player player : this.players.values()) {
+			if (player.getLocation() != null) {
+				for (Apple apple : this.apples.values()) {
+					if (player.getLocation().distanceTo(apple.getLocation()) <= INTERACTION_DISTANCE) {
+						System.out.println("Player " + player.getId() + " picked up Apple " + apple.getId() + ".");
+						this.removeApple(apple.getId());
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Processes all quests and checks if they are being accepted up by any player.
+	 * 
+	 * @throws IOException
+	 *             if there was any problem broadcasting quest update.
+	 */
+	private void processQuests() throws IOException {
+		for (Player player : this.players.values()) {
+			if (player.getLocation() != null) {
+				for (Quest quest : this.quests.values()) {
+					if (player.getLocation().distanceTo(quest.getLocation()) <= INTERACTION_DISTANCE) {
+						System.out.println("Player " + player.getId() + " accepted Quest " + quest.getId() + ".");
+						this.removeQuest(quest.getId());
+						for (int i = 0; i < APPLES_PER_QUEST; i++) {
+							this.addRandomApple(quest.getLocation(), QUEST_TO_APPLES_DISTANCE);
+						}
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Generates a random location near the specified location.
+	 * 
+	 * @param location
+	 *            Near this location a new location will be generated.
+	 * 
+	 * @param distance
+	 *            The maximum distance to a new location. Approximately 100 meters per 1.0.
+	 */
+	private Location generateRandomLocation(final Location location, final double distance) {
+		final double longitude = location.getLongitude() + (this.random.nextDouble() - 0.5) * 0.0017904931 * distance;
+		final double latitude = location.getLatitude() + (this.random.nextDouble() - 0.5) * 0.0017904931 * distance;
+		Location randomLocation = new Location(longitude, latitude, 0.0);
+		System.out.println("Distance: " + location.distanceTo(randomLocation) + ".");
+		return randomLocation;
 	}
 
 	/**
