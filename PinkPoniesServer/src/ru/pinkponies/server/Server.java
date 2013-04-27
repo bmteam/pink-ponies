@@ -420,18 +420,14 @@ public final class Server {
 	 * Adds a new apple somewhere near the specified location.
 	 * 
 	 * @param location
-	 *            Near this location the apple will be added.
+	 *            Near this location an apple will be added.
 	 * @param distance
-	 *            How far the apple will appear.
+	 *            The maximum distance to an apple. Approximately 100 meters per 1.0.
 	 * @throws IOException
 	 *             if there was any problem broadcasting apple update.
 	 */
 	private void addRandomApple(final Location location, final double distance) throws IOException {
-		final double longitude = location.getLongitude() + (this.random.nextDouble() - 0.5) * 0.001 * distance;
-		final double latitude = location.getLatitude() + (this.random.nextDouble() - 0.5) * 0.001 * distance;
-		final Location appleLocation = new Location(longitude, latitude, 0.0);
-		this.addApple(appleLocation);
-		System.out.println("Distance: " + location.distanceTo(appleLocation) + ".");
+		this.addApple(this.generateRandomLocation(location, distance));
 	}
 
 	/**
@@ -476,18 +472,14 @@ public final class Server {
 	 * Adds a new quest somewhere near the specified location.
 	 * 
 	 * @param location
-	 *            Near this location the quest will be added.
+	 *            Near this location a quest will be added.
 	 * @param distance
-	 *            How far the quest will appear.
+	 *            The maximum distance to a quest. Approximately 100 meters per 1.0.
 	 * @throws IOException
-	 *             if there was any problem broadcasting apple update.
+	 *             if there was any problem broadcasting quest update.
 	 */
 	private void addRandomQuest(final Location location, final double distance) throws IOException {
-		final double longitude = location.getLongitude() + (this.random.nextDouble() - 0.5) * 0.001 * distance;
-		final double latitude = location.getLatitude() + (this.random.nextDouble() - 0.5) * 0.001 * distance;
-		final Location questLocation = new Location(longitude, latitude, 0.0);
-		this.addQuest(questLocation);
-		System.out.println("Distance: " + location.distanceTo(questLocation) + ".");
+		this.addQuest(this.generateRandomLocation(location, distance));
 	}
 
 	/**
@@ -550,6 +542,23 @@ public final class Server {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Generates a random location near the specified location.
+	 * 
+	 * @param location
+	 *            Near this location a new location will be generated.
+	 * 
+	 * @param distance
+	 *            The maximum distance to a new location. Approximately 100 meters per 1.0.
+	 */
+	private Location generateRandomLocation(final Location location, final double distance) {
+		final double longitude = location.getLongitude() + (this.random.nextDouble() - 0.5) * 0.0017904931 * distance;
+		final double latitude = location.getLatitude() + (this.random.nextDouble() - 0.5) * 0.0017904931 * distance;
+		Location randomLocation = new Location(longitude, latitude, 0.0);
+		System.out.println("Distance: " + location.distanceTo(randomLocation) + ".");
+		return randomLocation;
 	}
 
 	/**

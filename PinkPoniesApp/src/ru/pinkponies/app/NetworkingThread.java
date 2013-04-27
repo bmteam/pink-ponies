@@ -274,7 +274,6 @@ public class NetworkingThread extends Thread {
 	 *            The packet to be parsed.
 	 */
 	private void onPacket(final Packet packet) {
-		LOGGER.info("!!! " + packet.toString());
 		if (packet instanceof ClientOptionsPacket) {
 			this.sendMessageToUIThread(packet);
 		} else if (packet instanceof SayPacket) {
