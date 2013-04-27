@@ -19,7 +19,7 @@ PYLINT_ERROR_FMT = re.compile(r"""
 (?P<msg>.*)                       # finally, the error message
 """, re.IGNORECASE|re.VERBOSE)
 
-def hg_get_status():
+def hg_get_commit_changes():
   """ Runs the hg status command and parses its output. Returns a list of
   changed files. """
   files = str(subprocess.check_output(["hg", "st", "-man"]))
@@ -178,7 +178,7 @@ def parse_args():
     files += hg_get_all_files()
 
   if args.commit:
-    files += hg_get_status()
+    files += hg_get_commit_changes()
 
   if args.push:
     files += hg_get_push_changes()
