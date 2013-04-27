@@ -16,9 +16,9 @@ public final class Quest extends Entity {
 	 * Creates a new quest with the given id and location.
 	 * 
 	 * @param id
-	 *            the apple id
+	 *            the quest id
 	 * @param location
-	 *            the apple location
+	 *            the quest location
 	 */
 	public Quest(final long id, final Location location) {
 		super(id, location);
