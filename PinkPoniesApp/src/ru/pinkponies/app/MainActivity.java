@@ -6,8 +6,6 @@
 
 package ru.pinkponies.app;
 
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.logging.Logger;
 
 import org.osmdroid.DefaultResourceProxyImpl;
@@ -55,11 +53,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	private static final Logger LOGGER = Logger.getLogger(MainActivity.class.getName());
 
 	/**
-	 * The delay between consecutive network IO updates.
-	 */
-	private static final int SERVICE_DELAY = 1000;
-
-	/**
 	 * The minimum time interval between location updates, in milliseconds.
 	 */
 	private static final long LOCATION_UPDATE_MIN_DELAY = 1000;
@@ -89,6 +82,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	 */
 	private NetworkingService networkingService;
 
+	/**
+	 * The connection between main activity and networking service.
+	 */
 	private final ServiceConnection networkingServiceConnection = new ServiceConnection() {
 		@Override
 		public void onServiceConnected(final ComponentName className, final IBinder binder) {
@@ -106,8 +102,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		}
 
 	};
-
-	private final Timer updateTimer = new Timer();
 
 	/**
 	 * The location service manager.
@@ -168,12 +162,13 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	 * @return Created itemized overlay.
 	 */
 	private MyItemizedOverlay createItemizedOverlay(final int resourceId) {
-		Drawable marker = this.getResources().getDrawable(resourceId);
-		Bitmap bitmap = ((BitmapDrawable) marker).getBitmap();
-		marker = new BitmapDrawable(this.getResources(), Bitmap.createScaledBitmap(bitmap, ICON_SIZE, ICON_SIZE, true));
+		final Drawable marker = this.getResources().getDrawable(resourceId);
+		final Bitmap bitmap = ((BitmapDrawable) marker).getBitmap();
+		final Drawable bitmapMarker = new BitmapDrawable(this.getResources(), Bitmap.createScaledBitmap(bitmap,
+				ICON_SIZE, ICON_SIZE, true));
 
 		final ResourceProxy resourceProxy = new DefaultResourceProxyImpl(this.getApplicationContext());
-		return new MyItemizedOverlay(marker, resourceProxy);
+		return new MyItemizedOverlay(bitmapMarker, resourceProxy);
 	}
 
 	/**
@@ -289,8 +284,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 			this.networkingService = null;
 		}
 
-		this.updateTimer.cancel();
-
 		this.locationManager.removeUpdates(this);
 		super.onDestroy();
 	}
@@ -351,6 +344,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		this.finish();
 	}
 
+	/**
+	 * Called when the networking service is for some reason disconnected from the main activity.
+	 */
 	protected void onNetworkingServiceDisconnected() {
 		if (this.networkingService != null) {
 			this.networkingService.removeListener(this);
@@ -358,10 +354,15 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		}
 	}
 
+	/**
+	 * Called when the networking service is connected to the main activity.
+	 */
 	protected void onNetworkingServiceConnected() {
 		this.networkingService.addListener(this);
-		this.sendMessageToNetwork("connect");
-		this.sendMessageToNetwork("service");
+
+		if (this.networkingService.getState() != NetworkingService.State.CONNECTED) {
+			this.networkingService.connect();
+		}
 	}
 
 	/**
@@ -374,17 +375,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	public void onMessage(final Object message) {
 		LOGGER.info(message.toString());
 
-		if (message.equals("connected")) {
-			this.sendMessageToNetwork("login");
-			this.updateTimer.scheduleAtFixedRate(new TimerTask() {
-
-				@Override
-				public void run() {
-					MainActivity.this.sendMessageToNetwork("service");
-				}
-
-			}, 0, MainActivity.SERVICE_DELAY);
-		} else if (message.equals("failed")) {
+		if (message.equals("failed")) {
 			this.showMessageBox("Socket exception.", null);
 		} else if (message instanceof ClientOptionsPacket) {
 			final ClientOptionsPacket packet = (ClientOptionsPacket) message;
@@ -428,17 +419,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	}
 
 	/**
-	 * Asynchronously sends the given message to the networking thread.
-	 * 
-	 * @param message
-	 *            The message to send.
-	 */
-
-	private void sendMessageToNetwork(final Object message) {
-		this.networkingService.sendMessage(message);
-	}
-
-	/**
 	 * Switches current activity to login activity.
 	 */
 	public void goToLoginActivity() {
@@ -464,7 +444,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 		final ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude, latitude, altitude);
 		final PlayerUpdatePacket packet = new PlayerUpdatePacket(this.myId, loc);
-		this.sendMessageToNetwork(packet);
+		this.networkingService.sendPacket(packet);
 
 		MainActivity.LOGGER.info("Location updated.");
 	}
