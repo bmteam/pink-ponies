@@ -6,6 +6,7 @@
 
 package ru.pinkponies.app;
 
+import java.net.InetSocketAddress;
 import java.util.logging.Logger;
 
 import org.osmdroid.DefaultResourceProxyImpl;
@@ -76,6 +77,16 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	 * The size of the objects on the map.
 	 */
 	private static final int ICON_SIZE = 48;
+
+	/**
+	 * The default server IP.
+	 */
+	private static final String SERVER_IP = "77.232.25.36";
+
+	/**
+	 * The default server port.
+	 */
+	private static final int SERVER_PORT = 4264;
 
 	/**
 	 * The networking service.
@@ -361,7 +372,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		this.networkingService.addListener(this);
 
 		if (this.networkingService.getState() != NetworkingService.State.CONNECTED) {
-			this.networkingService.connect();
+			this.networkingService.connect(new InetSocketAddress(SERVER_IP, SERVER_PORT));
 		}
 	}
 

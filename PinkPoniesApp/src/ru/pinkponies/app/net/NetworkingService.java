@@ -7,6 +7,7 @@
 package ru.pinkponies.app.net;
 
 import java.lang.ref.WeakReference;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -119,9 +120,9 @@ public class NetworkingService extends Service {
 	/**
 	 * Asynchronously connects to the server.
 	 */
-	public void connect() {
-		this.sendMessageToNetworkingThread("connect");
-		this.sendMessageToNetworkingThread("service");
+	public void connect(final InetSocketAddress address) {
+		this.sendMessageToNetworkingThread(NetworkingThread.MSG_CONNECT, address);
+		this.sendMessageToNetworkingThread(NetworkingThread.MSG_SERVICE, null);
 	}
 
 	/**
@@ -131,7 +132,7 @@ public class NetworkingService extends Service {
 	 *            the packet
 	 */
 	public void sendPacket(final Packet packet) {
-		this.sendMessageToNetworkingThread(packet);
+		this.sendMessageToNetworkingThread(NetworkingThread.MSG_SEND_PACKET, packet);
 	}
 
 	/**
@@ -157,7 +158,7 @@ public class NetworkingService extends Service {
 
 				@Override
 				public void run() {
-					NetworkingService.this.sendMessageToNetworkingThread("service");
+					NetworkingService.this.sendMessageToNetworkingThread(NetworkingThread.MSG_SERVICE, null);
 				}
 
 			}, 0, SERVICE_DELAY);
@@ -177,9 +178,10 @@ public class NetworkingService extends Service {
 	 * @param message
 	 *            the message
 	 */
-	private void sendMessageToNetworkingThread(final Object message) {
+	private void sendMessageToNetworkingThread(final int what, final Object object) {
 		final Message msg = this.networkingThread.getMessageHandler().obtainMessage();
-		msg.obj = message;
+		msg.what = what;
+		msg.obj = object;
 		this.networkingThread.getMessageHandler().sendMessage(msg);
 	}
 
