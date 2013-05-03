@@ -301,6 +301,11 @@ public final class Server {
 		final ClientOptionsPacket packet = new ClientOptionsPacket(id);
 		this.sendPacket(channel, packet);
 
+		for (final Player player : this.players.values()) {
+			final PlayerUpdatePacket playerUpdate = new PlayerUpdatePacket(player.getId(), player.getLocation());
+			this.sendPacket(channel, playerUpdate);
+		}
+
 		for (final Apple apple : this.apples.values()) {
 			final AppleUpdatePacket applePacket = new AppleUpdatePacket(apple.getId(), apple.getLocation(), true);
 			this.sendPacket(channel, applePacket);
