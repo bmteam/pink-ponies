@@ -42,14 +42,19 @@ public class NetworkingThread extends Thread {
 	private static final Logger LOGGER = Logger.getLogger(NetworkingThread.class.getName());
 
 	/**
-	 * The default server ip.
+	 * The connect message id. Message object should be an instance of {@link InetSocketAddress}.
 	 */
-	private static final String SERVER_IP = "77.232.25.36";
+	public static final int MSG_CONNECT = 0;
 
 	/**
-	 * The default server port.
+	 * The service message id.
 	 */
-	private static final int SERVER_PORT = 4264;
+	public static final int MSG_SERVICE = 1;
+
+	/**
+	 * The "send packet" message id. Message object should be an instance of {@link Packet}
+	 */
+	public static final int MSG_SEND_PACKET = 2;
 
 	/**
 	 * The default incoming/outgoing buffer size.
@@ -128,12 +133,12 @@ public class NetworkingThread extends Thread {
 	 * @throws IOException
 	 *             If connection could not be initiated.
 	 */
-	private void connect() throws IOException {
-		LOGGER.info("Connecting to " + NetworkingThread.SERVER_IP + ":" + NetworkingThread.SERVER_PORT + "...");
+	private void connect(final InetSocketAddress address) throws IOException {
+		LOGGER.info("Connecting to " + address.toString());
 
 		this.socket = SocketChannel.open();
 		this.socket.configureBlocking(false);
-		this.socket.connect(new InetSocketAddress(NetworkingThread.SERVER_IP, NetworkingThread.SERVER_PORT));
+		this.socket.connect(address);
 
 		this.selector = Selector.open();
 		this.socket.register(this.selector, SelectionKey.OP_CONNECT);
@@ -305,35 +310,24 @@ public class NetworkingThread extends Thread {
 	}
 
 	/**
-	 * Writes a say packet to the output buffer.
-	 * 
-	 * @param message
-	 *            The message.
-	 * @throws IOException
-	 *             If there was a error writing to the output buffer (e.g not enough space).
-	 */
-	private void say(final String message) throws IOException {
-		final SayPacket packet = new SayPacket(message);
-		this.sendPacket(packet);
-	}
-
-	/**
 	 * Called when a new message was received from the service.
 	 * 
 	 * @param message
 	 *            the message
 	 */
-	private void onMessageFromService(final Object message) {
+	private void onMessageFromService(final Message message) {
 		try {
-			if (message.equals("connect")) {
-				this.connect();
-			} else if (message.equals("service")) {
+			switch (message.what) {
+			case MSG_CONNECT:
+				this.connect((InetSocketAddress) message.obj);
+				break;
+			case MSG_SERVICE:
 				this.service();
-			} else if (message instanceof Packet) {
-				this.sendPacket((Packet) message);
-			} else if (message instanceof String) {
-				this.say((String) message);
-			} else {
+				break;
+			case MSG_SEND_PACKET:
+				this.sendPacket((Packet) message.obj);
+				break;
+			default:
 				throw new InvalidParameterException("Unknown message type.");
 			}
 		} catch (final IOException e) {
@@ -381,7 +375,7 @@ public class NetworkingThread extends Thread {
 		 */
 		@Override
 		public void handleMessage(final Message msg) {
-			this.thread.get().onMessageFromService(msg.obj);
+			this.thread.get().onMessageFromService(msg);
 		}
 	}
 }
