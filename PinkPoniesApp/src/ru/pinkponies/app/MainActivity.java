@@ -14,10 +14,6 @@ import java.util.logging.Logger;
 import org.osmdroid.DefaultResourceProxyImpl;
 import org.osmdroid.ResourceProxy;
 import org.osmdroid.util.GeoPoint;
-import org.osmdroid.views.MapController;
-import org.osmdroid.views.MapView;
-import org.osmdroid.views.overlay.MyLocationOverlay;
-import org.osmdroid.views.overlay.PathOverlay;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -25,7 +21,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
@@ -100,37 +95,37 @@ public final class MainActivity extends Activity implements LocationListener {
 	/**
 	 * The map view widget.
 	 */
-	private MapView mapView;
+	// private MapView mapView;
 
 	/**
 	 * The map controller.
 	 */
-	private MapController mapController;
+	// private MapController mapController;
 
 	/**
 	 * The overlay displaying player's location.
 	 */
-	private MyLocationOverlay locationOverlay;
+	// private MyLocationOverlay locationOverlay;
 
 	/**
 	 * The overlay displaying other people locations.
 	 */
-	private MyItemizedOverlay personOverlay;
+	// private MyItemizedOverlay personOverlay;
 
 	/**
 	 * The overlay displaying apple locations.
 	 */
-	private MyItemizedOverlay appleOverlay;
+	// private MyItemizedOverlay appleOverlay;
 
 	/**
 	 * The overlay displaying quest locations.
 	 */
-	private MyItemizedOverlay questOverlay;
+	// private MyItemizedOverlay questOverlay;
 
 	/**
 	 * The overlay which displays the path of the player.
 	 */
-	private PathOverlay pathOverlay;
+	// private PathOverlay pathOverlay;
 
 	/**
 	 * The identifier of the player.
@@ -199,40 +194,40 @@ public final class MainActivity extends Activity implements LocationListener {
 				LOCATION_UPDATE_MIN_DISTANCE, this);
 
 		// GUI.
-		this.mapView = (MapView) this.findViewById(R.id.MainActivityMapview);
-		this.mapView.setMultiTouchControls(true);
-
-		this.mapController = this.mapView.getController();
-		this.mapController.setZoom(MAP_VIEW_INITIAL_ZOOM_LEVEL);
-
-		this.locationOverlay = new MyLocationOverlay(this, this.mapView);
-		this.mapView.getOverlays().add(this.locationOverlay);
-
-		this.pathOverlay = new PathOverlay(Color.GREEN, this);
-		this.mapView.getOverlays().add(this.pathOverlay);
-
-		this.locationOverlay.runOnFirstFix(new Runnable() {
-			@Override
-			public void run() {
-				MainActivity.this.mapView.getController().animateTo(MainActivity.this.locationOverlay.getMyLocation());
-			}
-		});
-
-		this.mapView.postInvalidate();
-
-		// textOverlay = new TextOverlay(this, mapView);
-		// textOverlay.setPosition(new GeoPoint(55.9, 37.5));
-		// textOverlay.setText("Hello, world!");
-		// mapView.getOverlays().add(textOverlay);
-
-		this.personOverlay = this.createItemizedOverlay(R.drawable.player);
-		this.mapView.getOverlays().add(this.personOverlay);
-
-		this.appleOverlay = this.createItemizedOverlay(R.drawable.apple);
-		this.mapView.getOverlays().add(this.appleOverlay);
-
-		this.questOverlay = this.createItemizedOverlay(R.drawable.question);
-		this.mapView.getOverlays().add(this.questOverlay);
+		/*
+		 * this.mapView = (MapView) this.findViewById(R.id.MainActivityMapview);
+		 * this.mapView.setMultiTouchControls(true);
+		 * 
+		 * this.mapController = this.mapView.getController();
+		 * this.mapController.setZoom(MAP_VIEW_INITIAL_ZOOM_LEVEL);
+		 * 
+		 * this.locationOverlay = new MyLocationOverlay(this, this.mapView);
+		 * this.mapView.getOverlays().add(this.locationOverlay);
+		 * 
+		 * this.pathOverlay = new PathOverlay(Color.GREEN, this);
+		 * this.mapView.getOverlays().add(this.pathOverlay);
+		 * 
+		 * this.locationOverlay.runOnFirstFix(new Runnable() {
+		 * 
+		 * @Override public void run() {
+		 * MainActivity.this.mapView.getController().animateTo(MainActivity
+		 * .this.locationOverlay.getMyLocation()); } });
+		 * 
+		 * this.mapView.postInvalidate();
+		 * 
+		 * // textOverlay = new TextOverlay(this, mapView); // textOverlay.setPosition(new
+		 * GeoPoint(55.9, 37.5)); // textOverlay.setText("Hello, world!"); //
+		 * mapView.getOverlays().add(textOverlay);
+		 * 
+		 * this.personOverlay = this.createItemizedOverlay(R.drawable.player);
+		 * this.mapView.getOverlays().add(this.personOverlay);
+		 * 
+		 * this.appleOverlay = this.createItemizedOverlay(R.drawable.apple);
+		 * this.mapView.getOverlays().add(this.appleOverlay);
+		 * 
+		 * this.questOverlay = this.createItemizedOverlay(R.drawable.question);
+		 * this.mapView.getOverlays().add(this.questOverlay);
+		 */
 
 		// GeoPoint myPoint = new GeoPoint(55929563, 37523862);
 		// this.myAppleOverlay.addItem(myPoint, "Apple");
@@ -246,8 +241,8 @@ public final class MainActivity extends Activity implements LocationListener {
 	@Override
 	protected void onResume() {
 		super.onResume();
-		this.locationOverlay.enableMyLocation();
-		this.locationOverlay.enableFollowLocation();
+		// this.locationOverlay.enableMyLocation();
+		// this.locationOverlay.enableFollowLocation();
 	}
 
 	/**
@@ -256,8 +251,8 @@ public final class MainActivity extends Activity implements LocationListener {
 	@Override
 	protected void onPause() {
 		super.onPause();
-		this.locationOverlay.disableMyLocation();
-		this.locationOverlay.disableFollowLocation();
+		// this.locationOverlay.disableMyLocation();
+		// this.locationOverlay.disableFollowLocation();
 	}
 
 	/**
@@ -278,7 +273,7 @@ public final class MainActivity extends Activity implements LocationListener {
 	@Override
 	protected void onSaveInstanceState(final Bundle outState) {
 		super.onSaveInstanceState(outState);
-		outState.putInt("zoomLevel", this.mapView.getZoomLevel());
+		// outState.putInt("zoomLevel", this.mapView.getZoomLevel());
 	}
 
 	/**
@@ -293,7 +288,7 @@ public final class MainActivity extends Activity implements LocationListener {
 		MainActivity.LOGGER.info("MainActivity:onSaveInstanceState");
 		super.onRestoreInstanceState(outState);
 		outState.getInt("zoomLevel");
-		this.mapController.setZoom(outState.getInt("zoomLevel"));
+		// this.mapController.setZoom(outState.getInt("zoomLevel"));
 	}
 
 	/**
@@ -358,8 +353,8 @@ public final class MainActivity extends Activity implements LocationListener {
 						.getLongitude());
 				final String title = "Player" + String.valueOf(packet.getClientId());
 
-				this.personOverlay.removeItem(title);
-				this.personOverlay.addItem(point, title);
+				// this.personOverlay.removeItem(title);
+				// this.personOverlay.addItem(point, title);
 			}
 		} else if (message instanceof AppleUpdatePacket) {
 			final AppleUpdatePacket packet = (AppleUpdatePacket) message;
@@ -367,9 +362,9 @@ public final class MainActivity extends Activity implements LocationListener {
 			if (packet.getStatus()) {
 				final GeoPoint point = new GeoPoint(packet.getLocation().getLatitude(), packet.getLocation()
 						.getLongitude());
-				this.appleOverlay.addItem(point, title);
+				// this.appleOverlay.addItem(point, title);
 			} else {
-				this.appleOverlay.removeItem(title);
+				// this.appleOverlay.removeItem(title);
 			}
 			LOGGER.info("Apple " + String.valueOf(packet.getAppleId()) + " updated.");
 		} else if (message instanceof QuestUpdatePacket) {
@@ -378,9 +373,9 @@ public final class MainActivity extends Activity implements LocationListener {
 			if (packet.getStatus()) {
 				final GeoPoint point = new GeoPoint(packet.getLocation().getLatitude(), packet.getLocation()
 						.getLongitude());
-				this.questOverlay.addItem(point, title);
+				// this.questOverlay.addItem(point, title);
 			} else {
-				this.questOverlay.removeItem(title);
+				// this.questOverlay.removeItem(title);
 			}
 			LOGGER.info("Quest " + String.valueOf(packet.getQuestId()) + " updated.");
 		}
@@ -420,7 +415,7 @@ public final class MainActivity extends Activity implements LocationListener {
 		final double altitude = location.getAltitude();
 
 		final GeoPoint point = new GeoPoint(latitude, longitude);
-		this.pathOverlay.addPoint(point);
+		// this.pathOverlay.addPoint(point);
 
 		final ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude, latitude, altitude);
 		final PlayerUpdatePacket packet = new PlayerUpdatePacket(this.myId, loc);

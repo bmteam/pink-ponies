@@ -26,8 +26,8 @@ import android.os.Message;
 
 import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.ClientOptionsPacket;
-import ru.pinkponies.protocol.PlayerUpdatePacket;
 import ru.pinkponies.protocol.Packet;
+import ru.pinkponies.protocol.PlayerUpdatePacket;
 import ru.pinkponies.protocol.Protocol;
 import ru.pinkponies.protocol.QuestUpdatePacket;
 import ru.pinkponies.protocol.SayPacket;
@@ -44,7 +44,7 @@ public class NetworkingThread extends Thread {
 	/**
 	 * The default server ip.
 	 */
-	private static final String SERVER_IP = "192.168.1.15";
+	private static final String SERVER_IP = "192.168.0.199";
 
 	/**
 	 * The default server port.
