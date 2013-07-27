@@ -197,12 +197,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 		this.setContentView(R.layout.activity_main);
 
-		this.locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-		this.locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, LOCATION_UPDATE_MIN_DELAY,
-				LOCATION_UPDATE_MIN_DISTANCE, this);
-		this.locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_UPDATE_MIN_DELAY,
-				LOCATION_UPDATE_MIN_DISTANCE, this);
-
 		// GUI.
 		/*
 		 * this.mapView = (MapView) this.findViewById(R.id.MainActivityMapview);
@@ -246,6 +240,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		this.startService(new Intent(this, NetworkingService.class));
 		this.bindService(new Intent(this, NetworkingService.class), this.networkingServiceConnection,
 				Context.BIND_AUTO_CREATE);
+
+		this.locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+		// Updates requested on service connected.
 
 		LOGGER.info("Initialized.");
 	}
@@ -366,6 +363,11 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		if (this.networkingService.getState() != NetworkingService.State.CONNECTED) {
 			this.networkingService.connect(new InetSocketAddress(SERVER_IP, SERVER_PORT));
 		}
+
+		this.locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, LOCATION_UPDATE_MIN_DELAY,
+				LOCATION_UPDATE_MIN_DISTANCE, this);
+		this.locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_UPDATE_MIN_DELAY,
+				LOCATION_UPDATE_MIN_DISTANCE, this);
 	}
 
 	/**
