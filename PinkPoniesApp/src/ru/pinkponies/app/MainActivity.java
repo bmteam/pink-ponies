@@ -9,9 +9,12 @@ package ru.pinkponies.app;
 import java.net.InetSocketAddress;
 import java.util.logging.Logger;
 
-import org.osmdroid.DefaultResourceProxyImpl;
-import org.osmdroid.ResourceProxy;
 import org.osmdroid.util.GeoPoint;
+
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -20,9 +23,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -61,7 +61,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	/**
 	 * The initial map view zoom level.
 	 */
-	private static final int MAP_VIEW_INITIAL_ZOOM_LEVEL = 18;
+	private static final int MAP_INITIAL_ZOOM_LEVEL = 18;
 
 	/**
 	 * This value is used when the identifier is not yet defined.
@@ -76,7 +76,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	/**
 	 * The default server IP.
 	 */
-	private static final String SERVER_IP = "192.168.0.199";
+	private static final String SERVER_IP = "192.168.0.195";
 
 	/**
 	 * The default server port.
@@ -108,45 +108,11 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 	};
 
-	/**
-	 * The location service manager.
-	 */
 	private LocationManager locationManager;
-
-	/**
-	 * The map view widget.
-	 */
-	// private MapView mapView;
-
-	/**
-	 * The map controller.
-	 */
-	// private MapController mapController;
-
-	/**
-	 * The overlay displaying player's location.
-	 */
-	// private MyLocationOverlay locationOverlay;
-
-	/**
-	 * The overlay displaying other people locations.
-	 */
-	// private MyItemizedOverlay personOverlay;
-
-	/**
-	 * The overlay displaying apple locations.
-	 */
-	// private MyItemizedOverlay appleOverlay;
-
-	/**
-	 * The overlay displaying quest locations.
-	 */
-	// private MyItemizedOverlay questOverlay;
-
-	/**
-	 * The overlay which displays the path of the player.
-	 */
-	// private PathOverlay pathOverlay;
+	private GoogleMap map;
+	// private ItemizedOverlay personOverlay;
+	// private ItemizedOverlay appleOverlay;
+	private ItemizedOverlay questOverlay;
 
 	/**
 	 * The identifier of the player.
@@ -166,15 +132,16 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	 *            Resource id.
 	 * @return Created itemized overlay.
 	 */
-	private MyItemizedOverlay createItemizedOverlay(final int resourceId) {
-		final Drawable marker = this.getResources().getDrawable(resourceId);
-		final Bitmap bitmap = ((BitmapDrawable) marker).getBitmap();
-		final Drawable bitmapMarker = new BitmapDrawable(this.getResources(), Bitmap.createScaledBitmap(bitmap,
-				ICON_SIZE, ICON_SIZE, true));
-
-		final ResourceProxy resourceProxy = new DefaultResourceProxyImpl(this.getApplicationContext());
-		return new MyItemizedOverlay(bitmapMarker, resourceProxy);
-	}
+	/*
+	 * private MyItemizedOverlay createItemizedOverlay(final int resourceId) { final Drawable marker
+	 * = this.getResources().getDrawable(resourceId); final Bitmap bitmap = ((BitmapDrawable)
+	 * marker).getBitmap(); final Drawable bitmapMarker = new BitmapDrawable(this.getResources(),
+	 * Bitmap.createScaledBitmap(bitmap, ICON_SIZE, ICON_SIZE, true));
+	 * 
+	 * final ResourceProxy resourceProxy = new
+	 * DefaultResourceProxyImpl(this.getApplicationContext()); return new
+	 * MyItemizedOverlay(bitmapMarker, resourceProxy); }
+	 */
 
 	/**
 	 * Called when the activity is first created. Initializes GUI, networking, creates overlays.
@@ -196,6 +163,19 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		// password = extras.getString("password");
 
 		this.setContentView(R.layout.activity_main);
+
+		this.locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+		// Updates requested after the networking service is connected.
+
+		this.map = ((MapFragment) this.getFragmentManager().findFragmentById(R.id.map)).getMap();
+		this.map.setMyLocationEnabled(true);
+
+		// CameraUpdate zoom = CameraUpdateFactory.zoomTo(MAP_INITIAL_ZOOM_LEVEL);
+		// this.map.animateCamera(zoom);
+
+		this.map.addMarker(new MarkerOptions().position(new LatLng(-37.81319, 144.96298)));
+
+		this.questOverlay = new ItemizedOverlay(this.map, null);
 
 		// GUI.
 		/*
@@ -241,22 +221,16 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		this.bindService(new Intent(this, NetworkingService.class), this.networkingServiceConnection,
 				Context.BIND_AUTO_CREATE);
 
-		this.locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-		// Updates requested on service connected.
-
 		LOGGER.info("Initialized.");
 	}
 
 	/**
-	 * Called when the activity will start interacting with the user.
+	 * LatLng Called when the activity will start interacting with the user.
 	 */
 	@Override
 	protected void onResume() {
 		super.onResume();
 		LOGGER.info("onResume " + this.hashCode());
-
-		// this.locationOverlay.enableMyLocation();
-		// this.locationOverlay.enableFollowLocation();
 	}
 
 	/**
@@ -266,9 +240,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	protected void onPause() {
 		super.onPause();
 		LOGGER.info("onPause");
-
-		// this.locationOverlay.disableMyLocation();
-		// this.locationOverlay.disableFollowLocation();
 	}
 
 	/**
@@ -312,10 +283,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	 */
 	@Override
 	protected void onRestoreInstanceState(final Bundle outState) {
+		super.onRestoreInstanceState(outState);
 		LOGGER.info("onRestoreInstanceState " + this.hashCode());
 
-		MainActivity.LOGGER.info("MainActivity:onSaveInstanceState");
-		super.onRestoreInstanceState(outState);
 		outState.getInt("zoomLevel");
 		// this.mapController.setZoom(outState.getInt("zoomLevel"));
 	}
@@ -358,6 +328,8 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	 * Called when the networking service is connected to the main activity.
 	 */
 	protected void onNetworkingServiceConnected() {
+		LOGGER.info("onNetworkingServiceConnected");
+
 		this.networkingService.addListener(this);
 
 		if (this.networkingService.getState() != NetworkingService.State.CONNECTED) {
@@ -411,13 +383,13 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 			LOGGER.info("Apple " + String.valueOf(packet.getAppleId()) + " updated.");
 		} else if (message instanceof QuestUpdatePacket) {
 			final QuestUpdatePacket packet = (QuestUpdatePacket) message;
-			final String title = "Quest" + String.valueOf(packet.getQuestId());
+			final String name = "Quest" + String.valueOf(packet.getQuestId());
 			if (packet.getStatus()) {
-				final GeoPoint point = new GeoPoint(packet.getLocation().getLatitude(), packet.getLocation()
+				final LatLng location = new LatLng(packet.getLocation().getLatitude(), packet.getLocation()
 						.getLongitude());
-				// this.questOverlay.addItem(point, title);
+				this.questOverlay.addItem(name, location);
 			} else {
-				// this.questOverlay.removeItem(title);
+				this.questOverlay.removeItem(name);
 			}
 			LOGGER.info("Quest " + String.valueOf(packet.getQuestId()) + " updated.");
 		}
