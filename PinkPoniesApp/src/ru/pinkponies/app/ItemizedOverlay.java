@@ -33,8 +33,7 @@ public final class ItemizedOverlay {
 		if (this.overlayItems.containsKey(name)) {
 			throw new IllegalArgumentException("Item named " + name + " already exists.");
 		}
-		// TODO: use bitmapDescriptor.
-		Marker marker = this.map.addMarker(new MarkerOptions().position(location));
+		Marker marker = this.map.addMarker(new MarkerOptions().position(location).icon(this.bitmapDescriptor));
 		this.overlayItems.put(name, marker);
 	}
 

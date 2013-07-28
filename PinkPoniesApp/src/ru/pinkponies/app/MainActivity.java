@@ -11,8 +11,8 @@ import java.util.logging.Logger;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -108,9 +108,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 	private LocationManager locationManager;
 	private GoogleMap map;
-	// private ItemizedOverlay personOverlay;
-	// private ItemizedOverlay appleOverlay;
-	private ItemizedOverlay questOverlay;
+	private ItemizedOverlay playersOverlay;
+	private ItemizedOverlay applesOverlay;
+	private ItemizedOverlay questsOverlay;
 
 	/**
 	 * The identifier of the player.
@@ -121,25 +121,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 	// private String login = "";
 	// private String password = "";
-
-	/**
-	 * Creates a new itemized overlay. This overlay will render image markers with the given
-	 * resource id.
-	 * 
-	 * @param resourceId
-	 *            Resource id.
-	 * @return Created itemized overlay.
-	 */
-	/*
-	 * private MyItemizedOverlay createItemizedOverlay(final int resourceId) { final Drawable marker
-	 * = this.getResources().getDrawable(resourceId); final Bitmap bitmap = ((BitmapDrawable)
-	 * marker).getBitmap(); final Drawable bitmapMarker = new BitmapDrawable(this.getResources(),
-	 * Bitmap.createScaledBitmap(bitmap, ICON_SIZE, ICON_SIZE, true));
-	 * 
-	 * final ResourceProxy resourceProxy = new
-	 * DefaultResourceProxyImpl(this.getApplicationContext()); return new
-	 * MyItemizedOverlay(bitmapMarker, resourceProxy); }
-	 */
 
 	/**
 	 * Called when the activity is first created. Initializes GUI, networking, creates overlays.
@@ -171,48 +152,14 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		// CameraUpdate zoom = CameraUpdateFactory.zoomTo(MAP_INITIAL_ZOOM_LEVEL);
 		// this.map.animateCamera(zoom);
 
-		this.map.addMarker(new MarkerOptions().position(new LatLng(-37.81319, 144.96298)));
+		// this.map.addMarker(new MarkerOptions().position(new LatLng(-37.81319, 144.96298)));
 
-		this.questOverlay = new ItemizedOverlay(this.map, null);
-
-		// GUI.
-		/*
-		 * this.mapView = (MapView) this.findViewById(R.id.MainActivityMapview);
-		 * this.mapView.setMultiTouchControls(true);
-		 * 
-		 * this.mapController = this.mapView.getController();
-		 * this.mapController.setZoom(MAP_VIEW_INITIAL_ZOOM_LEVEL);
-		 * 
-		 * this.locationOverlay = new MyLocationOverlay(this, this.mapView);
-		 * this.mapView.getOverlays().add(this.locationOverlay);
-		 * 
-		 * this.pathOverlay = new PathOverlay(Color.GREEN, this);
-		 * this.mapView.getOverlays().add(this.pathOverlay);
-		 * 
-		 * this.locationOverlay.runOnFirstFix(new Runnable() {
-		 * 
-		 * @Override public void run() {
-		 * MainActivity.this.mapView.getController().animateTo(MainActivity
-		 * .this.locationOverlay.getMyLocation()); } });
-		 * 
-		 * this.mapView.postInvalidate();
-		 * 
-		 * // textOverlay = new TextOverlay(this, mapView); // textOverlay.setPosition(new
-		 * GeoPoint(55.9, 37.5)); // textOverlay.setText("Hello, world!"); //
-		 * mapView.getOverlays().add(textOverlay);
-		 * 
-		 * this.personOverlay = this.createItemizedOverlay(R.drawable.player);
-		 * this.mapView.getOverlays().add(this.personOverlay);
-		 * 
-		 * this.appleOverlay = this.createItemizedOverlay(R.drawable.apple);
-		 * this.mapView.getOverlays().add(this.appleOverlay);
-		 * 
-		 * this.questOverlay = this.createItemizedOverlay(R.drawable.question);
-		 * this.mapView.getOverlays().add(this.questOverlay);
-		 */
-
-		// GeoPoint myPoint = new GeoPoint(55929563, 37523862);
-		// this.myAppleOverlay.addItem(myPoint, "Apple");
+		this.playersOverlay = new ItemizedOverlay(this.map,
+				BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
+		this.applesOverlay = new ItemizedOverlay(this.map,
+				BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
+		this.questsOverlay = new ItemizedOverlay(this.map,
+				BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
 
 		LOGGER.info("Starting service");
 		this.startService(new Intent(this, NetworkingService.class));
@@ -284,7 +231,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		super.onRestoreInstanceState(outState);
 		LOGGER.info("onRestoreInstanceState " + this.hashCode());
 
-		outState.getInt("zoomLevel");
+		// outState.getInt("zoomLevel");
 		// this.mapController.setZoom(outState.getInt("zoomLevel"));
 	}
 
@@ -361,24 +308,22 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		} else if (message instanceof PlayerUpdatePacket) {
 			final PlayerUpdatePacket packet = (PlayerUpdatePacket) message;
 			if (this.myId != BAD_ID && packet.getClientId() != this.myId) {
-				// final GeoPoint point = new GeoPoint(packet.getLocation().getLatitude(),
-				// packet.getLocation()
-				// .getLongitude());
-				final String title = "Player" + String.valueOf(packet.getClientId());
-
-				// this.personOverlay.removeItem(title);
-				// this.personOverlay.addItem(point, title);
+				final LatLng location = new LatLng(packet.getLocation().getLatitude(), packet.getLocation()
+						.getLongitude());
+				final String name = "Player" + String.valueOf(packet.getClientId());
+				this.playersOverlay.removeItem(name);
+				this.playersOverlay.addItem(name, location);
 			}
 		} else if (message instanceof AppleUpdatePacket) {
 			final AppleUpdatePacket packet = (AppleUpdatePacket) message;
-			final String title = "Apple" + String.valueOf(packet.getAppleId());
+			final String name = "Apple" + String.valueOf(packet.getAppleId());
 			if (packet.getStatus()) {
-				// final GeoPoint point = new GeoPoint(packet.getLocation().getLatitude(),
-				// packet.getLocation()
-				// .getLongitude());
-				// this.appleOverlay.addItem(point, title);
+				final LatLng location = new LatLng(packet.getLocation().getLatitude(), packet.getLocation()
+						.getLongitude());
+				;
+				this.applesOverlay.addItem(name, location);
 			} else {
-				// this.appleOverlay.removeItem(title);
+				this.applesOverlay.removeItem(name);
 			}
 			LOGGER.info("Apple " + String.valueOf(packet.getAppleId()) + " updated.");
 		} else if (message instanceof QuestUpdatePacket) {
@@ -387,9 +332,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 			if (packet.getStatus()) {
 				final LatLng location = new LatLng(packet.getLocation().getLatitude(), packet.getLocation()
 						.getLongitude());
-				this.questOverlay.addItem(name, location);
+				this.questsOverlay.addItem(name, location);
 			} else {
-				this.questOverlay.removeItem(name);
+				this.questsOverlay.removeItem(name);
 			}
 			LOGGER.info("Quest " + String.valueOf(packet.getQuestId()) + " updated.");
 		}
@@ -415,9 +360,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		final double longitude = location.getLongitude();
 		final double latitude = location.getLatitude();
 		final double altitude = location.getAltitude();
-
-		// final GeoPoint point = new GeoPoint(latitude, longitude);
-		// this.pathOverlay.addPoint(point);
 
 		final ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude, latitude, altitude);
 		final PlayerUpdatePacket packet = new PlayerUpdatePacket(this.myId, loc);
