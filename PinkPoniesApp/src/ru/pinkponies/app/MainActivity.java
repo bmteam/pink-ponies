@@ -9,8 +9,6 @@ package ru.pinkponies.app;
 import java.net.InetSocketAddress;
 import java.util.logging.Logger;
 
-import org.osmdroid.util.GeoPoint;
-
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.LatLng;
@@ -225,7 +223,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	}
 
 	/**
-	 * LatLng Called when the activity will start interacting with the user.
+	 * Called when the activity will start interacting with the user.
 	 */
 	@Override
 	protected void onResume() {
@@ -363,8 +361,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		} else if (message instanceof PlayerUpdatePacket) {
 			final PlayerUpdatePacket packet = (PlayerUpdatePacket) message;
 			if (this.myId != BAD_ID && packet.getClientId() != this.myId) {
-				final GeoPoint point = new GeoPoint(packet.getLocation().getLatitude(), packet.getLocation()
-						.getLongitude());
+				// final GeoPoint point = new GeoPoint(packet.getLocation().getLatitude(),
+				// packet.getLocation()
+				// .getLongitude());
 				final String title = "Player" + String.valueOf(packet.getClientId());
 
 				// this.personOverlay.removeItem(title);
@@ -374,8 +373,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 			final AppleUpdatePacket packet = (AppleUpdatePacket) message;
 			final String title = "Apple" + String.valueOf(packet.getAppleId());
 			if (packet.getStatus()) {
-				final GeoPoint point = new GeoPoint(packet.getLocation().getLatitude(), packet.getLocation()
-						.getLongitude());
+				// final GeoPoint point = new GeoPoint(packet.getLocation().getLatitude(),
+				// packet.getLocation()
+				// .getLongitude());
 				// this.appleOverlay.addItem(point, title);
 			} else {
 				// this.appleOverlay.removeItem(title);
@@ -416,7 +416,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		final double latitude = location.getLatitude();
 		final double altitude = location.getAltitude();
 
-		final GeoPoint point = new GeoPoint(latitude, longitude);
+		// final GeoPoint point = new GeoPoint(latitude, longitude);
 		// this.pathOverlay.addPoint(point);
 
 		final ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude, latitude, altitude);
