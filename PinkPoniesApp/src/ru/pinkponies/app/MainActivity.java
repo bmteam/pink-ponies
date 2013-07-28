@@ -9,6 +9,8 @@ package ru.pinkponies.app;
 import java.net.InetSocketAddress;
 import java.util.logging.Logger;
 
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
@@ -57,11 +59,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	private static final float LOCATION_UPDATE_MIN_DISTANCE = 1;
 
 	/**
-	 * The initial map view zoom level.
-	 */
-	private static final int MAP_INITIAL_ZOOM_LEVEL = 18;
-
-	/**
 	 * This value is used when the identifier is not yet defined.
 	 */
 	private static final long BAD_ID = -1;
@@ -74,7 +71,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	/**
 	 * The default server IP.
 	 */
-	private static final String SERVER_IP = "192.168.0.195";
+	private static final String SERVER_IP = "192.168.0.196";
 
 	/**
 	 * The default server port.
@@ -107,7 +104,10 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	};
 
 	private LocationManager locationManager;
+	private boolean isLocationChanchedFirstTime = true;
+
 	private GoogleMap map;
+
 	private ItemizedOverlay playersOverlay;
 	private ItemizedOverlay applesOverlay;
 	private ItemizedOverlay questsOverlay;
@@ -148,11 +148,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 		this.map = ((MapFragment) this.getFragmentManager().findFragmentById(R.id.map)).getMap();
 		this.map.setMyLocationEnabled(true);
-
-		// CameraUpdate zoom = CameraUpdateFactory.zoomTo(MAP_INITIAL_ZOOM_LEVEL);
-		// this.map.animateCamera(zoom);
-
-		// this.map.addMarker(new MarkerOptions().position(new LatLng(-37.81319, 144.96298)));
 
 		this.playersOverlay = new ItemizedOverlay(this.map,
 				BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
@@ -215,8 +210,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	protected void onSaveInstanceState(final Bundle outState) {
 		super.onSaveInstanceState(outState);
 		LOGGER.info("onSaveInstanceState " + this.hashCode());
-
-		// outState.putInt("zoomLevel", this.mapView.getZoomLevel());
 	}
 
 	/**
@@ -230,9 +223,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	protected void onRestoreInstanceState(final Bundle outState) {
 		super.onRestoreInstanceState(outState);
 		LOGGER.info("onRestoreInstanceState " + this.hashCode());
-
-		// outState.getInt("zoomLevel");
-		// this.mapController.setZoom(outState.getInt("zoomLevel"));
 	}
 
 	/**
@@ -360,6 +350,13 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		final double longitude = location.getLongitude();
 		final double latitude = location.getLatitude();
 		final double altitude = location.getAltitude();
+
+		if (this.isLocationChanchedFirstTime) {
+			LatLng latLng = new LatLng(latitude, longitude);
+			CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 15);
+			this.map.animateCamera(cameraUpdate);
+			this.isLocationChanchedFirstTime = false;
+		}
 
 		final ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude, latitude, altitude);
 		final PlayerUpdatePacket packet = new PlayerUpdatePacket(this.myId, loc);
