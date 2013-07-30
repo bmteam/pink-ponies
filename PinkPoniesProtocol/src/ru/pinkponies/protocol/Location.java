@@ -6,6 +6,8 @@
 
 package ru.pinkponies.protocol;
 
+import java.util.Random;
+
 import org.msgpack.annotation.Index;
 import org.msgpack.annotation.Message;
 
@@ -109,6 +111,40 @@ public final class Location {
 		final double x = Math.cos(this.latitude) * Math.sin(other.latitude) - Math.sin(this.latitude)
 				* Math.cos(other.latitude) * Math.cos(longitudeDifference);
 		return Math.atan2(y, x);
+	}
+
+	/**
+	 * Calculate a point that is the specified distance and bearing away from this point.
+	 * 
+	 * @see http://www.movable-type.co.uk/scripts/latlong.html
+	 * @see http://www.movable-type.co.uk/scripts/latlon.js
+	 */
+	public Location moveBy(final double distanceInMeters, final double bearingInDegrees) {
+		// Convert distance to angular distance.
+		double distance = distanceInMeters / EARTH_AVERAGE_RADIUS;
+
+		// Convert bearing to radians.
+		double bearing = bearingInDegrees / 180 * Math.PI;
+
+		double newLatitude = Math.asin(Math.sin(this.latitude) * Math.cos(distance) +
+			Math.cos(this.latitude) * Math.sin(distance) * Math.cos(bearing));
+		double newLongitude = this.longitude + Math.atan2(
+			Math.sin(bearing) * Math.sin(distance) * Math.cos(this.latitude),
+			Math.cos(distance) - Math.sin(this.latitude) * Math.sin(newLatitude));
+
+		return new Location(newLongitude, newLatitude, this.altitude);
+	}
+
+	public Location randomLocationInCircle(final Random random, final double radiusInMeters) {
+		double radius = radiusInMeters / EARTH_AVERAGE_RADIUS;
+
+		if (radius >= Math.PI) {
+			throw new IllegalArgumentException("Radius has to be smaller than half the circumference of the Earth.");
+		}
+
+		double distanceInMeters = Math.acos(1 - (1 - Math.cos(radius)) * random.nextDouble()) * EARTH_AVERAGE_RADIUS;
+		double bearingInDegrees = random.nextDouble() * 2 * Math.PI;
+		return this.moveBy(distanceInMeters, bearingInDegrees);
 	}
 
 	/**

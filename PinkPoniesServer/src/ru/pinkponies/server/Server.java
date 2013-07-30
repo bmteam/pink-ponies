@@ -61,9 +61,9 @@ public final class Server {
 	private static final int APPLES_PER_QUEST = 5;
 
 	/**
-	 * The maximum distance to the quest at which apples can appear.
+	 * The maximum distance in meters to the quest at which apples can appear.
 	 */
-	private static final double QUEST_TO_APPLES_DISTANCE = 1.0;
+	private static final double QUEST_TO_APPLES_DISTANCE = 100;
 
 	/**
 	 * The main socket channel on which the server listens for incoming connections.
@@ -344,7 +344,7 @@ public final class Server {
 
 			// XXX(xairy): temporary.
 			for (int i = 0; i < 5; i++) {
-				this.addRandomQuest(locUpdate.getLocation(), 3.0);
+				this.addRandomQuest(locUpdate.getLocation(), 300);
 			}
 		} else {
 			LOGGER.info("Unknown packet type.");
@@ -427,7 +427,7 @@ public final class Server {
 	 * @param location
 	 *            Near this location an apple will be added.
 	 * @param distance
-	 *            The maximum distance to an apple. Approximately 100 meters per 1.0.
+	 *            The maximum distance to an apple in meters.
 	 * @throws IOException
 	 *             if there was any problem broadcasting apple update.
 	 */
@@ -479,7 +479,7 @@ public final class Server {
 	 * @param location
 	 *            Near this location a quest will be added.
 	 * @param distance
-	 *            The maximum distance to a quest. Approximately 100 meters per 1.0.
+	 *            The maximum distance to a quest in meters.
 	 * @throws IOException
 	 *             if there was any problem broadcasting quest update.
 	 */
@@ -556,12 +556,10 @@ public final class Server {
 	 *            Near this location a new location will be generated.
 	 * 
 	 * @param distance
-	 *            The maximum distance to a new location. Approximately 100 meters per 1.0.
+	 *            The maximum distance to a new location in meters.
 	 */
 	private Location generateRandomLocation(final Location location, final double distance) {
-		final double longitude = location.getLongitude() + (this.random.nextDouble() - 0.5) * 0.0017904931 * distance;
-		final double latitude = location.getLatitude() + (this.random.nextDouble() - 0.5) * 0.0017904931 * distance;
-		Location randomLocation = new Location(longitude, latitude, 0.0);
+		Location randomLocation = location.randomLocationInCircle(this.random, distance);
 		System.out.println("Distance: " + location.distanceTo(randomLocation) + ".");
 		return randomLocation;
 	}
