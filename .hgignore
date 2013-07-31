@@ -5,5 +5,7 @@ syntax: regexp
 ^PinkPoniesProtocol/gen$
 ^PinkPoniesServer/bin$
 ^PinkPoniesServer/gen$
+^GooglePlayServices/bin$
+^GooglePlayServices/gen$
 ^.metadata$
 .pyc$
