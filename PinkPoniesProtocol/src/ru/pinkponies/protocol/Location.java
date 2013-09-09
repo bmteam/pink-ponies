@@ -30,6 +30,12 @@ public final class Location {
 	@Index(2)
 	public double altitude;
 
+	public Location() {
+		this.longitude = 0;
+		this.latitude = 0;
+		this.altitude = 0;
+	}
+
 	public Location(final double longitude, final double latitude, final double altitude) {
 		this.longitude = longitude;
 		this.latitude = latitude;
