@@ -335,8 +335,8 @@ public final class Server {
 			System.out.println(sayPacket.toString());
 		} else if (packet instanceof PlayerUpdatePacket) {
 			final PlayerUpdatePacket locUpdate = (PlayerUpdatePacket) packet;
-			locUpdate.setClientId(this.players.get(channel).getId());
-			this.players.get(channel).setLocation(locUpdate.getLocation());
+			locUpdate.clientId = this.players.get(channel).getId();
+			this.players.get(channel).setLocation(locUpdate.location);
 			System.out.println(locUpdate.toString());
 
 			this.broadcastPacket(locUpdate);
@@ -344,7 +344,7 @@ public final class Server {
 
 			// XXX(xairy): temporary.
 			for (int i = 0; i < 5; i++) {
-				this.addRandomQuest(locUpdate.getLocation(), 300);
+				this.addRandomQuest(locUpdate.location, 300);
 			}
 		} else {
 			LOGGER.info("Unknown packet type.");

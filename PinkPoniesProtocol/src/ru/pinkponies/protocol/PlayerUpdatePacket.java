@@ -16,74 +16,31 @@ import org.msgpack.annotation.Message;
 @Message
 @Beans
 public final class PlayerUpdatePacket extends Packet {
-	/**
-	 * The id of the client whose location is being updated.
-	 */
+	// The id of the client whose location is being updated.\
 	@Index(0)
-	private long clientId;
+	public long clientId;
 
-	/**
-	 * The client location.
-	 */
+	// The client location.
 	@Index(1)
-	private Location location;
+	public Location location;
 
-	/**
-	 * Creates a new empty location update packet with client id set to -1, longitude, latitude and
-	 * altitude set to zero.
-	 */
+	// Creates a new empty location update packet with client id set to -1, longitude, latitude and
+	// altitude set to zero.
 	public PlayerUpdatePacket() {
 		super();
 		this.clientId = -1;
-		this.setLocation(new Location());
+		this.location = new Location(0, 0, 0);
 	}
 
-	/**
-	 * Creates a new location update packet with the given client id and location.
-	 * 
-	 * @param clientId
-	 *            the client id
-	 * @param location
-	 *            the location of the client
-	 */
+	// Creates a new location update packet with the given client id and location.
 	public PlayerUpdatePacket(final long clientId, final Location location) {
 		super();
 		this.clientId = clientId;
-		this.setLocation(location);
-	}
-
-	/**
-	 * @return the client id
-	 */
-	public long getClientId() {
-		return this.clientId;
-	}
-
-	/**
-	 * @param clientId
-	 *            the client id to set
-	 */
-	public void setClientId(final long clientId) {
-		this.clientId = clientId;
+		this.location = location;
 	}
 
 	@Override
 	public String toString() {
-		return "LocationUpdate [clientID=" + this.clientId + ", " + this.getLocation() + "]";
-	}
-
-	/**
-	 * @return the location
-	 */
-	public Location getLocation() {
-		return this.location;
-	}
-
-	/**
-	 * @param location
-	 *            the location to set
-	 */
-	public void setLocation(final Location location) {
-		this.location = location;
+		return "LocationUpdate [clientID=" + this.clientId + ", " + this.location + "]";
 	}
 }
