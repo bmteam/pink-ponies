@@ -71,7 +71,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	/**
 	 * The default server IP.
 	 */
-	private static final String SERVER_IP = "192.168.0.196";
+	private static final String SERVER_IP = "77.232.25.36";
 
 	/**
 	 * The default server port.
@@ -297,10 +297,10 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 			LOGGER.info(packet.toString());
 		} else if (message instanceof PlayerUpdatePacket) {
 			final PlayerUpdatePacket packet = (PlayerUpdatePacket) message;
-			if (this.myId != BAD_ID && packet.getClientId() != this.myId) {
-				final LatLng location = new LatLng(packet.getLocation().getLatitude(), packet.getLocation()
-						.getLongitude());
-				final String name = "Player" + String.valueOf(packet.getClientId());
+			if (this.myId != BAD_ID && packet.clientId != this.myId) {
+				final LatLng location = new LatLng(packet.location.latitude * 180 / Math.PI, packet.location.longitude
+						* 180 / Math.PI);
+				final String name = "Player" + String.valueOf(packet.clientId);
 				this.playersOverlay.removeItem(name);
 				this.playersOverlay.addItem(name, location);
 			}
@@ -308,8 +308,8 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 			final AppleUpdatePacket packet = (AppleUpdatePacket) message;
 			final String name = "Apple" + String.valueOf(packet.getAppleId());
 			if (packet.getStatus()) {
-				final LatLng location = new LatLng(packet.getLocation().getLatitude(), packet.getLocation()
-						.getLongitude());
+				final LatLng location = new LatLng(packet.getLocation().latitude * 180 / Math.PI,
+						packet.getLocation().longitude * 180 / Math.PI);
 				;
 				this.applesOverlay.addItem(name, location);
 			} else {
@@ -320,8 +320,8 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 			final QuestUpdatePacket packet = (QuestUpdatePacket) message;
 			final String name = "Quest" + String.valueOf(packet.getQuestId());
 			if (packet.getStatus()) {
-				final LatLng location = new LatLng(packet.getLocation().getLatitude(), packet.getLocation()
-						.getLongitude());
+				final LatLng location = new LatLng(packet.getLocation().latitude * 180 / Math.PI,
+						packet.getLocation().longitude * 180 / Math.PI);
 				this.questsOverlay.addItem(name, location);
 			} else {
 				this.questsOverlay.removeItem(name);
@@ -358,7 +358,8 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 			this.isLocationChanchedFirstTime = false;
 		}
 
-		final ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude, latitude, altitude);
+		final ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude / 180 * Math.PI,
+				latitude / 180 * Math.PI, altitude);
 		final PlayerUpdatePacket packet = new PlayerUpdatePacket(this.myId, loc);
 		this.networkingService.sendPacket(packet);
 
