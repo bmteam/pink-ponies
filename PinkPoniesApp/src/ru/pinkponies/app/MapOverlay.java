@@ -48,7 +48,7 @@ public final class MapOverlay {
 		}
 	}
 
-	public synchronized void addCircle(final String name, final LatLng location, final int radius, final int color) {
+	public synchronized void addCircle(final String name, final LatLng location, final double radius, final int color) {
 		if (this.circles.containsKey(name)) {
 			throw new IllegalArgumentException("Circle named " + name + " already exists.");
 		}

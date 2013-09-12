@@ -67,8 +67,8 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	/**
 	 * The size of objects on the map.
 	 */
-	private static final int APPLE_RADIUS = 10;
-	private static final int QUEST_RADIUS = 30;
+	private static final double APPLE_RADIUS = 10.0;
+	private static final double QUEST_RADIUS = 30.0;
 
 	/**
 	 * The default server IP.
