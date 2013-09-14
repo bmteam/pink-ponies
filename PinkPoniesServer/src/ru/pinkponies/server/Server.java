@@ -61,9 +61,9 @@ public final class Server {
 	private static final int APPLES_PER_QUEST = 5;
 
 	/**
-	 * The maximum distance to the quest at which apples can appear.
+	 * The maximum distance in meters to the quest at which apples can appear.
 	 */
-	private static final double QUEST_TO_APPLES_DISTANCE = 1.0;
+	private static final double QUEST_TO_APPLES_DISTANCE = 100;
 
 	/**
 	 * The main socket channel on which the server listens for incoming connections.
@@ -301,6 +301,11 @@ public final class Server {
 		final ClientOptionsPacket packet = new ClientOptionsPacket(id);
 		this.sendPacket(channel, packet);
 
+		for (final Player player : this.players.values()) {
+			final PlayerUpdatePacket playerUpdate = new PlayerUpdatePacket(player.getId(), player.getLocation());
+			this.sendPacket(channel, playerUpdate);
+		}
+
 		for (final Apple apple : this.apples.values()) {
 			final AppleUpdatePacket applePacket = new AppleUpdatePacket(apple.getId(), apple.getLocation(), true);
 			this.sendPacket(channel, applePacket);
@@ -330,8 +335,8 @@ public final class Server {
 			System.out.println(sayPacket.toString());
 		} else if (packet instanceof PlayerUpdatePacket) {
 			final PlayerUpdatePacket locUpdate = (PlayerUpdatePacket) packet;
-			locUpdate.setClientId(this.players.get(channel).getId());
-			this.players.get(channel).setLocation(locUpdate.getLocation());
+			locUpdate.clientId = this.players.get(channel).getId();
+			this.players.get(channel).setLocation(locUpdate.location);
 			System.out.println(locUpdate.toString());
 
 			this.broadcastPacket(locUpdate);
@@ -339,7 +344,7 @@ public final class Server {
 
 			// XXX(xairy): temporary.
 			for (int i = 0; i < 5; i++) {
-				this.addRandomQuest(locUpdate.getLocation(), 3.0);
+				this.addRandomQuest(locUpdate.location, 300);
 			}
 		} else {
 			LOGGER.info("Unknown packet type.");
@@ -424,7 +429,7 @@ public final class Server {
 	 * @param location
 	 *            Near this location an apple will be added.
 	 * @param distance
-	 *            The maximum distance to an apple. Approximately 100 meters per 1.0.
+	 *            The maximum distance to an apple in meters.
 	 * @param questId
 	 *            The id of the quest to which apple relates.
 	 * @throws IOException
@@ -478,7 +483,7 @@ public final class Server {
 	 * @param location
 	 *            Near this location a quest will be added.
 	 * @param distance
-	 *            The maximum distance to a quest. Approximately 100 meters per 1.0.
+	 *            The maximum distance to a quest in meters.
 	 * @throws IOException
 	 *             if there was any problem broadcasting quest update.
 	 */
@@ -555,12 +560,10 @@ public final class Server {
 	 *            Near this location a new location will be generated.
 	 * 
 	 * @param distance
-	 *            The maximum distance to a new location. Approximately 100 meters per 1.0.
+	 *            The maximum distance to a new location in meters.
 	 */
 	private Location generateRandomLocation(final Location location, final double distance) {
-		final double longitude = location.getLongitude() + (this.random.nextDouble() - 0.5) * 0.0017904931 * distance;
-		final double latitude = location.getLatitude() + (this.random.nextDouble() - 0.5) * 0.0017904931 * distance;
-		Location randomLocation = new Location(longitude, latitude, 0.0);
+		Location randomLocation = location.randomLocationInCircle(this.random, distance);
 		System.out.println("Distance: " + location.distanceTo(randomLocation) + ".");
 		return randomLocation;
 	}
