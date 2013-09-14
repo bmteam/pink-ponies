@@ -29,6 +29,7 @@ import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.PlayerUpdatePacket;
 import ru.pinkponies.protocol.Protocol;
 import ru.pinkponies.protocol.QuestUpdatePacket;
+import ru.pinkponies.protocol.QuestUpdatePacket.Status;
 import ru.pinkponies.protocol.SayPacket;
 
 /**
@@ -317,7 +318,8 @@ public final class Server {
 		}
 
 		for (final Quest quest : this.quests.values()) {
-			final QuestUpdatePacket questPacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(), true);
+			final QuestUpdatePacket questPacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
+					Status.APPEARED);
 			this.sendPacket(channel, questPacket);
 		}
 	}
@@ -475,7 +477,7 @@ public final class Server {
 		final long id = this.idManager.newId();
 		final Quest quest = new Quest(id, location);
 		this.quests.put(id, quest);
-		final QuestUpdatePacket packet = new QuestUpdatePacket(id, location, true);
+		final QuestUpdatePacket packet = new QuestUpdatePacket(id, location, Status.APPEARED);
 		System.out.println("Added " + quest + ".");
 
 		this.broadcastPacket(packet);
@@ -506,7 +508,7 @@ public final class Server {
 	 */
 	private void removeQuest(final long id) throws IOException {
 		final Location location = this.quests.get(id).getLocation();
-		final QuestUpdatePacket packet = new QuestUpdatePacket(id, location, false);
+		final QuestUpdatePacket packet = new QuestUpdatePacket(id, location, Status.DISAPPEARED);
 
 		this.broadcastPacket(packet);
 		System.out.println("Quest update broadcasted.");

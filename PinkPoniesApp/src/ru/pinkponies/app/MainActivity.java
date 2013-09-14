@@ -39,6 +39,7 @@ import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.ClientOptionsPacket;
 import ru.pinkponies.protocol.PlayerUpdatePacket;
 import ru.pinkponies.protocol.QuestUpdatePacket;
+import ru.pinkponies.protocol.QuestUpdatePacket.Status;
 import ru.pinkponies.protocol.SayPacket;
 
 /**
@@ -324,7 +325,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		} else if (message instanceof QuestUpdatePacket) {
 			final QuestUpdatePacket packet = (QuestUpdatePacket) message;
 			final String name = "Quest" + String.valueOf(packet.getQuestId());
-			if (packet.getStatus()) {
+			if (packet.getStatus() == Status.APPEARED) {
 				final LatLng location = new LatLng(packet.getLocation().latitude * 180 / Math.PI,
 						packet.getLocation().longitude * 180 / Math.PI);
 				this.questsOverlay.addCircle(name, location, QUEST_RADIUS, Color.GREEN);
