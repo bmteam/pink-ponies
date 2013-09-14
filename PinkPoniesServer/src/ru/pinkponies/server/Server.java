@@ -51,9 +51,14 @@ public final class Server {
 	private static final int BUFFER_SIZE = 8192;
 
 	/**
-	 * The distance at which players pick up apples.
+	 * The distance at which players can pick up apples.
 	 */
-	private static final double INTERACTION_DISTANCE = 50.0;
+	private static final double APPLE_RADIUS = 10.0;
+
+	/**
+	 * The distance at which players can sign up for quests.
+	 */
+	private static final double QUEST_RADIUS = 30.0;
 
 	/**
 	 * The number of apples that will be created when a quest is accepted.
@@ -63,7 +68,7 @@ public final class Server {
 	/**
 	 * The maximum distance in meters to the quest at which apples can appear.
 	 */
-	private static final double QUEST_TO_APPLES_DISTANCE = 100;
+	private static final double QUEST_TO_APPLES_DISTANCE = 50;
 
 	/**
 	 * The main socket channel on which the server listens for incoming connections.
@@ -343,8 +348,8 @@ public final class Server {
 			System.out.println("Location update broadcasted.");
 
 			// XXX(xairy): temporary.
-			for (int i = 0; i < 5; i++) {
-				this.addRandomQuest(locUpdate.location, 300);
+			for (int i = 0; i < 1; i++) {
+				this.addRandomQuest(locUpdate.location, 100);
 			}
 		} else {
 			LOGGER.info("Unknown packet type.");
@@ -520,7 +525,7 @@ public final class Server {
 		for (Player player : this.players.values()) {
 			if (player.getLocation() != null) {
 				for (Apple apple : this.apples.values()) {
-					if (player.getLocation().distanceTo(apple.getLocation()) <= INTERACTION_DISTANCE) {
+					if (player.getLocation().distanceTo(apple.getLocation()) <= APPLE_RADIUS) {
 						System.out.println("Player " + player.getId() + " picked up Apple " + apple.getId() + ".");
 						this.removeApple(apple.getId());
 						return;
@@ -540,7 +545,7 @@ public final class Server {
 		for (Player player : this.players.values()) {
 			if (player.getLocation() != null) {
 				for (Quest quest : this.quests.values()) {
-					if (player.getLocation().distanceTo(quest.getLocation()) <= INTERACTION_DISTANCE) {
+					if (player.getLocation().distanceTo(quest.getLocation()) <= QUEST_RADIUS) {
 						System.out.println("Player " + player.getId() + " accepted Quest " + quest.getId() + ".");
 						this.removeQuest(quest.getId());
 						for (int i = 0; i < APPLES_PER_QUEST; i++) {
