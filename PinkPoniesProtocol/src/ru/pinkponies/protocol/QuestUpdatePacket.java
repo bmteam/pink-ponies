@@ -16,7 +16,7 @@ import org.msgpack.annotation.OrdinalEnum;
 public class QuestUpdatePacket extends Packet {
 	@OrdinalEnum
 	public enum Status {
-		UNKNOWN, APPEARED, DISAPPEARED, JOINED, LEFT, STARTED, FINISHED
+		APPEARED, DISAPPEARED, AVAILABLE, UNAVAILABLE, ACCEPTED, DECLINED, STARTED, FINISHED
 	}
 
 	@Index(0)
@@ -32,7 +32,7 @@ public class QuestUpdatePacket extends Packet {
 		super();
 		this.questId = -1;
 		this.location = null;
-		this.status = Status.UNKNOWN;
+		this.status = null;
 	}
 
 	public QuestUpdatePacket(final long questId, final Location location, final Status status) {

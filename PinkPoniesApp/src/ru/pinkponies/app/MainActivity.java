@@ -284,9 +284,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 	/**
 	 * Called when there is a new message from the networking service.
-	 * 
-	 * @param message
-	 *            The message which was received.
 	 */
 	@Override
 	public void onMessage(final Object message) {
@@ -296,44 +293,64 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 			this.showMessageBox("Socket exception.", null);
 		} else if (message instanceof ClientOptionsPacket) {
 			final ClientOptionsPacket packet = (ClientOptionsPacket) message;
-			this.myId = packet.getClientId();
+			this.onClientOptonsPacket(packet);
 		} else if (message instanceof SayPacket) {
 			final SayPacket packet = (SayPacket) message;
-			LOGGER.info(packet.toString());
+			this.onSayPacket(packet);
 		} else if (message instanceof PlayerUpdatePacket) {
 			final PlayerUpdatePacket packet = (PlayerUpdatePacket) message;
-			if (this.myId != BAD_ID && packet.clientId != this.myId) {
-				final LatLng location = new LatLng(packet.location.latitude * 180 / Math.PI, packet.location.longitude
-						* 180 / Math.PI);
-				final String name = "Player" + String.valueOf(packet.clientId);
-				this.playersOverlay.removeMarker(name);
-				this.playersOverlay.addMarker(name, location,
-						BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
-			}
+			this.onPlayerUpdatePacket(packet);
 		} else if (message instanceof AppleUpdatePacket) {
 			final AppleUpdatePacket packet = (AppleUpdatePacket) message;
-			final String name = "Apple" + String.valueOf(packet.getAppleId());
-			if (packet.getStatus()) {
-				final LatLng location = new LatLng(packet.getLocation().latitude * 180 / Math.PI,
-						packet.getLocation().longitude * 180 / Math.PI);
-				;
-				this.applesOverlay.addCircle(name, location, APPLE_RADIUS, Color.RED);
-			} else {
-				this.applesOverlay.removeCircle(name);
-			}
-			LOGGER.info("Apple " + String.valueOf(packet.getAppleId()) + " updated.");
+			this.onAppleUpdatePacket(packet);
 		} else if (message instanceof QuestUpdatePacket) {
 			final QuestUpdatePacket packet = (QuestUpdatePacket) message;
-			final String name = "Quest" + String.valueOf(packet.getQuestId());
-			if (packet.getStatus() == Status.APPEARED) {
-				final LatLng location = new LatLng(packet.getLocation().latitude * 180 / Math.PI,
-						packet.getLocation().longitude * 180 / Math.PI);
-				this.questsOverlay.addCircle(name, location, QUEST_RADIUS, Color.GREEN);
-			} else {
-				this.questsOverlay.removeCircle(name);
-			}
-			LOGGER.info("Quest " + String.valueOf(packet.getQuestId()) + " updated.");
+			this.onQuestUpdatePacket(packet);
 		}
+	}
+
+	private void onClientOptonsPacket(final ClientOptionsPacket packet) {
+		this.myId = packet.getClientId();
+	}
+
+	private void onSayPacket(final SayPacket packet) {
+		LOGGER.info(packet.toString());
+	}
+
+	private void onPlayerUpdatePacket(final PlayerUpdatePacket packet) {
+		if (this.myId != BAD_ID && packet.clientId != this.myId) {
+			final LatLng location = new LatLng(packet.location.latitude * 180 / Math.PI, packet.location.longitude
+					* 180 / Math.PI);
+			final String name = "Player" + String.valueOf(packet.clientId);
+			this.playersOverlay.removeMarker(name);
+			this.playersOverlay.addMarker(name, location,
+					BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
+		}
+	}
+
+	private void onAppleUpdatePacket(final AppleUpdatePacket packet) {
+		final String name = "Apple" + String.valueOf(packet.getAppleId());
+		if (packet.getStatus()) {
+			final LatLng location = new LatLng(packet.getLocation().latitude * 180 / Math.PI,
+					packet.getLocation().longitude * 180 / Math.PI);
+			;
+			this.applesOverlay.addCircle(name, location, APPLE_RADIUS, Color.RED);
+		} else {
+			this.applesOverlay.removeCircle(name);
+		}
+		LOGGER.info("Apple " + String.valueOf(packet.getAppleId()) + " updated.");
+	}
+
+	private void onQuestUpdatePacket(final QuestUpdatePacket packet) {
+		final String name = "Quest" + String.valueOf(packet.getQuestId());
+		if (packet.getStatus() == Status.APPEARED) {
+			final LatLng location = new LatLng(packet.getLocation().latitude * 180 / Math.PI,
+					packet.getLocation().longitude * 180 / Math.PI);
+			this.questsOverlay.addCircle(name, location, QUEST_RADIUS, Color.GREEN);
+		} else {
+			this.questsOverlay.removeCircle(name);
+		}
+		LOGGER.info("Quest " + String.valueOf(packet.getQuestId()) + " updated.");
 	}
 
 	/**
