@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.io.InvalidClassException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.msgpack.MessagePack;
 import org.msgpack.packer.BufferPacker;
@@ -19,30 +21,15 @@ import org.msgpack.unpacker.BufferUnpacker;
  * This class provides methods related to packet packing / unpacking.
  */
 public final class Protocol {
-	/**
-	 * LoginPacket id.
-	 */
+	private static final Logger LOGGER = Logger.getLogger(Protocol.class.getName());
+
 	private static final byte LOGIN_PACKET = 0;
-	/**
-	 * ClientOptionsPacket id.
-	 */
 	private static final byte CLIENT_OPTIONS_PACKET = 1;
-	/**
-	 * SayPacket id.
-	 */
 	private static final byte SAY_PACKET = 2;
-	/**
-	 * LocationUpdatePacket id.
-	 */
 	private static final byte LOCATION_UPDATE_PACKET = 3;
-	/**
-	 * AppleUpdatePacket id.
-	 */
 	private static final byte APPLE_UPDATE_PACKET = 4;
-	/**
-	 * AppleUpdatePacket id.
-	 */
 	private static final byte QUEST_UPDATE_PACKET = 5;
+	private static final byte QUEST_ACTION_PACKET = 7;
 
 	/**
 	 * The underlying serialization and deserialization API.
@@ -61,6 +48,7 @@ public final class Protocol {
 		this.messagePack.register(PlayerUpdatePacket.class);
 		this.messagePack.register(AppleUpdatePacket.class);
 		this.messagePack.register(QuestUpdatePacket.class);
+		this.messagePack.register(QuestActionPacket.class);
 	}
 
 	/**
@@ -96,6 +84,10 @@ public final class Protocol {
 			packer.write(packet);
 		} else if (packet instanceof QuestUpdatePacket) {
 			packer.write(QUEST_UPDATE_PACKET);
+			packer.write(packet);
+		} else if (packet instanceof QuestActionPacket) {
+			LOGGER.info(((QuestActionPacket) packet).toString() + "");
+			packer.write(QUEST_ACTION_PACKET);
 			packer.write(packet);
 		} else {
 			throw new InvalidClassException("Unknown packet type.");
@@ -141,6 +133,9 @@ public final class Protocol {
 		} else if (packet instanceof QuestUpdatePacket) {
 			packer.write(QUEST_UPDATE_PACKET);
 			packer.write(packet);
+		} else if (packet instanceof QuestActionPacket) {
+			packer.write(QUEST_ACTION_PACKET);
+			packer.write(packet);
 		} else {
 			throw new InvalidClassException("Unknown packet type.");
 		}
@@ -174,6 +169,8 @@ public final class Protocol {
 			return unpacker.read(AppleUpdatePacket.class);
 		} else if (type == QUEST_UPDATE_PACKET) {
 			return unpacker.read(QuestUpdatePacket.class);
+		} else if (type == QUEST_ACTION_PACKET) {
+			return unpacker.read(QuestActionPacket.class);
 		} else {
 			// FIXME(alexknvl): check if its the right type of exception
 			throw new InvalidClassException("Unknown packet type.");
@@ -209,6 +206,9 @@ public final class Protocol {
 			result = unpacker.read(AppleUpdatePacket.class);
 		} else if (type == QUEST_UPDATE_PACKET) {
 			result = unpacker.read(QuestUpdatePacket.class);
+		} else if (type == QUEST_ACTION_PACKET) {
+			result = unpacker.read(QuestActionPacket.class);
+			LOGGER.log(Level.SEVERE, ((QuestActionPacket) result).toString());
 		} else {
 			// FIXME(alexknvl): check if its the right type of exception
 			throw new InvalidClassException("Unknown packet type.");

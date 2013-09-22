@@ -28,6 +28,7 @@ import ru.pinkponies.protocol.Location;
 import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.PlayerUpdatePacket;
 import ru.pinkponies.protocol.Protocol;
+import ru.pinkponies.protocol.QuestActionPacket;
 import ru.pinkponies.protocol.QuestUpdatePacket;
 import ru.pinkponies.protocol.QuestUpdatePacket.Status;
 import ru.pinkponies.protocol.SayPacket;
@@ -298,7 +299,7 @@ public final class Server {
 			System.out.println(sayPacket.toString());
 		} else if (packet instanceof PlayerUpdatePacket) {
 			final PlayerUpdatePacket locUpdate = (PlayerUpdatePacket) packet;
-			locUpdate.clientId = this.players.get(channel).getId();
+			locUpdate.playerId = this.players.get(channel).getId();
 			this.players.get(channel).setLocation(locUpdate.location);
 			System.out.println(locUpdate.toString());
 
@@ -306,8 +307,18 @@ public final class Server {
 			System.out.println("Location update broadcasted.");
 
 			// XXX(xairy): temporary.
-			for (int i = 0; i < 1; i++) {
+			for (int i = 0; i < 5; i++) {
 				this.createRandomQuest(locUpdate.location, 100);
+			}
+		} else if (packet instanceof QuestActionPacket) {
+			QuestActionPacket actionPacket = (QuestActionPacket) packet;
+			System.out.println("Player " + this.players.get(channel).getId() + " wants to " + actionPacket.getAction()
+					+ " Quest " + actionPacket.getQuestId() + ".");
+
+			if (actionPacket.getAction() == QuestActionPacket.Action.JOIN) {
+				if (this.quests.get(actionPacket.getQuestId()) != null) {
+					this.removeQuest(actionPacket.getQuestId());
+				}
 			}
 		} else {
 			LOGGER.info("Unknown packet type.");

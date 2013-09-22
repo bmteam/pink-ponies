@@ -38,6 +38,7 @@ import ru.pinkponies.app.net.NetworkingService;
 import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.ClientOptionsPacket;
 import ru.pinkponies.protocol.PlayerUpdatePacket;
+import ru.pinkponies.protocol.QuestActionPacket;
 import ru.pinkponies.protocol.QuestUpdatePacket;
 import ru.pinkponies.protocol.SayPacket;
 
@@ -315,10 +316,10 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	}
 
 	private void onPlayerUpdatePacket(final PlayerUpdatePacket packet) {
-		if (this.playerId != BAD_ID && packet.clientId != this.playerId) {
+		if (this.playerId != BAD_ID && packet.playerId != this.playerId) {
 			final LatLng location = new LatLng(packet.location.latitude * 180 / Math.PI, packet.location.longitude
 					* 180 / Math.PI);
-			final String name = "Player" + String.valueOf(packet.clientId);
+			final String name = "Player" + String.valueOf(packet.playerId);
 			this.playersOverlay.removeMarker(name);
 			this.playersOverlay.addMarker(name, location,
 					BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
@@ -345,13 +346,16 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 					packet.getLocation().longitude * 180 / Math.PI);
 			this.questsOverlay.addCircle(name, location, QUEST_RADIUS, Color.GREEN);
 		} else if (packet.getStatus() == QuestUpdatePacket.Status.DISAPPEARED) {
+			if (this.availableQuestId == packet.getQuestId()) {
+				this.availableQuestId = BAD_ID;
+			}
 			this.questsOverlay.removeCircle(name);
 		} else if (packet.getStatus() == QuestUpdatePacket.Status.AVAILABLE) {
 			this.availableQuestId = packet.getQuestId();
 			((Button) this.findViewById(R.id.join_button)).setEnabled(true);
 		} else if (packet.getStatus() == QuestUpdatePacket.Status.UNAVAILABLE) {
-			((Button) this.findViewById(R.id.join_button)).setEnabled(false);
 			this.availableQuestId = BAD_ID;
+			((Button) this.findViewById(R.id.join_button)).setEnabled(false);
 		}
 		LOGGER.info("Quest " + String.valueOf(packet.getQuestId()) + " updated.");
 	}
@@ -450,7 +454,11 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	}
 
 	public void onJoinButtonClick(final View view) {
-
+		if (this.availableQuestId == BAD_ID) {
+			return;
+		}
+		QuestActionPacket packet = new QuestActionPacket(this.availableQuestId, QuestActionPacket.Action.JOIN);
+		this.networkingService.sendPacket(packet);
 	}
 
 	public void onStartButtonClick(final View view) {
