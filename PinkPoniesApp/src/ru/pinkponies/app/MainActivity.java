@@ -39,7 +39,6 @@ import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.ClientOptionsPacket;
 import ru.pinkponies.protocol.PlayerUpdatePacket;
 import ru.pinkponies.protocol.QuestUpdatePacket;
-import ru.pinkponies.protocol.QuestUpdatePacket.Status;
 import ru.pinkponies.protocol.SayPacket;
 
 /**
@@ -116,10 +115,8 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	private MapOverlay applesOverlay;
 	private MapOverlay questsOverlay;
 
-	/**
-	 * The identifier of the player.
-	 */
-	private long myId = BAD_ID;
+	private long playerId = BAD_ID;
+	private long availableQuestId = BAD_ID;
 
 	// private TextOverlay textOverlay;
 
@@ -310,7 +307,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	}
 
 	private void onClientOptonsPacket(final ClientOptionsPacket packet) {
-		this.myId = packet.getClientId();
+		this.playerId = packet.getClientId();
 	}
 
 	private void onSayPacket(final SayPacket packet) {
@@ -318,7 +315,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	}
 
 	private void onPlayerUpdatePacket(final PlayerUpdatePacket packet) {
-		if (this.myId != BAD_ID && packet.clientId != this.myId) {
+		if (this.playerId != BAD_ID && packet.clientId != this.playerId) {
 			final LatLng location = new LatLng(packet.location.latitude * 180 / Math.PI, packet.location.longitude
 					* 180 / Math.PI);
 			final String name = "Player" + String.valueOf(packet.clientId);
@@ -343,12 +340,18 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 	private void onQuestUpdatePacket(final QuestUpdatePacket packet) {
 		final String name = "Quest" + String.valueOf(packet.getQuestId());
-		if (packet.getStatus() == Status.APPEARED) {
+		if (packet.getStatus() == QuestUpdatePacket.Status.APPEARED) {
 			final LatLng location = new LatLng(packet.getLocation().latitude * 180 / Math.PI,
 					packet.getLocation().longitude * 180 / Math.PI);
 			this.questsOverlay.addCircle(name, location, QUEST_RADIUS, Color.GREEN);
-		} else {
+		} else if (packet.getStatus() == QuestUpdatePacket.Status.DISAPPEARED) {
 			this.questsOverlay.removeCircle(name);
+		} else if (packet.getStatus() == QuestUpdatePacket.Status.AVAILABLE) {
+			this.availableQuestId = packet.getQuestId();
+			((Button) this.findViewById(R.id.join_button)).setEnabled(true);
+		} else if (packet.getStatus() == QuestUpdatePacket.Status.UNAVAILABLE) {
+			((Button) this.findViewById(R.id.join_button)).setEnabled(false);
+			this.availableQuestId = BAD_ID;
 		}
 		LOGGER.info("Quest " + String.valueOf(packet.getQuestId()) + " updated.");
 	}
@@ -383,7 +386,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 		final ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude / 180 * Math.PI,
 				latitude / 180 * Math.PI, altitude);
-		final PlayerUpdatePacket packet = new PlayerUpdatePacket(this.myId, loc);
+		final PlayerUpdatePacket packet = new PlayerUpdatePacket(this.playerId, loc);
 		this.networkingService.sendPacket(packet);
 
 		MainActivity.LOGGER.info("Location updated.");

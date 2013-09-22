@@ -69,7 +69,7 @@ public final class Server {
 	/**
 	 * The maximum distance in meters to the quest at which apples can appear.
 	 */
-	private static final double QUEST_TO_APPLES_DISTANCE = 50;
+	private static final double QUEST_TO_APPLES_DISTANCE = 50.0;
 
 	/**
 	 * The main socket channel on which the server listens for incoming connections.
@@ -96,34 +96,14 @@ public final class Server {
 	 */
 	private final Protocol protocol = new Protocol();
 
-	/**
-	 * The map of all connected clients.
-	 */
 	private final Map<SocketChannel, Player> players = new HashMap<SocketChannel, Player>();
+	private final Map<Player, SocketChannel> channels = new HashMap<Player, SocketChannel>();
 
-	/**
-	 * The map of all existing apples.
-	 */
-	private final Map<Long, Apple> apples = new HashMap<Long, Apple>();
-
-	/**
-	 * The map of all existing quests.
-	 */
 	private final Map<Long, Quest> quests = new HashMap<Long, Quest>();
 
-	/**
-	 * ID manager for generating new identifiers.
-	 */
 	private final IdManager idManager = new IdManager();
-
-	/**
-	 * Random numbers generator.
-	 */
 	private final Random random = new Random();
 
-	/**
-	 * Initializes this server.
-	 */
 	private void initialize() {
 		try {
 			Server.LOGGER.info("Initializing.");
@@ -143,14 +123,10 @@ public final class Server {
 		}
 	}
 
-	/**
-	 * Starts this server.
-	 */
 	private void start() {
 		try {
 			while (true) {
 				this.pumpEvents();
-				this.processApples();
 				this.processQuests();
 			}
 		} catch (final IOException e) {
@@ -226,6 +202,7 @@ public final class Server {
 		this.incomingData.remove(channel);
 		this.outgoingData.remove(channel);
 
+		this.channels.remove(this.players.get(channel));
 		this.players.remove(channel);
 
 		channel.close();
@@ -290,19 +267,13 @@ public final class Server {
 		}
 	}
 
-	/**
-	 * Called when new connection was established.
-	 * 
-	 * @param channel
-	 *            The socket channel connecting to the new peer.
-	 * @throws IOException
-	 *             if there was any io error.
-	 */
 	public void onConnect(final SocketChannel channel) throws IOException {
 		System.out.println("Client connected from " + channel.socket().getRemoteSocketAddress().toString() + ".");
 
 		final long id = this.idManager.newId();
-		this.players.put(channel, new Player(id, null, channel));
+		final Player newPlayer = new Player(id, null, channel);
+		this.players.put(channel, newPlayer);
+		this.channels.put(newPlayer, channel);
 
 		final ClientOptionsPacket packet = new ClientOptionsPacket(id);
 		this.sendPacket(channel, packet);
@@ -312,11 +283,6 @@ public final class Server {
 			this.sendPacket(channel, playerUpdate);
 		}
 
-		for (final Apple apple : this.apples.values()) {
-			final AppleUpdatePacket applePacket = new AppleUpdatePacket(apple.getId(), apple.getLocation(), true);
-			this.sendPacket(channel, applePacket);
-		}
-
 		for (final Quest quest : this.quests.values()) {
 			final QuestUpdatePacket questPacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
 					Status.APPEARED);
@@ -324,16 +290,6 @@ public final class Server {
 		}
 	}
 
-	/**
-	 * Called when there is new available packet on the given socket channel.
-	 * 
-	 * @param channel
-	 *            The socket channel from which new data has arrived.
-	 * @param packet
-	 *            The incoming packet.
-	 * @throws IOException
-	 *             If there was any problem during packet processing.
-	 */
 	public void onPacket(final SocketChannel channel, final Packet packet) throws IOException {
 		System.out.println("Message from " + channel.socket().getRemoteSocketAddress().toString() + ":");
 
@@ -351,25 +307,16 @@ public final class Server {
 
 			// XXX(xairy): temporary.
 			for (int i = 0; i < 1; i++) {
-				this.addRandomQuest(locUpdate.location, 100);
+				this.createRandomQuest(locUpdate.location, 100);
 			}
 		} else {
 			LOGGER.info("Unknown packet type.");
 		}
 	}
 
-	/**
-	 * Writes raw byte data into the channel's output buffer.
-	 * 
-	 * @param channel
-	 *            The channel to which output buffer data should be written.
-	 * @param data
-	 *            Raw byte data which should be written.
-	 * @throws IOException
-	 *             If there is not enough space in the output buffer.
-	 */
-	public void sendMessage(final SocketChannel channel, final byte[] data) throws IOException {
+	private void sendPacket(final SocketChannel channel, final Packet packet) throws IOException {
 		synchronized (this.outgoingData) {
+			final byte[] data = this.protocol.pack(packet);
 			final ByteBuffer buffer = this.outgoingData.get(channel);
 
 			try {
@@ -381,206 +328,87 @@ public final class Server {
 		}
 	}
 
-	/**
-	 * Writes a packet into the channel's output buffer.
-	 * 
-	 * @param channel
-	 *            The channel to which output buffer packet should be written.
-	 * @param packet
-	 *            The packet which should be written.
-	 * @throws IOException
-	 *             If there was a error writing to the output buffer (e.g not enough space).
-	 */
-	private void sendPacket(final SocketChannel channel, final Packet packet) throws IOException {
-		this.sendMessage(channel, this.protocol.pack(packet));
+	private void sendPacket(final Player player, final Packet packet) throws IOException {
+		this.sendPacket(this.channels.get(player), packet);
 	}
 
-	/**
-	 * Writes a broadcast packet to all output buffers.
-	 * 
-	 * @param packet
-	 *            The packet which should be written.
-	 * @throws IOException
-	 *             If there was a error writing to any of the output buffers (e.g not enough space).
-	 */
 	private void broadcastPacket(final Packet packet) throws IOException {
 		for (final Player player : this.players.values()) {
 			this.sendPacket(player.getChannel(), packet);
 		}
 	}
 
-	/**
-	 * Adds a new apple with a specified location.
-	 * 
-	 * @param location
-	 *            Location of the apple added.
-	 * @param questId
-	 *            The id of the quest to which apple relates.
-	 * @throws IOException
-	 *             if there was any problem broadcasting apple update.
-	 */
-	private void addApple(final Location location, final long questId) throws IOException {
-		final long id = this.idManager.newId();
-		final Apple apple = new Apple(id, location, questId);
-		this.apples.put(id, apple);
-		final AppleUpdatePacket packet = new AppleUpdatePacket(id, location, true);
-		System.out.println("Added " + apple + ".");
-
-		this.broadcastPacket(packet);
-		System.out.println("Apple update broadcasted.");
-	}
-
-	/**
-	 * Adds a new apple somewhere near the specified location.
-	 * 
-	 * @param location
-	 *            Near this location an apple will be added.
-	 * @param distance
-	 *            The maximum distance to an apple in meters.
-	 * @param questId
-	 *            The id of the quest to which apple relates.
-	 * @throws IOException
-	 *             if there was any problem broadcasting apple update.
-	 */
-	private void addRandomApple(final Location location, final double distance, final long questId) throws IOException {
-		this.addApple(this.generateRandomLocation(location, distance), questId);
-	}
-
-	/**
-	 * Removes the apple with the specified id.
-	 * 
-	 * @param id
-	 *            The id of the apple being removed.
-	 * @throws IOException
-	 *             if there was any problem broadcasting apple update.
-	 */
-	private void removeApple(final long id) throws IOException {
-		final Location location = this.apples.get(id).getLocation();
-		final AppleUpdatePacket packet = new AppleUpdatePacket(id, location, false);
-
-		this.broadcastPacket(packet);
-		System.out.println("Apple update broadcasted.");
-
-		this.apples.remove(id);
-		System.out.println("Removed Apple " + id + ".");
-	}
-
-	/**
-	 * Adds a new quest with a specified location.
-	 * 
-	 * @param location
-	 *            Location of the quest added.
-	 * @throws IOException
-	 *             if there was any problem broadcasting quest update.
-	 */
-	private void addQuest(final Location location) throws IOException {
-		final long id = this.idManager.newId();
-		final Quest quest = new Quest(id, location);
-		this.quests.put(id, quest);
-		final QuestUpdatePacket packet = new QuestUpdatePacket(id, location, Status.APPEARED);
+	private void createQuest(final Location location) throws IOException {
+		final long questId = this.idManager.newId();
+		final Quest quest = new Quest(questId, location);
+		this.quests.put(questId, quest);
+		final QuestUpdatePacket packet = new QuestUpdatePacket(questId, location, Status.APPEARED);
 		System.out.println("Added " + quest + ".");
+
+		for (int i = 0; i < APPLES_PER_QUEST; i++) {
+			final long appleId = this.idManager.newId();
+			final Location appleLocation = this.generateRandomLocation(location, QUEST_TO_APPLES_DISTANCE);
+			final Apple apple = new Apple(appleId, appleLocation, questId);
+			quest.addApple(apple);
+		}
 
 		this.broadcastPacket(packet);
 		System.out.println("Quest update broadcasted.");
 	}
 
-	/**
-	 * Adds a new quest somewhere near the specified location.
-	 * 
-	 * @param location
-	 *            Near this location a quest will be added.
-	 * @param distance
-	 *            The maximum distance to a quest in meters.
-	 * @throws IOException
-	 *             if there was any problem broadcasting quest update.
-	 */
-	private void addRandomQuest(final Location location, final double distance) throws IOException {
-		this.addQuest(this.generateRandomLocation(location, distance));
+	private void createRandomQuest(final Location location, final double distance) throws IOException {
+		this.createQuest(this.generateRandomLocation(location, distance));
 	}
 
-	/**
-	 * Removes the quest with the specified id.
-	 * 
-	 * @param id
-	 *            The id of the quest being removed.
-	 * @throws IOException
-	 *             if there was any problem broadcasting quest update.
-	 */
 	private void removeQuest(final long id) throws IOException {
-		final Location location = this.quests.get(id).getLocation();
+		final Quest quest = this.quests.get(id);
+		final Location location = quest.getLocation();
 		final QuestUpdatePacket packet = new QuestUpdatePacket(id, location, Status.DISAPPEARED);
 
 		this.broadcastPacket(packet);
 		System.out.println("Quest update broadcasted.");
 
+		for (Apple apple : quest.getApples().values()) {
+			final AppleUpdatePacket applePacket = new AppleUpdatePacket(apple.getId(), apple.getLocation(), false);
+			this.broadcastPacket(applePacket);
+		}
+
 		this.quests.remove(id);
 		System.out.println("Removed Quest " + id + ".");
 	}
 
-	/**
-	 * Processes all apples and checks if they are being picked up by any player.
-	 * 
-	 * @throws IOException
-	 *             if there was any problem broadcasting apple update.
-	 */
-	private void processApples() throws IOException {
-		for (Player player : this.players.values()) {
-			if (player.getLocation() != null) {
-				for (Apple apple : this.apples.values()) {
-					if (player.getLocation().distanceTo(apple.getLocation()) <= APPLE_RADIUS) {
-						System.out.println("Player " + player.getId() + " picked up Apple " + apple.getId() + ".");
-						this.removeApple(apple.getId());
-						return;
-					}
-				}
-			}
-		}
-	}
-
-	/**
-	 * Processes all quests and checks if they are being accepted up by any player.
-	 * 
-	 * @throws IOException
-	 *             if there was any problem broadcasting quest update.
-	 */
 	private void processQuests() throws IOException {
 		for (Player player : this.players.values()) {
-			if (player.getLocation() != null) {
-				for (Quest quest : this.quests.values()) {
-					if (player.getLocation().distanceTo(quest.getLocation()) <= QUEST_RADIUS) {
-						System.out.println("Player " + player.getId() + " accepted Quest " + quest.getId() + ".");
-						this.removeQuest(quest.getId());
-						for (int i = 0; i < APPLES_PER_QUEST; i++) {
-							this.addRandomApple(quest.getLocation(), QUEST_TO_APPLES_DISTANCE, quest.getId());
-						}
-						return;
+			if (player.getLocation() == null || player.getQuest() != null) {
+				continue;
+			}
+			for (Quest quest : this.quests.values()) {
+				if (player.getLocation().distanceTo(quest.getLocation()) <= QUEST_RADIUS) {
+					if (!quest.isPotentialParticipant(player)) {
+						System.out.println("Player " + player.getId() + " is near to Quest " + quest.getId() + ".");
+						quest.addPotentialParticipant(player);
+						QuestUpdatePacket packet = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
+								QuestUpdatePacket.Status.AVAILABLE);
+						this.sendPacket(player, packet);
+					}
+				} else {
+					if (quest.isPotentialParticipant(player)) {
+						System.out.println("Player " + player.getId() + " is far from Quest " + quest.getId() + ".");
+						quest.removePotentialParticipant(player);
+						QuestUpdatePacket packet = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
+								QuestUpdatePacket.Status.UNAVAILABLE);
+						this.sendPacket(player, packet);
 					}
 				}
 			}
 		}
 	}
 
-	/**
-	 * Generates a random location near the specified location.
-	 * 
-	 * @param location
-	 *            Near this location a new location will be generated.
-	 * 
-	 * @param distance
-	 *            The maximum distance to a new location in meters.
-	 */
 	private Location generateRandomLocation(final Location location, final double distance) {
 		Location randomLocation = location.randomLocationInCircle(this.random, distance);
-		System.out.println("Distance: " + location.distanceTo(randomLocation) + ".");
 		return randomLocation;
 	}
 
-	/**
-	 * Main server method.
-	 * 
-	 * @param args
-	 *            An array of strings containing command line arguments.
-	 */
 	public static void main(final String[] args) {
 		final Server server = new Server();
 		server.initialize();
