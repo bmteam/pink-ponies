@@ -23,6 +23,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -66,12 +67,13 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	/**
 	 * The size of objects on the map.
 	 */
-	private static final int ICON_SIZE = 48;
+	private static final double APPLE_RADIUS = 10.0;
+	private static final double QUEST_RADIUS = 30.0;
 
 	/**
 	 * The default server IP.
 	 */
-	private static final String SERVER_IP = "77.232.25.36";
+	private static final String SERVER_IP = "192.168.0.199";
 
 	/**
 	 * The default server port.
@@ -108,9 +110,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 	private GoogleMap map;
 
-	private ItemizedOverlay playersOverlay;
-	private ItemizedOverlay applesOverlay;
-	private ItemizedOverlay questsOverlay;
+	private MapOverlay playersOverlay;
+	private MapOverlay applesOverlay;
+	private MapOverlay questsOverlay;
 
 	/**
 	 * The identifier of the player.
@@ -149,12 +151,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		this.map = ((MapFragment) this.getFragmentManager().findFragmentById(R.id.map)).getMap();
 		this.map.setMyLocationEnabled(true);
 
-		this.playersOverlay = new ItemizedOverlay(this.map,
-				BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
-		this.applesOverlay = new ItemizedOverlay(this.map,
-				BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
-		this.questsOverlay = new ItemizedOverlay(this.map,
-				BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
+		this.playersOverlay = new MapOverlay(this.map);
+		this.applesOverlay = new MapOverlay(this.map);
+		this.questsOverlay = new MapOverlay(this.map);
 
 		LOGGER.info("Starting service");
 		this.startService(new Intent(this, NetworkingService.class));
@@ -301,8 +300,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 				final LatLng location = new LatLng(packet.location.latitude * 180 / Math.PI, packet.location.longitude
 						* 180 / Math.PI);
 				final String name = "Player" + String.valueOf(packet.clientId);
-				this.playersOverlay.removeItem(name);
-				this.playersOverlay.addItem(name, location);
+				this.playersOverlay.removeMarker(name);
+				this.playersOverlay.addMarker(name, location,
+						BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
 			}
 		} else if (message instanceof AppleUpdatePacket) {
 			final AppleUpdatePacket packet = (AppleUpdatePacket) message;
@@ -311,9 +311,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 				final LatLng location = new LatLng(packet.getLocation().latitude * 180 / Math.PI,
 						packet.getLocation().longitude * 180 / Math.PI);
 				;
-				this.applesOverlay.addItem(name, location);
+				this.applesOverlay.addCircle(name, location, APPLE_RADIUS, Color.RED);
 			} else {
-				this.applesOverlay.removeItem(name);
+				this.applesOverlay.removeCircle(name);
 			}
 			LOGGER.info("Apple " + String.valueOf(packet.getAppleId()) + " updated.");
 		} else if (message instanceof QuestUpdatePacket) {
@@ -322,9 +322,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 			if (packet.getStatus()) {
 				final LatLng location = new LatLng(packet.getLocation().latitude * 180 / Math.PI,
 						packet.getLocation().longitude * 180 / Math.PI);
-				this.questsOverlay.addItem(name, location);
+				this.questsOverlay.addCircle(name, location, QUEST_RADIUS, Color.GREEN);
 			} else {
-				this.questsOverlay.removeItem(name);
+				this.questsOverlay.removeCircle(name);
 			}
 			LOGGER.info("Quest " + String.valueOf(packet.getQuestId()) + " updated.");
 		}
@@ -353,7 +353,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 		if (this.isLocationChanchedFirstTime) {
 			LatLng latLng = new LatLng(latitude, longitude);
-			CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 15);
+			CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 17);
 			this.map.animateCamera(cameraUpdate);
 			this.isLocationChanchedFirstTime = false;
 		}
