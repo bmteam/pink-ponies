@@ -6,64 +6,35 @@
 
 package ru.pinkponies.protocol;
 
-import org.msgpack.annotation.Beans;
-import org.msgpack.annotation.Index;
 import org.msgpack.annotation.Message;
-import org.msgpack.annotation.OrdinalEnum;
 
 @Message
-@Beans
 public class QuestUpdatePacket extends Packet {
-	@OrdinalEnum
-	public enum Status {
-		APPEARED, DISAPPEARED, AVAILABLE, UNAVAILABLE, ACCEPTED, DECLINED, STARTED, FINISHED
-	}
+	public static final int APPEARED = 0;
+	public static final int DISAPPEARED = 1;
+	public static final int AVAILABLE = 2;
+	public static final int UNAVAILABLE = 3;
+	public static final int ACCEPTED = 4;
+	public static final int DECLINED = 5;
+	public static final int STARTED = 6;
+	public static final int FINISHED = 7;
 
-	@Index(0)
-	private long questId;
-
-	@Index(1)
-	private Location location;
-
-	@Index(2)
-	private Status status;
+	public long questId;
+	public Location location;
+	public int status;
 
 	public QuestUpdatePacket() {
 		super();
 		this.questId = -1;
 		this.location = null;
-		this.status = null;
+		this.status = -1;
 	}
 
-	public QuestUpdatePacket(final long questId, final Location location, final Status status) {
+	public QuestUpdatePacket(final long questId, final Location location, final int status) {
 		super();
 		this.questId = questId;
 		this.location = location;
 		this.status = status;
-	}
-
-	public Status getStatus() {
-		return this.status;
-	}
-
-	public void setStatus(final Status status) {
-		this.status = status;
-	}
-
-	public long getQuestId() {
-		return this.questId;
-	}
-
-	public void setQuestId(final long questId) {
-		this.questId = questId;
-	}
-
-	public Location getLocation() {
-		return this.location;
-	}
-
-	public void setLocation(final Location location) {
-		this.location = location;
 	}
 
 	@Override

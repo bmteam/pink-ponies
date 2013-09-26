@@ -308,7 +308,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	}
 
 	private void onClientOptonsPacket(final ClientOptionsPacket packet) {
-		this.playerId = packet.getClientId();
+		this.playerId = packet.clientId;
 	}
 
 	private void onSayPacket(final SayPacket packet) {
@@ -327,37 +327,38 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	}
 
 	private void onAppleUpdatePacket(final AppleUpdatePacket packet) {
-		final String name = "Apple" + String.valueOf(packet.getAppleId());
-		if (packet.getStatus()) {
-			final LatLng location = new LatLng(packet.getLocation().latitude * 180 / Math.PI,
-					packet.getLocation().longitude * 180 / Math.PI);
-			;
+		final String name = "Apple" + String.valueOf(packet.appleId);
+		if (packet.status) {
+			final LatLng location = new LatLng(packet.location.latitude * 180 / Math.PI, packet.location.longitude
+					* 180 / Math.PI);
 			this.applesOverlay.addCircle(name, location, APPLE_RADIUS, Color.RED);
 		} else {
 			this.applesOverlay.removeCircle(name);
 		}
-		LOGGER.info("Apple " + String.valueOf(packet.getAppleId()) + " updated.");
+		LOGGER.info("Apple " + String.valueOf(packet.appleId) + " updated.");
 	}
 
 	private void onQuestUpdatePacket(final QuestUpdatePacket packet) {
-		final String name = "Quest" + String.valueOf(packet.getQuestId());
-		if (packet.getStatus() == QuestUpdatePacket.Status.APPEARED) {
-			final LatLng location = new LatLng(packet.getLocation().latitude * 180 / Math.PI,
-					packet.getLocation().longitude * 180 / Math.PI);
+		final String name = "Quest" + String.valueOf(packet.questId);
+		if (packet.status == QuestUpdatePacket.APPEARED) {
+			final LatLng location = new LatLng(packet.location.latitude * 180 / Math.PI, packet.location.longitude
+					* 180 / Math.PI);
 			this.questsOverlay.addCircle(name, location, QUEST_RADIUS, Color.GREEN);
-		} else if (packet.getStatus() == QuestUpdatePacket.Status.DISAPPEARED) {
-			if (this.availableQuestId == packet.getQuestId()) {
+		} else if (packet.status == QuestUpdatePacket.DISAPPEARED) {
+			if (this.availableQuestId == packet.questId) {
 				this.availableQuestId = BAD_ID;
 			}
 			this.questsOverlay.removeCircle(name);
-		} else if (packet.getStatus() == QuestUpdatePacket.Status.AVAILABLE) {
-			this.availableQuestId = packet.getQuestId();
+		} else if (packet.status == QuestUpdatePacket.AVAILABLE) {
+			this.availableQuestId = packet.questId;
 			((Button) this.findViewById(R.id.join_button)).setEnabled(true);
-		} else if (packet.getStatus() == QuestUpdatePacket.Status.UNAVAILABLE) {
-			this.availableQuestId = BAD_ID;
-			((Button) this.findViewById(R.id.join_button)).setEnabled(false);
+		} else if (packet.status == QuestUpdatePacket.UNAVAILABLE) {
+			if (packet.questId == this.availableQuestId) {
+				this.availableQuestId = BAD_ID;
+				((Button) this.findViewById(R.id.join_button)).setEnabled(false);
+			}
 		}
-		LOGGER.info("Quest " + String.valueOf(packet.getQuestId()) + " updated.");
+		LOGGER.info("Quest " + String.valueOf(packet.questId) + " updated.");
 	}
 
 	/**
@@ -457,7 +458,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		if (this.availableQuestId == BAD_ID) {
 			return;
 		}
-		QuestActionPacket packet = new QuestActionPacket(this.availableQuestId, QuestActionPacket.Action.JOIN);
+		QuestActionPacket packet = new QuestActionPacket(this.availableQuestId, QuestActionPacket.JOIN);
 		this.networkingService.sendPacket(packet);
 	}
 

@@ -6,43 +6,27 @@
 
 package ru.pinkponies.protocol;
 
-import org.msgpack.annotation.Beans;
-import org.msgpack.annotation.Index;
 import org.msgpack.annotation.Message;
-import org.msgpack.annotation.OrdinalEnum;
 
 @Message
-@Beans
 public class QuestActionPacket extends Packet {
-	@OrdinalEnum
-	public enum Action {
-		JOIN, START, LEAVE
-	}
+	public static final int JOIN = 0;
+	public static final int START = 1;
+	public static final int LEAVE = 2;
 
-	@Index(0)
-	private final long questId;
-
-	@Index(1)
-	private final Action action;
+	public long questId;
+	public int action;
 
 	public QuestActionPacket() {
 		super();
-		this.questId = -2;
-		this.action = null;
+		this.questId = -1;
+		this.action = -1;
 	}
 
-	public QuestActionPacket(final long questId, final Action action) {
+	public QuestActionPacket(final long questId, final int action) {
 		super();
 		this.questId = questId;
 		this.action = action;
-	}
-
-	public long getQuestId() {
-		return this.questId;
-	}
-
-	public Action getAction() {
-		return this.action;
 	}
 
 	@Override

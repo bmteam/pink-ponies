@@ -6,17 +6,11 @@
 
 package ru.pinkponies.protocol;
 
-import org.msgpack.annotation.Beans;
-import org.msgpack.annotation.Index;
 import org.msgpack.annotation.Message;
 
 @Message
-@Beans
 public class PlayerUpdatePacket extends Packet {
-	@Index(0)
 	public long playerId;
-
-	@Index(1)
 	public Location location;
 
 	public PlayerUpdatePacket() {

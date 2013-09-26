@@ -5,10 +5,6 @@ package ru.pinkponies.protocol;
 
 import org.msgpack.annotation.Message;
 
-/**
- * @author alex
- * 
- */
 @Message
 public final class SayPacket extends Packet {
 	public String text;

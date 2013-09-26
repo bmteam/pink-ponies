@@ -30,7 +30,6 @@ import ru.pinkponies.protocol.PlayerUpdatePacket;
 import ru.pinkponies.protocol.Protocol;
 import ru.pinkponies.protocol.QuestActionPacket;
 import ru.pinkponies.protocol.QuestUpdatePacket;
-import ru.pinkponies.protocol.QuestUpdatePacket.Status;
 import ru.pinkponies.protocol.SayPacket;
 
 /**
@@ -286,7 +285,7 @@ public final class Server {
 
 		for (final Quest quest : this.quests.values()) {
 			final QuestUpdatePacket questPacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
-					Status.APPEARED);
+					QuestUpdatePacket.APPEARED);
 			this.sendPacket(channel, questPacket);
 		}
 	}
@@ -312,12 +311,12 @@ public final class Server {
 			}
 		} else if (packet instanceof QuestActionPacket) {
 			QuestActionPacket actionPacket = (QuestActionPacket) packet;
-			System.out.println("Player " + this.players.get(channel).getId() + " wants to " + actionPacket.getAction()
-					+ " Quest " + actionPacket.getQuestId() + ".");
+			System.out.println("Player " + this.players.get(channel).getId() + " wants to " + actionPacket.action
+					+ " Quest " + actionPacket.questId + ".");
 
-			if (actionPacket.getAction() == QuestActionPacket.Action.JOIN) {
-				if (this.quests.get(actionPacket.getQuestId()) != null) {
-					this.removeQuest(actionPacket.getQuestId());
+			if (actionPacket.action == QuestActionPacket.JOIN) {
+				if (this.quests.get(actionPacket.questId) != null) {
+					this.removeQuest(actionPacket.questId);
 				}
 			}
 		} else {
@@ -353,7 +352,7 @@ public final class Server {
 		final long questId = this.idManager.newId();
 		final Quest quest = new Quest(questId, location);
 		this.quests.put(questId, quest);
-		final QuestUpdatePacket packet = new QuestUpdatePacket(questId, location, Status.APPEARED);
+		final QuestUpdatePacket packet = new QuestUpdatePacket(questId, location, QuestUpdatePacket.APPEARED);
 		System.out.println("Added " + quest + ".");
 
 		for (int i = 0; i < APPLES_PER_QUEST; i++) {
@@ -374,7 +373,7 @@ public final class Server {
 	private void removeQuest(final long id) throws IOException {
 		final Quest quest = this.quests.get(id);
 		final Location location = quest.getLocation();
-		final QuestUpdatePacket packet = new QuestUpdatePacket(id, location, Status.DISAPPEARED);
+		final QuestUpdatePacket packet = new QuestUpdatePacket(id, location, QuestUpdatePacket.DISAPPEARED);
 
 		this.broadcastPacket(packet);
 		System.out.println("Quest update broadcasted.");
@@ -399,7 +398,7 @@ public final class Server {
 						System.out.println("Player " + player.getId() + " is near to Quest " + quest.getId() + ".");
 						quest.addPotentialParticipant(player);
 						QuestUpdatePacket packet = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
-								QuestUpdatePacket.Status.AVAILABLE);
+								QuestUpdatePacket.AVAILABLE);
 						this.sendPacket(player, packet);
 					}
 				} else {
@@ -407,7 +406,7 @@ public final class Server {
 						System.out.println("Player " + player.getId() + " is far from Quest " + quest.getId() + ".");
 						quest.removePotentialParticipant(player);
 						QuestUpdatePacket packet = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
-								QuestUpdatePacket.Status.UNAVAILABLE);
+								QuestUpdatePacket.UNAVAILABLE);
 						this.sendPacket(player, packet);
 					}
 				}
