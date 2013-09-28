@@ -396,6 +396,15 @@ public final class Server {
 					this.sendPacket(participant, appleUpdatePacket);
 				}
 			}
+
+			for (Player nonParticipant : this.players.values()) {
+				if (quest.isParticipant(nonParticipant)) {
+					continue;
+				}
+				final QuestUpdatePacket questUpdatePacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
+						QuestUpdatePacket.Status.DISAPPEARED);
+				this.sendPacket(nonParticipant, questUpdatePacket);
+			}
 		} else if (packet.action == QuestActionPacket.Action.LEAVE) {
 			if (player.getQuest() == null) {
 				System.out.println("Player " + player.getId() + " have not joined Quest " + quest.getId()
