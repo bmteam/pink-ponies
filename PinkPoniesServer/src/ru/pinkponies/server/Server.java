@@ -64,7 +64,7 @@ public final class Server {
 	/**
 	 * The number of apples that will be created when a quest is accepted.
 	 */
-	private static final int APPLES_PER_QUEST = 5;
+	private static final int APPLES_PER_QUEST = 10;
 
 	/**
 	 * The maximum distance in meters to the quest at which apples can appear.
@@ -285,6 +285,9 @@ public final class Server {
 		}
 
 		for (final Quest quest : this.quests.values()) {
+			if (quest.getStatus() != Quest.Status.AVAILABLE) {
+				continue;
+			}
 			final QuestUpdatePacket questPacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
 					QuestUpdatePacket.Status.APPEARED);
 			this.sendPacket(channel, questPacket);
@@ -341,6 +344,11 @@ public final class Server {
 				System.out.println("Player " + player.getId() + " already joined Quest " + quest.getId() + "!");
 				return;
 			}
+			if (quest.getStatus() != Quest.Status.AVAILABLE) {
+				System.out.println("Player " + player.getId() + " wants to join Quest " + quest.getId()
+						+ ", but it has already started (or ended)!");
+				return;
+			}
 
 			quest.addParticipant(player);
 			player.setQuest(quest);
@@ -353,20 +361,59 @@ public final class Server {
 					existingQuest.removePotentialParticipant(player);
 				}
 			}
-			for (Apple apple : quest.getApples().values()) {
-				final AppleUpdatePacket appleUpdatePacket = new AppleUpdatePacket(apple.getId(), apple.getLocation(),
-						true);
-				this.sendPacket(player, appleUpdatePacket);
-			}
+
 			final QuestUpdatePacket questUpdatePacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
 					QuestUpdatePacket.Status.ACCEPTED);
 			this.sendPacket(player, questUpdatePacket);
 
 			System.out.println("Player " + player.getId() + " joined Quest " + quest.getId() + ".");
+		} else if (packet.action == QuestActionPacket.Action.START) {
+			if (player.getQuest() == null) {
+				System.out.println("Player " + player.getId() + " have not joined Quest " + quest.getId()
+						+ ", but wants to start!");
+				return;
+			}
+			if (player.getQuest() != quest) {
+				System.out.println("Player " + player.getId() + " joined Quest " + player.getQuest().getId()
+						+ ", but wants to start Quest " + quest.getId() + "!");
+				return;
+			}
+			if (quest.getStatus() != Quest.Status.AVAILABLE) {
+				System.out.println("Player " + player.getId() + " wants to join Quest " + quest.getId()
+						+ ", but it has already started (or ended)!");
+				return;
+			}
+
+			quest.setStatus(Quest.Status.STARTED);
+
+			for (Player participant : quest.getParticipants().values()) {
+				final QuestUpdatePacket questUpdatePacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
+						QuestUpdatePacket.Status.STARTED);
+				this.sendPacket(participant, questUpdatePacket);
+				for (Apple apple : quest.getApples().values()) {
+					final AppleUpdatePacket appleUpdatePacket = new AppleUpdatePacket(apple.getId(),
+							apple.getLocation(), true);
+					this.sendPacket(participant, appleUpdatePacket);
+				}
+			}
+
+			for (Player nonParticipant : this.players.values()) {
+				if (quest.isParticipant(nonParticipant)) {
+					continue;
+				}
+				final QuestUpdatePacket questUpdatePacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
+						QuestUpdatePacket.Status.DISAPPEARED);
+				this.sendPacket(nonParticipant, questUpdatePacket);
+			}
 		} else if (packet.action == QuestActionPacket.Action.LEAVE) {
 			if (player.getQuest() == null) {
 				System.out.println("Player " + player.getId() + " have not joined Quest " + quest.getId()
-						+ ", but wishes to leave!");
+						+ ", but wants to leave!");
+				return;
+			}
+			if (player.getQuest() != quest) {
+				System.out.println("Player " + player.getId() + " joined Quest " + player.getQuest().getId()
+						+ ", but wants to leave Quest " + quest.getId() + "!");
 				return;
 			}
 
@@ -375,14 +422,19 @@ public final class Server {
 						false);
 				this.sendPacket(player, appleUpdatePacket);
 			}
-			for (Quest existingQuest : this.quests.values()) {
-				final QuestUpdatePacket questUpdatePacket = new QuestUpdatePacket(existingQuest.getId(),
-						existingQuest.getLocation(), QuestUpdatePacket.Status.APPEARED);
-				this.sendPacket(player, questUpdatePacket);
-			}
+
 			final QuestUpdatePacket questUpdatePacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
 					QuestUpdatePacket.Status.DECLINED);
 			this.sendPacket(player, questUpdatePacket);
+
+			for (Quest existingQuest : this.quests.values()) {
+				if (existingQuest.getStatus() != Quest.Status.AVAILABLE) {
+					continue;
+				}
+				final QuestUpdatePacket existingQuestUpdatePacket = new QuestUpdatePacket(existingQuest.getId(),
+						existingQuest.getLocation(), QuestUpdatePacket.Status.APPEARED);
+				this.sendPacket(player, existingQuestUpdatePacket);
+			}
 
 			quest.removeParticipant(player);
 			player.setQuest(null);
@@ -441,28 +493,15 @@ public final class Server {
 		this.createQuest(this.generateRandomLocation(location, distance));
 	}
 
-	private void removeQuest(final long id) throws IOException {
-		final Quest quest = this.quests.get(id);
-		final Location location = quest.getLocation();
-		final QuestUpdatePacket packet = new QuestUpdatePacket(id, location, QuestUpdatePacket.Status.DISAPPEARED);
-
-		for (Apple apple : quest.getApples().values()) {
-			final AppleUpdatePacket applePacket = new AppleUpdatePacket(apple.getId(), apple.getLocation(), false);
-			this.broadcastPacket(applePacket);
-		}
-
-		this.broadcastPacket(packet);
-		this.quests.remove(id);
-
-		System.out.println("Removed Quest " + id + ".");
-	}
-
 	private void processQuests() throws IOException {
 		for (Player player : this.players.values()) {
 			if (player.getLocation() == null || player.getQuest() != null) {
 				continue;
 			}
 			for (Quest quest : this.quests.values()) {
+				if (quest.getStatus() != Quest.Status.AVAILABLE) {
+					continue;
+				}
 				if (player.getLocation().distanceTo(quest.getLocation()) <= QUEST_RADIUS) {
 					if (!quest.isPotentialParticipant(player)) {
 						System.out.println("Player " + player.getId() + " is near to Quest " + quest.getId() + ".");
@@ -489,12 +528,18 @@ public final class Server {
 			if (player.getLocation() == null || player.getQuest() == null) {
 				continue;
 			}
-			for (Apple apple : player.getQuest().getApples().values()) {
+			if (player.getQuest().getStatus() != Quest.Status.STARTED) {
+				continue;
+			}
+			Iterator<Map.Entry<Long, Apple>> iter = player.getQuest().getApples().entrySet().iterator();
+			while (iter.hasNext()) {
+				Apple apple = iter.next().getValue();
 				if (player.getLocation().distanceTo(apple.getLocation()) <= APPLE_RADIUS) {
 					AppleUpdatePacket packet = new AppleUpdatePacket(apple.getId(), apple.getLocation(), false);
 					for (Player participant : player.getQuest().getParticipants().values()) {
 						this.sendPacket(participant, packet);
 					}
+					iter.remove();
 					// TODO: score points to the player.
 				}
 			}
