@@ -295,32 +295,66 @@ public final class Server {
 
 		if (packet instanceof SayPacket) {
 			final SayPacket sayPacket = (SayPacket) packet;
-			System.out.println(sayPacket.toString());
+			this.onSayPacket(channel, sayPacket);
 		} else if (packet instanceof PlayerUpdatePacket) {
-			final PlayerUpdatePacket locUpdate = (PlayerUpdatePacket) packet;
-			locUpdate.playerId = this.players.get(channel).getId();
-			this.players.get(channel).setLocation(locUpdate.location);
-			System.out.println(locUpdate.toString());
-
-			this.broadcastPacket(locUpdate);
-			System.out.println("Location update broadcasted.");
-
-			// XXX(xairy): temporary.
-			for (int i = 0; i < 5; i++) {
-				this.createRandomQuest(locUpdate.location, 100);
-			}
+			final PlayerUpdatePacket playerUpdatePacket = (PlayerUpdatePacket) packet;
+			this.onPlayerUpdatePacket(channel, playerUpdatePacket);
 		} else if (packet instanceof QuestActionPacket) {
 			QuestActionPacket actionPacket = (QuestActionPacket) packet;
-			System.out.println("Player " + this.players.get(channel).getId() + " wants to " + actionPacket.action
-					+ " Quest " + actionPacket.questId + ".");
-
-			if (actionPacket.action == QuestActionPacket.JOIN) {
-				if (this.quests.get(actionPacket.questId) != null) {
-					this.removeQuest(actionPacket.questId);
-				}
-			}
+			this.onQuestActionPacket(channel, actionPacket);
 		} else {
 			LOGGER.info("Unknown packet type.");
+		}
+	}
+
+	public void onSayPacket(final SocketChannel channel, final SayPacket packet) throws IOException {
+		System.out.println(packet.toString());
+	}
+
+	public void onPlayerUpdatePacket(final SocketChannel channel, final PlayerUpdatePacket packet) throws IOException {
+		System.out.println(packet.toString());
+
+		packet.playerId = this.players.get(channel).getId();
+		this.players.get(channel).setLocation(packet.location);
+		this.broadcastPacket(packet);
+
+		// XXX(xairy): temporary.
+		for (int i = 0; i < 5; i++) {
+			this.createRandomQuest(packet.location, 100);
+		}
+	}
+
+	public void onQuestActionPacket(final SocketChannel channel, final QuestActionPacket packet) throws IOException {
+		Player player = this.players.get(channel);
+		Quest quest = this.quests.get(packet.questId);
+		System.out
+				.println("Player " + player.getId() + " wants to " + packet.action + " Quest " + packet.questId + ".");
+
+		if (quest == null) {
+			System.out.println("No such quest!");
+			return;
+		}
+
+		if (packet.action == QuestActionPacket.JOIN) {
+			if (player.getQuest() != null) {
+				System.out.println("Player " + player.getId() + " already joined Quest " + player.getQuest().getId()
+						+ "!");
+				return;
+			}
+
+			quest.addParticipant(player);
+			player.setQuest(quest);
+
+			for (Quest existingQuest : this.quests.values()) {
+				final QuestUpdatePacket questUpdatePacket = new QuestUpdatePacket(existingQuest.getId(),
+						existingQuest.getLocation(), QuestUpdatePacket.DISAPPEARED);
+				this.sendPacket(player.getChannel(), questUpdatePacket);
+			}
+			for (Apple apple : quest.getApples().values()) {
+				final AppleUpdatePacket appleUpdatePacket = new AppleUpdatePacket(apple.getId(), apple.getLocation(),
+						true);
+				this.sendPacket(player.getChannel(), appleUpdatePacket);
+			}
 		}
 	}
 
@@ -352,8 +386,6 @@ public final class Server {
 		final long questId = this.idManager.newId();
 		final Quest quest = new Quest(questId, location);
 		this.quests.put(questId, quest);
-		final QuestUpdatePacket packet = new QuestUpdatePacket(questId, location, QuestUpdatePacket.APPEARED);
-		System.out.println("Added " + quest + ".");
 
 		for (int i = 0; i < APPLES_PER_QUEST; i++) {
 			final long appleId = this.idManager.newId();
@@ -362,8 +394,14 @@ public final class Server {
 			quest.addApple(apple);
 		}
 
-		this.broadcastPacket(packet);
-		System.out.println("Quest update broadcasted.");
+		final QuestUpdatePacket packet = new QuestUpdatePacket(questId, location, QuestUpdatePacket.APPEARED);
+		for (Player player : this.players.values()) {
+			if (player.getQuest() == null) {
+				this.sendPacket(player, packet);
+			}
+		}
+
+		System.out.println("Added " + quest + ".");
 	}
 
 	private void createRandomQuest(final Location location, final double distance) throws IOException {
@@ -375,15 +413,14 @@ public final class Server {
 		final Location location = quest.getLocation();
 		final QuestUpdatePacket packet = new QuestUpdatePacket(id, location, QuestUpdatePacket.DISAPPEARED);
 
-		this.broadcastPacket(packet);
-		System.out.println("Quest update broadcasted.");
-
 		for (Apple apple : quest.getApples().values()) {
 			final AppleUpdatePacket applePacket = new AppleUpdatePacket(apple.getId(), apple.getLocation(), false);
 			this.broadcastPacket(applePacket);
 		}
 
+		this.broadcastPacket(packet);
 		this.quests.remove(id);
+
 		System.out.println("Removed Quest " + id + ".");
 	}
 

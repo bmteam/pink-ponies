@@ -347,6 +347,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		} else if (packet.status == QuestUpdatePacket.DISAPPEARED) {
 			if (this.availableQuestId == packet.questId) {
 				this.availableQuestId = BAD_ID;
+				((Button) this.findViewById(R.id.join_button)).setEnabled(false);
 			}
 			this.questsOverlay.removeCircle(name);
 		} else if (packet.status == QuestUpdatePacket.AVAILABLE) {
