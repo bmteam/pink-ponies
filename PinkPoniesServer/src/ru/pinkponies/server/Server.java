@@ -128,6 +128,7 @@ public final class Server {
 			while (true) {
 				this.pumpEvents();
 				this.processQuests();
+				this.processApples();
 			}
 		} catch (final IOException e) {
 			Server.LOGGER.log(Level.SEVERE, "IOException during event pumping", e);
@@ -348,13 +349,46 @@ public final class Server {
 			for (Quest existingQuest : this.quests.values()) {
 				final QuestUpdatePacket questUpdatePacket = new QuestUpdatePacket(existingQuest.getId(),
 						existingQuest.getLocation(), QuestUpdatePacket.DISAPPEARED);
-				this.sendPacket(player.getChannel(), questUpdatePacket);
+				this.sendPacket(player, questUpdatePacket);
+				if (existingQuest.isPotentialParticipant(player)) {
+					existingQuest.removePotentialParticipant(player);
+				}
 			}
 			for (Apple apple : quest.getApples().values()) {
 				final AppleUpdatePacket appleUpdatePacket = new AppleUpdatePacket(apple.getId(), apple.getLocation(),
 						true);
-				this.sendPacket(player.getChannel(), appleUpdatePacket);
+				this.sendPacket(player, appleUpdatePacket);
 			}
+			final QuestUpdatePacket questUpdatePacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
+					QuestUpdatePacket.ACCEPTED);
+			this.sendPacket(player, questUpdatePacket);
+
+			System.out.println("Player " + player.getId() + " joined Quest " + quest.getId() + ".");
+		} else if (packet.action == QuestActionPacket.LEAVE) {
+			if (player.getQuest() == null) {
+				System.out.println("Player " + player.getId() + " have not joined Quest " + player.getQuest().getId()
+						+ ", but wishes to leave!");
+				return;
+			}
+
+			for (Apple apple : quest.getApples().values()) {
+				final AppleUpdatePacket appleUpdatePacket = new AppleUpdatePacket(apple.getId(), apple.getLocation(),
+						false);
+				this.sendPacket(player, appleUpdatePacket);
+			}
+			for (Quest existingQuest : this.quests.values()) {
+				final QuestUpdatePacket questUpdatePacket = new QuestUpdatePacket(existingQuest.getId(),
+						existingQuest.getLocation(), QuestUpdatePacket.APPEARED);
+				this.sendPacket(player, questUpdatePacket);
+			}
+			final QuestUpdatePacket questUpdatePacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
+					QuestUpdatePacket.DECLINED);
+			this.sendPacket(player, questUpdatePacket);
+
+			quest.removeParticipant(player);
+			player.setQuest(null);
+
+			System.out.println("Player " + player.getId() + " left Quest " + quest.getId() + ".");
 		}
 	}
 
@@ -446,6 +480,23 @@ public final class Server {
 								QuestUpdatePacket.UNAVAILABLE);
 						this.sendPacket(player, packet);
 					}
+				}
+			}
+		}
+	}
+
+	private void processApples() throws IOException {
+		for (Player player : this.players.values()) {
+			if (player.getLocation() == null || player.getQuest() == null) {
+				continue;
+			}
+			for (Apple apple : player.getQuest().getApples().values()) {
+				if (player.getLocation().distanceTo(apple.getLocation()) <= APPLE_RADIUS) {
+					AppleUpdatePacket packet = new AppleUpdatePacket(apple.getId(), apple.getLocation(), false);
+					for (Player participant : player.getQuest().getParticipants().values()) {
+						this.sendPacket(participant, packet);
+					}
+					// TODO: score points to the player.
 				}
 			}
 		}

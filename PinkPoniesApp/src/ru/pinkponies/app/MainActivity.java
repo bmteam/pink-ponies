@@ -118,6 +118,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 	private long playerId = BAD_ID;
 	private long availableQuestId = BAD_ID;
+	private long acceptedQuestId = BAD_ID;
 
 	// private TextOverlay textOverlay;
 
@@ -358,25 +359,24 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 				this.availableQuestId = BAD_ID;
 				((Button) this.findViewById(R.id.join_button)).setEnabled(false);
 			}
+		} else if (packet.status == QuestUpdatePacket.ACCEPTED) {
+			this.acceptedQuestId = packet.questId;
+			this.availableQuestId = BAD_ID;
+			((Button) this.findViewById(R.id.join_button)).setEnabled(false);
+			((Button) this.findViewById(R.id.leave_button)).setEnabled(true);
+		} else if (packet.status == QuestUpdatePacket.DECLINED) {
+			this.acceptedQuestId = BAD_ID;
+			((Button) this.findViewById(R.id.leave_button)).setEnabled(false);
 		}
 		LOGGER.info("Quest " + String.valueOf(packet.questId) + " updated.");
 	}
 
-	/**
-	 * Switches current activity to login activity.
-	 */
 	public void goToLoginActivity() {
 		final Intent intent = new Intent(MainActivity.this, LoginActivity.class);
 		this.startActivity(intent);
 		this.onDestroy();
 	}
 
-	/**
-	 * Called when the player's location is changed.
-	 * 
-	 * @param location
-	 *            The new location, as a Location object.
-	 */
 	@Override
 	public void onLocationChanged(final Location location) {
 		final double longitude = location.getLongitude();
@@ -398,50 +398,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		MainActivity.LOGGER.info("Location updated.");
 	}
 
-	/**
-	 * Called when the location provider is disabled by the user.
-	 * 
-	 * @param provider
-	 *            The name of the location provider associated with this update.
-	 */
-	@Override
-	public void onProviderDisabled(final String provider) {
-	}
-
-	/**
-	 * Called when the location provider is enabled by the user.
-	 * 
-	 * @param provider
-	 *            The name of the location provider associated with this update.
-	 */
-	@Override
-	public void onProviderEnabled(final String provider) {
-	}
-
-	/**
-	 * Called when the provider status changes. This method is called when a provider is unable to
-	 * fetch a location or if the provider has recently become available after a period of
-	 * unavailability.
-	 * 
-	 * @param provider
-	 *            The name of the location provider associated with this update.
-	 * @param status
-	 *            The status of the provider.
-	 * @param extras
-	 *            Extra information about this update.
-	 */
-	@Override
-	public void onStatusChanged(final String provider, final int status, final Bundle extras) {
-	}
-
-	/**
-	 * Shows a message box with the specified title and message.
-	 * 
-	 * @param title
-	 *            The title of the message box.
-	 * @param message
-	 *            The message that will be shown in the message box.
-	 */
 	public void showMessageBox(final String title, final String message) {
 		final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
 		alertDialogBuilder.setTitle(title);
@@ -468,6 +424,19 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	}
 
 	public void onLeaveButtonClick(final View view) {
+		QuestActionPacket packet = new QuestActionPacket(this.acceptedQuestId, QuestActionPacket.LEAVE);
+		this.networkingService.sendPacket(packet);
+	}
 
+	@Override
+	public void onProviderDisabled(final String provider) {
+	}
+
+	@Override
+	public void onProviderEnabled(final String provider) {
+	}
+
+	@Override
+	public void onStatusChanged(final String provider, final int status, final Bundle extras) {
 	}
 }
