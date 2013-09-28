@@ -361,12 +361,20 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 			}
 		} else if (packet.status == QuestUpdatePacket.Status.ACCEPTED) {
 			this.acceptedQuestId = packet.questId;
-			this.availableQuestId = BAD_ID;
 			((Button) this.findViewById(R.id.join_button)).setEnabled(false);
+			((Button) this.findViewById(R.id.start_button)).setEnabled(true);
 			((Button) this.findViewById(R.id.leave_button)).setEnabled(true);
+			final LatLng location = new LatLng(packet.location.latitude * 180 / Math.PI, packet.location.longitude
+					* 180 / Math.PI);
+			this.questsOverlay.addCircle(name + "_accepted", location, QUEST_RADIUS, Color.BLUE);
 		} else if (packet.status == QuestUpdatePacket.Status.DECLINED) {
 			this.acceptedQuestId = BAD_ID;
+			((Button) this.findViewById(R.id.start_button)).setEnabled(false);
 			((Button) this.findViewById(R.id.leave_button)).setEnabled(false);
+			this.questsOverlay.removeCircle(name + "_accepted");
+		} else if (packet.status == QuestUpdatePacket.Status.STARTED) {
+			((Button) this.findViewById(R.id.start_button)).setEnabled(false);
+			this.questsOverlay.removeCircle(name + "_accepted");
 		}
 		LOGGER.info("Quest " + String.valueOf(packet.questId) + " updated.");
 	}
@@ -413,6 +421,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 	public void onJoinButtonClick(final View view) {
 		if (this.availableQuestId == BAD_ID) {
+			LOGGER.info("Can't join, bad id!");
 			return;
 		}
 		QuestActionPacket packet = new QuestActionPacket(this.availableQuestId, QuestActionPacket.Action.JOIN);
@@ -420,10 +429,19 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	}
 
 	public void onStartButtonClick(final View view) {
-
+		if (this.acceptedQuestId == BAD_ID) {
+			LOGGER.info("Can't start, bad id!");
+			return;
+		}
+		QuestActionPacket packet = new QuestActionPacket(this.acceptedQuestId, QuestActionPacket.Action.START);
+		this.networkingService.sendPacket(packet);
 	}
 
 	public void onLeaveButtonClick(final View view) {
+		if (this.acceptedQuestId == BAD_ID) {
+			LOGGER.info("Can't leave, bad id!");
+			return;
+		}
 		QuestActionPacket packet = new QuestActionPacket(this.acceptedQuestId, QuestActionPacket.Action.LEAVE);
 		this.networkingService.sendPacket(packet);
 	}
