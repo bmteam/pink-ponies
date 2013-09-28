@@ -7,23 +7,25 @@
 package ru.pinkponies.protocol;
 
 import org.msgpack.annotation.Message;
+import org.msgpack.annotation.OrdinalEnum;
 
 @Message
 public class QuestActionPacket extends Packet {
-	public static final int JOIN = 0;
-	public static final int START = 1;
-	public static final int LEAVE = 2;
+	@OrdinalEnum
+	public enum Action {
+		JOIN, START, LEAVE
+	}
 
 	public long questId;
-	public int action;
+	public Action action;
 
 	public QuestActionPacket() {
 		super();
 		this.questId = -1;
-		this.action = -1;
+		this.action = null;
 	}
 
-	public QuestActionPacket(final long questId, final int action) {
+	public QuestActionPacket(final long questId, final Action action) {
 		super();
 		this.questId = questId;
 		this.action = action;

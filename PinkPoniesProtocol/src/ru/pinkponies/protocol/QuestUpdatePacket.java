@@ -7,30 +7,27 @@
 package ru.pinkponies.protocol;
 
 import org.msgpack.annotation.Message;
+import org.msgpack.annotation.OrdinalEnum;
 
 @Message
 public class QuestUpdatePacket extends Packet {
-	public static final int APPEARED = 0;
-	public static final int DISAPPEARED = 1;
-	public static final int AVAILABLE = 2;
-	public static final int UNAVAILABLE = 3;
-	public static final int ACCEPTED = 4;
-	public static final int DECLINED = 5;
-	public static final int STARTED = 6;
-	public static final int FINISHED = 7;
+	@OrdinalEnum
+	public enum Status {
+		APPEARED, DISAPPEARED, AVAILABLE, UNAVAILABLE, ACCEPTED, DECLINED, STARTED, FINISHED
+	}
 
 	public long questId;
 	public Location location;
-	public int status;
+	public Status status;
 
 	public QuestUpdatePacket() {
 		super();
 		this.questId = -1;
 		this.location = null;
-		this.status = -1;
+		this.status = null;
 	}
 
-	public QuestUpdatePacket(final long questId, final Location location, final int status) {
+	public QuestUpdatePacket(final long questId, final Location location, final Status status) {
 		super();
 		this.questId = questId;
 		this.location = location;

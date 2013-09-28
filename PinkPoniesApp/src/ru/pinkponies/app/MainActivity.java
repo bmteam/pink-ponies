@@ -341,30 +341,30 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 	private void onQuestUpdatePacket(final QuestUpdatePacket packet) {
 		final String name = "Quest" + String.valueOf(packet.questId);
-		if (packet.status == QuestUpdatePacket.APPEARED) {
+		if (packet.status == QuestUpdatePacket.Status.APPEARED) {
 			final LatLng location = new LatLng(packet.location.latitude * 180 / Math.PI, packet.location.longitude
 					* 180 / Math.PI);
 			this.questsOverlay.addCircle(name, location, QUEST_RADIUS, Color.GREEN);
-		} else if (packet.status == QuestUpdatePacket.DISAPPEARED) {
+		} else if (packet.status == QuestUpdatePacket.Status.DISAPPEARED) {
 			if (this.availableQuestId == packet.questId) {
 				this.availableQuestId = BAD_ID;
 				((Button) this.findViewById(R.id.join_button)).setEnabled(false);
 			}
 			this.questsOverlay.removeCircle(name);
-		} else if (packet.status == QuestUpdatePacket.AVAILABLE) {
+		} else if (packet.status == QuestUpdatePacket.Status.AVAILABLE) {
 			this.availableQuestId = packet.questId;
 			((Button) this.findViewById(R.id.join_button)).setEnabled(true);
-		} else if (packet.status == QuestUpdatePacket.UNAVAILABLE) {
+		} else if (packet.status == QuestUpdatePacket.Status.UNAVAILABLE) {
 			if (packet.questId == this.availableQuestId) {
 				this.availableQuestId = BAD_ID;
 				((Button) this.findViewById(R.id.join_button)).setEnabled(false);
 			}
-		} else if (packet.status == QuestUpdatePacket.ACCEPTED) {
+		} else if (packet.status == QuestUpdatePacket.Status.ACCEPTED) {
 			this.acceptedQuestId = packet.questId;
 			this.availableQuestId = BAD_ID;
 			((Button) this.findViewById(R.id.join_button)).setEnabled(false);
 			((Button) this.findViewById(R.id.leave_button)).setEnabled(true);
-		} else if (packet.status == QuestUpdatePacket.DECLINED) {
+		} else if (packet.status == QuestUpdatePacket.Status.DECLINED) {
 			this.acceptedQuestId = BAD_ID;
 			((Button) this.findViewById(R.id.leave_button)).setEnabled(false);
 		}
@@ -415,7 +415,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		if (this.availableQuestId == BAD_ID) {
 			return;
 		}
-		QuestActionPacket packet = new QuestActionPacket(this.availableQuestId, QuestActionPacket.JOIN);
+		QuestActionPacket packet = new QuestActionPacket(this.availableQuestId, QuestActionPacket.Action.JOIN);
 		this.networkingService.sendPacket(packet);
 	}
 
@@ -424,7 +424,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	}
 
 	public void onLeaveButtonClick(final View view) {
-		QuestActionPacket packet = new QuestActionPacket(this.acceptedQuestId, QuestActionPacket.LEAVE);
+		QuestActionPacket packet = new QuestActionPacket(this.acceptedQuestId, QuestActionPacket.Action.LEAVE);
 		this.networkingService.sendPacket(packet);
 	}
 
