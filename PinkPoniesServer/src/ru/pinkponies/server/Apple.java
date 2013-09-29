@@ -8,24 +8,19 @@ package ru.pinkponies.server;
 
 import ru.pinkponies.protocol.Location;
 
-/**
- * The apple class.
- */
 public final class Apple extends Entity {
 	/**
-	 * Creates a new apple with the given id and location.
-	 * 
-	 * @param id
-	 *            the apple id
-	 * @param location
-	 *            the apple location
+	 * The id of the quest to which apple relates.
 	 */
-	public Apple(final long id, final Location location) {
+	private final long questId;
+
+	public Apple(final long id, final Location location, final long questId) {
 		super(id, location);
+		this.questId = questId;
 	}
 
 	@Override
 	public String toString() {
-		return "Apple [id=" + this.getId() + ", " + this.getLocation() + "]";
+		return "Apple [id=" + this.getId() + ", questId=" + this.questId + ", " + this.getLocation() + "]";
 	}
 }

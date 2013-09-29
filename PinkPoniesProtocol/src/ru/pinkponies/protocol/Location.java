@@ -8,7 +8,6 @@ package ru.pinkponies.protocol;
 
 import java.util.Random;
 
-import org.msgpack.annotation.Index;
 import org.msgpack.annotation.Message;
 
 // Location class.
@@ -18,16 +17,8 @@ public final class Location {
 	// The average radius of the Earth in meters.
 	private static final double EARTH_AVERAGE_RADIUS = 6371000;
 
-	// The longitude, measured in radians.
-	@Index(0)
 	public double longitude;
-
-	// The latitude, measured in radians.
-	@Index(1)
 	public double latitude;
-
-	// The altitude, measured in meters.
-	@Index(2)
 	public double altitude;
 
 	public Location() {

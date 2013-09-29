@@ -6,105 +6,32 @@
 
 package ru.pinkponies.protocol;
 
-import org.msgpack.annotation.Beans;
-import org.msgpack.annotation.Index;
 import org.msgpack.annotation.Message;
+import org.msgpack.annotation.OrdinalEnum;
 
-/**
- * The quest update packet class.
- */
 @Message
-@Beans
 public class QuestUpdatePacket extends Packet {
-	/**
-	 * The id of the quest.
-	 */
-	@Index(0)
-	private long questId;
+	@OrdinalEnum
+	public enum Status {
+		APPEARED, DISAPPEARED, AVAILABLE, UNAVAILABLE, ACCEPTED, DECLINED, STARTED, FINISHED
+	}
 
-	/**
-	 * The location of the quest.
-	 */
-	@Index(1)
-	private Location location;
+	public long questId;
+	public Location location;
+	public Status status;
 
-	/**
-	 * The status of the quest. True means quest still exists, false means the quest disappeared.
-	 */
-	@Index(2)
-	private boolean status;
-
-	/**
-	 * Creates a new quest update packet with quest id set to -1, location set to null and status
-	 * set to false.
-	 */
 	public QuestUpdatePacket() {
 		super();
 		this.questId = -1;
 		this.location = null;
-		this.status = false;
+		this.status = null;
 	}
 
-	/**
-	 * Creates a new quest update packet with the given quest id, location and status.
-	 * 
-	 * @param questId
-	 *            the quest id
-	 * @param location
-	 *            the quest location
-	 * @param status
-	 *            the status
-	 */
-	public QuestUpdatePacket(final long questId, final Location location, final boolean status) {
+	public QuestUpdatePacket(final long questId, final Location location, final Status status) {
 		super();
 		this.questId = questId;
 		this.location = location;
 		this.status = status;
-	}
-
-	/**
-	 * @return the status
-	 */
-	public boolean getStatus() {
-		return this.status;
-	}
-
-	/**
-	 * @param status
-	 *            the status to set
-	 */
-	public void setStatus(final boolean status) {
-		this.status = status;
-	}
-
-	/**
-	 * @return the questId
-	 */
-	public long getQuestId() {
-		return this.questId;
-	}
-
-	/**
-	 * @param questId
-	 *            the questId to set
-	 */
-	public void setQuestId(final long questId) {
-		this.questId = questId;
-	}
-
-	/**
-	 * @return the location
-	 */
-	public Location getLocation() {
-		return this.location;
-	}
-
-	/**
-	 * @param location
-	 *            the location to set
-	 */
-	public void setLocation(final Location location) {
-		this.location = location;
 	}
 
 	@Override

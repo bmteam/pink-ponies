@@ -10,37 +10,26 @@ import java.nio.channels.SocketChannel;
 
 import ru.pinkponies.protocol.Location;
 
-/**
- * The player class.
- */
 public final class Player extends Entity {
-	/**
-	 * The socket channel associated with this player.
-	 */
 	private final SocketChannel channel;
+	private Quest quest;
 
-	/**
-	 * Creates a new player class with the given id, location and socket channel.
-	 * 
-	 * @param id
-	 *            the player id
-	 * @param location
-	 *            the player location
-	 * @param channel
-	 *            the channel associated with this player
-	 */
 	public Player(final long id, final Location location, final SocketChannel channel) {
 		super(id, location);
 		this.channel = channel;
+		this.quest = null;
 	}
 
-	/**
-	 * Returns the socket channel associated with this player.
-	 * 
-	 * @return the socket channel associated with this player.
-	 */
 	public SocketChannel getChannel() {
 		return this.channel;
+	}
+
+	public Quest getQuest() {
+		return this.quest;
+	}
+
+	public void setQuest(final Quest quest) {
+		this.quest = quest;
 	}
 
 	@Override
