@@ -126,9 +126,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 	// private TextOverlay textOverlay;
 
-	// private String login = "";
-	// private String password = "";
-
 	/**
 	 * Called when the activity is first created. Initializes GUI, networking, creates overlays.
 	 * 
@@ -141,8 +138,8 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	protected void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		this.login = "login"; // savedInstanceState.getString("login");
-		this.password = ""; // savedInstanceState.getString("password");
+		this.login = this.getIntent().getStringExtra("login");
+		this.password = this.getIntent().getStringExtra("password");
 
 		LOGGER.info("onCreate " + this.hashCode());
 

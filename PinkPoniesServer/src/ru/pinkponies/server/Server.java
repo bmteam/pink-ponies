@@ -307,13 +307,10 @@ public final class Server {
 	}
 
 	public void onLoginPacket(final SocketChannel channel, final LoginPacket packet) throws IOException {
-		System.out.println("Login!!");
 		final Player newPlayer = this.players.get(channel);
-		if (this.isLoginValid(packet.id, packet.login, packet.password)) { // &&
-																			// !newPlayer.isNameChanged())
-																			// {
+		if (this.isLoginValid(packet.id, packet.login, packet.password) && !newPlayer.isNameChanged()) {
 			newPlayer.setName(packet.login);
-			System.out.println("Login accepted: " + packet.login);
+			System.out.println("Login accepted: <" + packet.login + ">");
 
 			// Send info to new player about others' location.
 			for (final Player player : this.players.values()) {
@@ -340,7 +337,6 @@ public final class Server {
 				this.sendPacket(player.getChannel(), playerUpdate);
 			}
 
-			System.out.println("Login accepted:end");
 		}
 	}
 

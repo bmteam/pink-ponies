@@ -31,7 +31,7 @@ public final class Player extends Entity {
 	}
 
 	public boolean isNameChanged() {
-		return this.name == "";
+		return this.name != "";
 	}
 
 	public SocketChannel getChannel() {
