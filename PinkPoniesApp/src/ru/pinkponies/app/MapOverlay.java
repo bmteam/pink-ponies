@@ -36,7 +36,7 @@ public final class MapOverlay {
 		if (this.markers.containsKey(name)) {
 			throw new IllegalArgumentException("Item named " + name + " already exists.");
 		}
-		Marker marker = this.map.addMarker(new MarkerOptions().position(location).icon(bitmapDescriptor));
+		Marker marker = this.map.addMarker(new MarkerOptions().position(location).icon(bitmapDescriptor).title(name));
 		this.markers.put(name, marker);
 	}
 
