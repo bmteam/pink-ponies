@@ -347,6 +347,10 @@ public final class Server {
 	public void onPlayerUpdatePacket(final SocketChannel channel, final PlayerUpdatePacket packet) throws IOException {
 		System.out.println(packet.toString());
 
+		// Login packet should be first.
+		if (!this.players.get(channel).isNameChanged()) {
+			return;
+		}
 		packet.playerId = this.players.get(channel).getId();
 		this.players.get(channel).setLocation(packet.location);
 
@@ -354,7 +358,7 @@ public final class Server {
 		this.broadcastPacket(packet);
 
 		// XXX(xairy): temporary.
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < 1; i++) {
 			this.createRandomQuest(packet.location, 100);
 		}
 	}

@@ -317,6 +317,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		this.playerId = packet.clientId;
 		LoginPacket loginPacket = new LoginPacket(this.playerId, this.login, this.password);
 		this.networkingService.sendPacket(loginPacket);
+		this.onLocationChanged(this.locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER));
 	}
 
 	private void onSayPacket(final SayPacket packet) {

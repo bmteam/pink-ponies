@@ -19,7 +19,7 @@ public final class Player extends Entity {
 		super(id, location);
 		this.channel = channel;
 		this.quest = null;
-		this.name = "";
+		this.name = "DEFAULT TEST NAME";
 	}
 
 	public void setName(final String playerName) {
@@ -31,7 +31,7 @@ public final class Player extends Entity {
 	}
 
 	public boolean isNameChanged() {
-		return this.name != "";
+		return this.name != "DEFAULT TEST NAME";
 	}
 
 	public SocketChannel getChannel() {
