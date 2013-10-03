@@ -75,7 +75,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	/**
 	 * The default server IP.
 	 */
-	private static final String SERVER_IP = "192.168.0.199";
+	private static final String SERVER_IP = "81.5.108.58";
 
 	/**
 	 * The default server port.
@@ -166,6 +166,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		((Button) this.findViewById(R.id.leave_button)).setEnabled(false);
 
 		LOGGER.info("Initialized.");
+
 	}
 
 	/**
