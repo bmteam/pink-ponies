@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.ClientOptionsPacket;
 import ru.pinkponies.protocol.Location;
+import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.Packet;
 import ru.pinkponies.protocol.PlayerUpdatePacket;
 import ru.pinkponies.protocol.Protocol;
@@ -279,27 +280,6 @@ public final class Server {
 		final ClientOptionsPacket packet = new ClientOptionsPacket(id);
 		this.sendPacket(channel, packet);
 
-		// Send info to new player about others' location.
-		for (final Player player : this.players.values()) {
-			final PlayerUpdatePacket playerUpdate = new PlayerUpdatePacket(player.getId(), player.getLocation());
-			this.sendPacket(channel, playerUpdate);
-		}
-
-		// Send info to new player about quests.
-		for (final Quest quest : this.quests.values()) {
-			if (quest.getStatus() != Quest.Status.AVAILABLE) {
-				continue;
-			}
-			final QuestUpdatePacket questPacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
-					QuestUpdatePacket.Status.APPEARED);
-			this.sendPacket(channel, questPacket);
-		}
-
-		// Send info to others player about new player's location.
-		for (final Player player : this.players.values()) {
-			final PlayerUpdatePacket playerUpdate = new PlayerUpdatePacket(newPlayer.getId(), newPlayer.getLocation());
-			this.sendPacket(player.getChannel(), playerUpdate);
-		}
 	}
 
 	public void onPacket(final SocketChannel channel, final Packet packet) throws IOException {
@@ -314,8 +294,53 @@ public final class Server {
 		} else if (packet instanceof QuestActionPacket) {
 			QuestActionPacket actionPacket = (QuestActionPacket) packet;
 			this.onQuestActionPacket(channel, actionPacket);
+		} else if (packet instanceof LoginPacket) {
+			LoginPacket actionPacket = (LoginPacket) packet;
+			this.onLoginPacket(channel, actionPacket);
 		} else {
 			LOGGER.info("Unknown packet type.");
+		}
+	}
+
+	public boolean isLoginValid(final long id, final String login, final String password) {
+		return true;
+	}
+
+	public void onLoginPacket(final SocketChannel channel, final LoginPacket packet) throws IOException {
+		System.out.println("Login!!");
+		final Player newPlayer = this.players.get(channel);
+		if (this.isLoginValid(packet.id, packet.login, packet.password)) { // &&
+																			// !newPlayer.isNameChanged())
+																			// {
+			newPlayer.setName(packet.login);
+			System.out.println("Login accepted: " + packet.login);
+
+			// Send info to new player about others' location.
+			for (final Player player : this.players.values()) {
+				final PlayerUpdatePacket playerUpdate = new PlayerUpdatePacket(player.getId(), player.getName(),
+						player.getLocation());
+				this.sendPacket(channel, playerUpdate);
+			}
+
+			// Send info to new player about quests.
+			for (final Quest quest : this.quests.values()) {
+				if (quest.getStatus() != Quest.Status.AVAILABLE) {
+					continue;
+				}
+				final QuestUpdatePacket questPacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
+						QuestUpdatePacket.Status.APPEARED);
+				this.sendPacket(channel, questPacket);
+				System.out.println(questPacket.toString());
+			}
+
+			// Send info to others player about new player's location.
+			for (final Player player : this.players.values()) {
+				final PlayerUpdatePacket playerUpdate = new PlayerUpdatePacket(newPlayer.getId(), newPlayer.getName(),
+						newPlayer.getLocation());
+				this.sendPacket(player.getChannel(), playerUpdate);
+			}
+
+			System.out.println("Login accepted:end");
 		}
 	}
 
@@ -328,6 +353,8 @@ public final class Server {
 
 		packet.playerId = this.players.get(channel).getId();
 		this.players.get(channel).setLocation(packet.location);
+
+		// TODO: -> broadcast only checked (isNameChanged == True)
 		this.broadcastPacket(packet);
 
 		// XXX(xairy): temporary.

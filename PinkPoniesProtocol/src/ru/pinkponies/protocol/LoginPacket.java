@@ -10,6 +10,7 @@ import org.msgpack.annotation.Message;
 
 @Message
 public class LoginPacket extends Packet {
+	public long id;
 	public String login;
 	public String password;
 
@@ -17,10 +18,12 @@ public class LoginPacket extends Packet {
 		super();
 		this.login = "";
 		this.password = "";
+		this.id = -1;
 	}
 
-	public LoginPacket(final String login, final String password) {
+	public LoginPacket(final long id, final String login, final String password) {
 		super();
+		this.id = id;
 		this.login = login;
 		this.password = password;
 	}

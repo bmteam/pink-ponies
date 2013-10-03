@@ -50,7 +50,8 @@ public final class MapOverlay {
 
 	public synchronized void addCircle(final String name, final LatLng location, final double radius, final int color) {
 		if (this.circles.containsKey(name)) {
-			throw new IllegalArgumentException("Circle named " + name + " already exists.");
+			this.removeCircle(name);
+			// throw new IllegalArgumentException("Circle named " + name + " already exists.");
 		}
 		Circle circle = this.map.addCircle(new CircleOptions().center(location).radius(radius).strokeWidth(2)
 				.strokeColor(Color.BLACK).fillColor(color));

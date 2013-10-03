@@ -37,6 +37,7 @@ import ru.pinkponies.app.net.NetworkListener;
 import ru.pinkponies.app.net.NetworkingService;
 import ru.pinkponies.protocol.AppleUpdatePacket;
 import ru.pinkponies.protocol.ClientOptionsPacket;
+import ru.pinkponies.protocol.LoginPacket;
 import ru.pinkponies.protocol.PlayerUpdatePacket;
 import ru.pinkponies.protocol.QuestActionPacket;
 import ru.pinkponies.protocol.QuestUpdatePacket;
@@ -120,6 +121,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	private long availableQuestId = BAD_ID;
 	private long acceptedQuestId = BAD_ID;
 
+	private String login;
+	private String password;
+
 	// private TextOverlay textOverlay;
 
 	// private String login = "";
@@ -136,6 +140,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	@Override
 	protected void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+		this.login = "login"; // savedInstanceState.getString("login");
+		this.password = ""; // savedInstanceState.getString("password");
 
 		LOGGER.info("onCreate " + this.hashCode());
 
@@ -311,6 +318,8 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 	private void onClientOptonsPacket(final ClientOptionsPacket packet) {
 		this.playerId = packet.clientId;
+		LoginPacket loginPacket = new LoginPacket(this.playerId, this.login, this.password);
+		this.networkingService.sendPacket(loginPacket);
 	}
 
 	private void onSayPacket(final SayPacket packet) {
@@ -321,7 +330,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		if (this.playerId != BAD_ID && packet.playerId != this.playerId) {
 			final LatLng location = new LatLng(packet.location.latitude * 180 / Math.PI, packet.location.longitude
 					* 180 / Math.PI);
-			final String name = "Player" + String.valueOf(packet.playerId);
+			final String name = packet.playerName;
 			this.playersOverlay.removeMarker(name);
 			this.playersOverlay.addMarker(name, location,
 					BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
@@ -401,7 +410,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 		final ru.pinkponies.protocol.Location loc = new ru.pinkponies.protocol.Location(longitude / 180 * Math.PI,
 				latitude / 180 * Math.PI, altitude);
-		final PlayerUpdatePacket packet = new PlayerUpdatePacket(this.playerId, loc);
+		final PlayerUpdatePacket packet = new PlayerUpdatePacket(this.playerId, this.login, loc);
 		this.networkingService.sendPacket(packet);
 
 		MainActivity.LOGGER.info("Location updated.");
