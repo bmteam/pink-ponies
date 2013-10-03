@@ -279,12 +279,14 @@ public final class Server {
 		final ClientOptionsPacket packet = new ClientOptionsPacket(id);
 		this.sendPacket(channel, packet);
 
-		// Send info to new player from others
+		// Send info to new player
+		// about others' location
 		for (final Player player : this.players.values()) {
 			final PlayerUpdatePacket playerUpdate = new PlayerUpdatePacket(player.getId(), player.getLocation());
 			this.sendPacket(channel, playerUpdate);
 		}
 
+		// about quests
 		for (final Quest quest : this.quests.values()) {
 			if (quest.getStatus() != Quest.Status.AVAILABLE) {
 				continue;
@@ -294,7 +296,11 @@ public final class Server {
 			this.sendPacket(channel, questPacket);
 		}
 
-		// Send info from other to new
+		// Send info to others player about new player's location
+		for (final Player player : this.players.values()) {
+			final PlayerUpdatePacket playerUpdate = new PlayerUpdatePacket(newPlayer.getId(), newPlayer.getLocation());
+			this.sendPacket(player.getChannel(), playerUpdate);
+		}
 	}
 
 	public void onPacket(final SocketChannel channel, final Packet packet) throws IOException {
