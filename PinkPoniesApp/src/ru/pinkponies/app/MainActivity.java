@@ -15,7 +15,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -76,7 +75,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	/**
 	 * The default server IP.
 	 */
-	private static final String SERVER_IP = "192.168.1.36";
+	private static final String SERVER_IP = "81.5.108.58";
 
 	/**
 	 * The default server port.
@@ -168,7 +167,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 		LOGGER.info("Initialized.");
 
-		this.map.addMarker(new MarkerOptions().position(new LatLng(0, 0)).title("Hello world"));
 	}
 
 	/**
