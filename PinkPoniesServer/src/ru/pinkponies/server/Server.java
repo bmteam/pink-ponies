@@ -49,7 +49,7 @@ public final class Server {
 	/**
 	 * The default incoming/outgoing buffer size.
 	 */
-	private static final int BUFFER_SIZE = 8192;
+	private static final int BUFFER_SIZE = 819002;
 
 	/**
 	 * The distance at which players can pick up apples.
@@ -279,6 +279,7 @@ public final class Server {
 		final ClientOptionsPacket packet = new ClientOptionsPacket(id);
 		this.sendPacket(channel, packet);
 
+		// Send info to new player from others
 		for (final Player player : this.players.values()) {
 			final PlayerUpdatePacket playerUpdate = new PlayerUpdatePacket(player.getId(), player.getLocation());
 			this.sendPacket(channel, playerUpdate);
@@ -292,6 +293,8 @@ public final class Server {
 					QuestUpdatePacket.Status.APPEARED);
 			this.sendPacket(channel, questPacket);
 		}
+
+		// Send info from other to new
 	}
 
 	public void onPacket(final SocketChannel channel, final Packet packet) throws IOException {
