@@ -18,7 +18,7 @@ public class PlayerUpdatePacket extends Packet {
 		super();
 		this.playerId = -1;
 		this.location = new Location(0, 0, 0);
-		this.playerName = "Default player name";
+		this.playerName = "UNKNOWN";
 	}
 
 	public PlayerUpdatePacket(final long playerId, final String playerName, final Location location) {

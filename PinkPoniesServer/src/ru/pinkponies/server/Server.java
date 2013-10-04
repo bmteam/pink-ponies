@@ -302,44 +302,37 @@ public final class Server {
 		}
 	}
 
-	public boolean isLoginValid(final long id, final String login, final String password) {
-		return true;
-	}
-
 	public void onLoginPacket(final SocketChannel channel, final LoginPacket packet) throws IOException {
 		final Player newPlayer = this.players.get(channel);
 		if (newPlayer.isLoggedIn()) {
 			return;
 		}
-		if (this.isLoginValid(packet.id, packet.login, packet.password) && !newPlayer.isLoggedIn()) {
-			newPlayer.setName(packet.login);
-			System.out.println("Login accepted: <" + packet.login + ">");
+		newPlayer.setName(packet.login);
+		System.out.println("Login accepted: <" + packet.login + ">");
 
-			// Send info to new player about others' location.
-			for (final Player player : this.players.values()) {
-				final PlayerUpdatePacket playerUpdate = new PlayerUpdatePacket(player.getId(), player.getName(),
-						player.getLocation());
-				this.sendPacket(channel, playerUpdate);
+		// Send info to new player about others' location.
+		for (final Player player : this.players.values()) {
+			final PlayerUpdatePacket playerUpdate = new PlayerUpdatePacket(player.getId(), player.getName(),
+					player.getLocation());
+			this.sendPacket(channel, playerUpdate);
+		}
+
+		// Send info to new player about quests.
+		for (final Quest quest : this.quests.values()) {
+			if (quest.getStatus() != Quest.Status.AVAILABLE) {
+				continue;
 			}
+			final QuestUpdatePacket questPacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
+					QuestUpdatePacket.Status.APPEARED);
+			this.sendPacket(channel, questPacket);
+			System.out.println(questPacket.toString());
+		}
 
-			// Send info to new player about quests.
-			for (final Quest quest : this.quests.values()) {
-				if (quest.getStatus() != Quest.Status.AVAILABLE) {
-					continue;
-				}
-				final QuestUpdatePacket questPacket = new QuestUpdatePacket(quest.getId(), quest.getLocation(),
-						QuestUpdatePacket.Status.APPEARED);
-				this.sendPacket(channel, questPacket);
-				System.out.println(questPacket.toString());
-			}
-
-			// Send info to others player about new player's location.
-			for (final Player player : this.players.values()) {
-				final PlayerUpdatePacket playerUpdate = new PlayerUpdatePacket(newPlayer.getId(), newPlayer.getName(),
-						newPlayer.getLocation());
-				this.sendPacket(player.getChannel(), playerUpdate);
-			}
-
+		// Send info to others player about new player's location.
+		for (final Player player : this.players.values()) {
+			final PlayerUpdatePacket playerUpdate = new PlayerUpdatePacket(newPlayer.getId(), newPlayer.getName(),
+					newPlayer.getLocation());
+			this.sendPacket(player.getChannel(), playerUpdate);
 		}
 	}
 
