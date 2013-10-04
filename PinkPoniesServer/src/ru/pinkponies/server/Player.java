@@ -30,7 +30,7 @@ public final class Player extends Entity {
 		return this.name;
 	}
 
-	public boolean isNameChanged() {
+	public boolean isLoggedIn() {
 		return this.name != "DEFAULT TEST NAME";
 	}
 

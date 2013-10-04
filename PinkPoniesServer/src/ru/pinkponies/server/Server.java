@@ -308,7 +308,7 @@ public final class Server {
 
 	public void onLoginPacket(final SocketChannel channel, final LoginPacket packet) throws IOException {
 		final Player newPlayer = this.players.get(channel);
-		if (this.isLoginValid(packet.id, packet.login, packet.password) && !newPlayer.isNameChanged()) {
+		if (this.isLoginValid(packet.id, packet.login, packet.password) && !newPlayer.isLoggedIn()) {
 			newPlayer.setName(packet.login);
 			System.out.println("Login accepted: <" + packet.login + ">");
 
@@ -348,7 +348,7 @@ public final class Server {
 		System.out.println(packet.toString());
 
 		// Login packet should be first.
-		if (!this.players.get(channel).isNameChanged()) {
+		if (!this.players.get(channel).isLoggedIn()) {
 			return;
 		}
 		packet.playerId = this.players.get(channel).getId();
