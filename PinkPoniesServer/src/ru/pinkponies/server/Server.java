@@ -295,8 +295,8 @@ public final class Server {
 			QuestActionPacket actionPacket = (QuestActionPacket) packet;
 			this.onQuestActionPacket(channel, actionPacket);
 		} else if (packet instanceof LoginPacket) {
-			LoginPacket actionPacket = (LoginPacket) packet;
-			this.onLoginPacket(channel, actionPacket);
+			LoginPacket loginPacket = (LoginPacket) packet;
+			this.onLoginPacket(channel, loginPacket);
 		} else {
 			LOGGER.info("Unknown packet type.");
 		}
