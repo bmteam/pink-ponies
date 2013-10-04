@@ -354,7 +354,6 @@ public final class Server {
 		packet.playerId = this.players.get(channel).getId();
 		this.players.get(channel).setLocation(packet.location);
 
-		// TODO: -> broadcast only checked (isNameChanged == True)
 		this.broadcastPacket(packet);
 
 		// XXX(xairy): temporary.
@@ -498,7 +497,9 @@ public final class Server {
 
 	private void broadcastPacket(final Packet packet) throws IOException {
 		for (final Player player : this.players.values()) {
-			this.sendPacket(player.getChannel(), packet);
+			if (player.isLoggedIn()) {
+				this.sendPacket(player.getChannel(), packet);
+			}
 		}
 	}
 
