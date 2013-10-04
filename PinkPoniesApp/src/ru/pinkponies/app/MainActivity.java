@@ -76,7 +76,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	/**
 	 * The default server IP.
 	 */
-	private static final String SERVER_IP = "192.168.1.36";
+	private static final String SERVER_IP = "192.168.85.196";
 
 	/**
 	 * The default server port.
@@ -317,7 +317,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		this.playerId = packet.clientId;
 		LoginPacket loginPacket = new LoginPacket(this.playerId, this.login, this.password);
 		this.networkingService.sendPacket(loginPacket);
-		this.onLocationChanged(this.locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER));
+		// this.onLocationChanged(this.locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER));
 	}
 
 	private void onSayPacket(final SayPacket packet) {
@@ -395,6 +395,11 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 	@Override
 	public void onLocationChanged(final Location location) {
+
+		if (this.playerId == BAD_ID) {
+			return;
+		}
+
 		final double longitude = location.getLongitude();
 		final double latitude = location.getLatitude();
 		final double altitude = location.getAltitude();
