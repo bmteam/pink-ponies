@@ -14,12 +14,13 @@ public final class Player extends Entity {
 	private final SocketChannel channel;
 	private Quest quest;
 	private String name;
+	private static final String default_name = "UNKNOWN";
 
 	public Player(final long id, final Location location, final SocketChannel channel) {
 		super(id, location);
 		this.channel = channel;
 		this.quest = null;
-		this.name = "DEFAULT TEST NAME";
+		this.name = Player.default_name;
 	}
 
 	public void setName(final String playerName) {
@@ -31,7 +32,7 @@ public final class Player extends Entity {
 	}
 
 	public boolean isLoggedIn() {
-		return this.name != "DEFAULT TEST NAME";
+		return this.name != Player.default_name;
 	}
 
 	public SocketChannel getChannel() {
