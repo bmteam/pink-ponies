@@ -394,7 +394,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 	@Override
 	public void onLocationChanged(final Location location) {
-
 		if (this.playerId == BAD_ID) {
 			return;
 		}

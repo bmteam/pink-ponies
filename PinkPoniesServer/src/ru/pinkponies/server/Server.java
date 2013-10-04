@@ -308,6 +308,9 @@ public final class Server {
 
 	public void onLoginPacket(final SocketChannel channel, final LoginPacket packet) throws IOException {
 		final Player newPlayer = this.players.get(channel);
+		if (newPlayer.isLoggedIn()) {
+			return;
+		}
 		if (this.isLoginValid(packet.id, packet.login, packet.password) && !newPlayer.isLoggedIn()) {
 			newPlayer.setName(packet.login);
 			System.out.println("Login accepted: <" + packet.login + ">");
