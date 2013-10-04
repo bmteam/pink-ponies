@@ -76,7 +76,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	/**
 	 * The default server IP.
 	 */
-	private static final String SERVER_IP = "192.168.85.196";
+	private static final String SERVER_IP = "192.168.1.34";
 
 	/**
 	 * The default server port.
