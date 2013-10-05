@@ -18,7 +18,8 @@
         <requestFocus />
     </EditText>
 
-    <EditText
+   <!-- 
+   <EditText
         android:id="@+id/password"
         android:layout_width="240dp"
         android:layout_height="40dp"
@@ -29,15 +30,15 @@
         android:hint="@string/password"
         android:inputType="textPassword" >
     </EditText>
+    -->
 
     <Button
         android:id="@+id/ok"
         android:layout_width="100dp"
         android:layout_height="42dp"
-        android:layout_alignRight="@+id/password"
-        android:layout_below="@+id/password"
-        android:layout_marginRight="25dp"
-        android:layout_marginTop="20dp"
+        android:layout_below="@+id/login"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="49dp"
         android:ems="15"
         android:onClick="onLoginClick"
         android:text="@string/button_login" />

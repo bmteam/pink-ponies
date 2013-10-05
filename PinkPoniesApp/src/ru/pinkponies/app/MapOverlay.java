@@ -34,9 +34,9 @@ public final class MapOverlay {
 
 	public synchronized void addMarker(final String name, final LatLng location, final BitmapDescriptor bitmapDescriptor) {
 		if (this.markers.containsKey(name)) {
-			throw new IllegalArgumentException("Item named " + name + " already exists.");
+			this.removeMarker(name);
 		}
-		Marker marker = this.map.addMarker(new MarkerOptions().position(location).icon(bitmapDescriptor));
+		Marker marker = this.map.addMarker(new MarkerOptions().position(location).icon(bitmapDescriptor).title(name));
 		this.markers.put(name, marker);
 	}
 
@@ -50,7 +50,7 @@ public final class MapOverlay {
 
 	public synchronized void addCircle(final String name, final LatLng location, final double radius, final int color) {
 		if (this.circles.containsKey(name)) {
-			throw new IllegalArgumentException("Circle named " + name + " already exists.");
+			this.removeCircle(name);
 		}
 		Circle circle = this.map.addCircle(new CircleOptions().center(location).radius(radius).strokeWidth(2)
 				.strokeColor(Color.BLACK).fillColor(color));

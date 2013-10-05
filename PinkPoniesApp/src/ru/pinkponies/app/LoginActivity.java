@@ -34,7 +34,7 @@ public class LoginActivity extends Activity {
 	/**
 	 * The password edit box.
 	 */
-	private EditText passwordEditBox;
+	// private EditText passwordEditBox;
 
 	@Override
 	protected void onCreate(final Bundle savedInstanceState) {
@@ -44,7 +44,7 @@ public class LoginActivity extends Activity {
 		this.setContentView(R.layout.activity_login);
 
 		this.loginEditBox = (EditText) this.findViewById(R.id.login);
-		this.passwordEditBox = (EditText) this.findViewById(R.id.password);
+		// this.passwordEditBox = (EditText) this.findViewById(R.id.password);
 
 		LOGGER.info("LoginActivity::Initialized!");
 	}
@@ -57,7 +57,8 @@ public class LoginActivity extends Activity {
 	 */
 	public void onLoginClick(final View view) {
 		final String login = this.loginEditBox.getText().toString();
-		final String password = this.passwordEditBox.getText().toString();
+		final String password = "defaut password";
+		// final String password = this.passwordEditBox.getText().toString();
 
 		this.goToMainActivity(login, password);
 	}

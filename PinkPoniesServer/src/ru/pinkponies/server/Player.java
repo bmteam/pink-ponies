@@ -11,13 +11,28 @@ import java.nio.channels.SocketChannel;
 import ru.pinkponies.protocol.Location;
 
 public final class Player extends Entity {
+	private static final String DEFAULT_NAME = "UNKNOWN";
 	private final SocketChannel channel;
 	private Quest quest;
+	private String name;
 
 	public Player(final long id, final Location location, final SocketChannel channel) {
 		super(id, location);
 		this.channel = channel;
 		this.quest = null;
+		this.name = Player.DEFAULT_NAME;
+	}
+
+	public void setName(final String playerName) {
+		this.name = playerName;
+	}
+
+	public String getName() {
+		return this.name;
+	}
+
+	public boolean isLoggedIn() {
+		return this.name != Player.DEFAULT_NAME;
 	}
 
 	public SocketChannel getChannel() {
