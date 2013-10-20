@@ -298,6 +298,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		LOGGER.info(message.toString());
 
 		if (message.equals("failed")) {
+			this.printIntoConnStateTextView("No connection");
 			this.showMessageBox("Socket exception.", null);
 		} else if (message instanceof ClientOptionsPacket) {
 			final ClientOptionsPacket packet = (ClientOptionsPacket) message;
@@ -475,14 +476,13 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	}
 
 	public void printIntoConnStateTextView(final String string) {
+		LOGGER.info("Print into conn_textview: " + string);
 		this.runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
 				if (MainActivity.this.conn_textview == null) {
-					LOGGER.info("#con_tv");
 				}
 				MainActivity.this.conn_textview.setText(string);
-
 			}
 		});
 	}
