@@ -32,6 +32,7 @@ import android.os.IBinder;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 import ru.pinkponies.app.net.NetworkListener;
 import ru.pinkponies.app.net.NetworkingService;
@@ -76,7 +77,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	/**
 	 * The default server IP.
 	 */
-	private static final String SERVER_IP = "192.168.1.34";
+	private static final String SERVER_IP = "192.168.1.33";
 
 	/**
 	 * The default server port.
@@ -124,6 +125,8 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	private String login;
 	private String password;
 
+	private final TextView conn_textview = (TextView) this.findViewById(R.id.textView1);
+
 	// private TextOverlay textOverlay;
 
 	/**
@@ -142,11 +145,6 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		this.password = this.getIntent().getStringExtra("password");
 
 		LOGGER.info("onCreate " + this.hashCode());
-
-		// Intent intent = getIntent();
-		// Bundle extras = intent.getExtras();
-		// login = extras.getString("login");
-		// password = extras.getString("password");
 
 		this.setContentView(R.layout.activity_main);
 
@@ -317,6 +315,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		this.playerId = packet.clientId;
 		LoginPacket loginPacket = new LoginPacket(this.playerId, this.login, this.password);
 		this.networkingService.sendPacket(loginPacket);
+		this.printIntoConnStateTextView("Everything's fine");
 	}
 
 	private void onSayPacket(final SayPacket packet) {
@@ -467,5 +466,9 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 
 	@Override
 	public void onStatusChanged(final String provider, final int status, final Bundle extras) {
+	}
+
+	public void printIntoConnStateTextView(final String string) {
+		// this.conn_textview.setText(string);
 	}
 }
