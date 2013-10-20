@@ -125,7 +125,7 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	private String login;
 	private String password;
 
-	private final TextView conn_textview = (TextView) this.findViewById(R.id.textView1);
+	private final TextView conn_textview = (TextView) this.findViewById(R.id.conn_state_textview);
 
 	// private TextOverlay textOverlay;
 
