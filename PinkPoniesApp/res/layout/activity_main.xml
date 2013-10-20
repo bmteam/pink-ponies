@@ -28,7 +28,7 @@
             android:id="@+id/conn_state_textview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="48sp"
+            android:textSize="@dimen/font_size"
             android:text="@string/conn_state_textview" />
     </LinearLayout>
 

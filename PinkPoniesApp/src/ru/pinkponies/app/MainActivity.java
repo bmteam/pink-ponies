@@ -28,7 +28,10 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Handler.Callback;
 import android.os.IBinder;
+import android.os.Message;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
@@ -47,7 +50,7 @@ import ru.pinkponies.protocol.SayPacket;
 /**
  * The main activity class.
  */
-public final class MainActivity extends Activity implements LocationListener, NetworkListener {
+public final class MainActivity extends Activity implements LocationListener, NetworkListener, Callback {
 	/**
 	 * The class wide logger.
 	 */
@@ -125,7 +128,8 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	private String login;
 	private String password;
 
-	private final TextView conn_textview = (TextView) this.findViewById(R.id.conn_state_textview);
+	private TextView conn_textview;
+	final Handler threadHandler = new Handler(this);
 
 	// private TextOverlay textOverlay;
 
@@ -166,6 +170,8 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 		((Button) this.findViewById(R.id.join_button)).setEnabled(false);
 		((Button) this.findViewById(R.id.start_button)).setEnabled(false);
 		((Button) this.findViewById(R.id.leave_button)).setEnabled(false);
+
+		this.conn_textview = (TextView) this.findViewById(R.id.conn_state_textview);
 
 		LOGGER.info("Initialized.");
 
@@ -469,6 +475,21 @@ public final class MainActivity extends Activity implements LocationListener, Ne
 	}
 
 	public void printIntoConnStateTextView(final String string) {
-		// this.conn_textview.setText(string);
+		this.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				if (MainActivity.this.conn_textview == null) {
+					LOGGER.info("#con_tv");
+				}
+				MainActivity.this.conn_textview.setText(string);
+
+			}
+		});
+	}
+
+	@Override
+	public boolean handleMessage(final Message arg0) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }
