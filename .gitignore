@@ -1,0 +1,10 @@
+PinkPoniesApp/bin/*
+PinkPoniesApp/gen/*
+PinkPoniesProtocol/bin/*
+PinkPoniesProtocol/gen/*
+PinkPoniesServer/bin/*
+PinkPoniesServer/gen/*
+GooglePlayServices/bin/*
+GooglePlayServices/gen/*
+*.metadata
+*.pyc
